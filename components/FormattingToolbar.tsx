@@ -64,7 +64,18 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
 
     useEffect(() => {
         const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        setCanRecord(!!SR);
+        const isAvailable = !!SR;
+        setCanRecord(isAvailable);
+        
+        // Log availability for debugging
+        const isElectron = (window as any)?.electron?.isElectron;
+        console.log('Speech Recognition:', {
+            available: isAvailable,
+            isElectron,
+            SpeechRecognition: !!(window as any).SpeechRecognition,
+            webkitSpeechRecognition: !!(window as any).webkitSpeechRecognition
+        });
+        
         return () => {
             try { recognitionRef.current?.stop?.(); } catch {}
         };
@@ -186,7 +197,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
             </ToolbarButton>
             <ToolbarButton
                 onClick={recording ? stopRecording : startRecording}
-title={recording ? t('voice.stop') : t('voice.start')}
+                title={!canRecord ? 'Speech Recognition not available in Electron' : (recording ? t('voice.stop') : t('voice.start'))}
                 disabled={!canRecord}
                 isActive={recording}
             >

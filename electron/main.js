@@ -28,7 +28,18 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
-      webSecurity: true
+      webSecurity: true,
+      // Enable Web Speech API
+      experimentalFeatures: true
+    }
+  })
+
+  // Enable media access (microphone)
+  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'media') {
+      callback(true)
+    } else {
+      callback(false)
     }
   })
 
@@ -54,6 +65,10 @@ app.whenReady().then(() => {
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.neural-pad.app')
   }
+
+  // Enable Speech Recognition
+  app.commandLine.appendSwitch('enable-speech-dispatcher')
+  app.commandLine.appendSwitch('enable-speech-input')
 
   createWindow()
 
