@@ -6,6 +6,10 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
 import Underline from '@tiptap/extension-underline';
+import { Table } from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableHeader from '@tiptap/extension-table-header';
+import TableCell from '@tiptap/extension-table-cell';
 
 import { useTranslations } from '../hooks/useTranslations';
 import FormattingToolbar from './FormattingToolbar';
@@ -38,6 +42,10 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
             TextStyle,
             FontFamily,
             FontSize,
+            Table.configure({ resizable: true }),
+            TableRow,
+            TableHeader,
+            TableCell,
         ],
         content: content,
         onUpdate: ({ editor }) => {
@@ -45,36 +53,40 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
         },
         editorProps: {
             handlePaste: (view, event) => {
-                // FIX: Refactor loop to use indexed access on DataTransferItemList.
-                // This avoids using Array.from which was causing type inference issues,
-                // leading to `item` being of type `unknown`.
                 const items = event.clipboardData?.items;
-                if (!items) {
-                    return false;
-                }
-                const { schema } = view.state;
-
-                for (let i = 0; i < items.length; i++) {
-                    const item = items[i];
-                    if (item.type.startsWith('image/')) {
-                        const file = item.getAsFile();
-                        if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (readerEvent) => {
-                                const url = readerEvent.target?.result;
-                                if (typeof url === 'string') {
-                                    const node = schema.nodes.image.create({ src: url });
-                                    const transaction = view.state.tr.replaceSelectionWith(node);
-                                    view.dispatch(transaction);
-                                }
-                            };
-                            reader.readAsDataURL(file);
-                            return true; // We've handled the paste event
+                if (items) {
+                    for (let i = 0; i < items.length; i++) {
+                        const item = items[i];
+                        if (item.type.startsWith('image/')) {
+                            const file = item.getAsFile();
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (readerEvent) => {
+                                    const url = readerEvent.target?.result as string | undefined;
+                                    if (typeof url === 'string') {
+                                        (editorRef.current as any)?.chain().focus().insertContent({ type: 'image', attrs: { src: url } }).run();
+                                    }
+                                };
+                                reader.readAsDataURL(file);
+                                return true;
+                            }
                         }
                     }
                 }
 
-                return false; // Let Tiptap handle the rest
+                const text = event.clipboardData?.getData('text/plain') || '';
+                if (text && /\t|\n/.test(text)) {
+                    const rows = text.split(/\r?\n/).filter(r => r.length);
+                    const matrix = rows.map(r => r.split('\t'));
+                    const header = matrix[0];
+                    const body = matrix.slice(1);
+                    const th = `<tr>${header.map(h => `<th>${h}</th>`).join('')}</tr>`;
+                    const tb = body.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
+                    const html = `<table><thead>${th}</thead><tbody>${tb}</tbody></table>`;
+                    (editorRef.current as any)?.chain().focus().insertContent(html).run();
+                    return true;
+                }
+                return false;
             },
         },
     });

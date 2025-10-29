@@ -15,6 +15,17 @@ export default defineConfig(() => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        chunkSizeWarningLimit: 1500,
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              'react-vendor': ['react', 'react-dom'],
+              'tiptap-vendor': ['@tiptap/react', '@tiptap/core', '@tiptap/starter-kit'],
+            }
+          }
+        }
       }
     };
 });

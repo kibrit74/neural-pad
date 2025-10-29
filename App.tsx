@@ -13,6 +13,8 @@ import ResizableHandle from './components/ResizableHandle';
 import WelcomeModal from './components/WelcomeModal';
 import HelpModal from './components/HelpModal';
 import MakeBlueprintModal from './components/MakeBlueprintModal';
+import MarkdownModal from './components/MarkdownModal';
+import HistoryModal from './components/HistoryModal';
 import PasswordModal, { PasswordMode } from './components/PasswordModal';
 
 import type { Settings, NotificationType, Note } from './types';
@@ -65,12 +67,15 @@ const App: React.FC = () => {
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [isMakeBlueprintOpen, setMakeBlueprintOpen] = useState(false);
     const [blueprintSelectedText, setBlueprintSelectedText] = useState('');
+    const [isMarkdownModalOpen, setMarkdownModalOpen] = useState(false);
 
     // Password / lock state
     const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
     const [passwordMode, setPasswordMode] = useState<PasswordMode>('set');
     const [passwordTargetNoteId, setPasswordTargetNoteId] = useState<number | null>(null);
     const passwordCacheRef = useRef<Map<number, string>>(new Map());
+
+    const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -513,6 +518,7 @@ const App: React.FC = () => {
                         }
                         setPasswordModalOpen(true);
                     }}
+                    onOpenHistory={() => setHistoryModalOpen(true)}
                     isLocked={!!activeNote?.isLocked}
                     activeNote={activeNote}
                     searchQuery={searchQuery}
@@ -546,6 +552,9 @@ const App: React.FC = () => {
                     )}
                 </div>
                 <div className="flex-grow overflow-hidden relative" onContextMenu={handleContextMenu}>
+                    <div className="absolute right-4 top-4 z-10 flex gap-2">
+                        <button onClick={() => setMarkdownModalOpen(true)} className="px-2 py-1 text-xs rounded bg-background border border-border text-text-primary hover:bg-border">MD</button>
+                    </div>
                     <Editor
                         content={activeNote?.content || ''}
                         onChange={handleEditorChange}
@@ -711,6 +720,26 @@ const App: React.FC = () => {
                 selectedText={blueprintSelectedText}
                 onClose={() => setMakeBlueprintOpen(false)}
                 addNotification={addNotification}
+            />
+
+            <MarkdownModal
+                isOpen={isMarkdownModalOpen}
+                html={activeNote?.content || ''}
+                onClose={() => setMarkdownModalOpen(false)}
+                onApply={(html) => {
+                    editorRef.current?.commands.setContent(html, { emitUpdate: true });
+                }}
+            />
+
+            <HistoryModal
+                isOpen={isHistoryModalOpen}
+                noteId={activeNote?.id || null}
+                currentHtml={activeNote?.content || ''}
+                onClose={() => setHistoryModalOpen(false)}
+                onRestore={(html) => {
+                    editorRef.current?.commands.setContent(html, { emitUpdate: true });
+                    setHistoryModalOpen(false);
+                }}
             />
             
             <div className="absolute bottom-4 right-4 z-50 space-y-2 w-full max-w-sm">

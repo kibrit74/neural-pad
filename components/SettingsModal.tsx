@@ -120,6 +120,25 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                         ))}
                     </div>
                 </Section>
+
+                <Section title="Export">
+                    <div className="flex gap-2">
+                        <button
+                            onClick={async () => {
+                                const { exportAll } = await import('../utils/exportAll');
+                                await exportAll('html');
+                            }}
+                            className="px-3 py-2 rounded-md font-semibold bg-background border border-border-strong hover:bg-border text-text-primary"
+                        >Export All (HTML)</button>
+                        <button
+                            onClick={async () => {
+                                const { exportAll } = await import('../utils/exportAll');
+                                await exportAll('md');
+                            }}
+                            className="px-3 py-2 rounded-md font-semibold bg-background border border-border-strong hover:bg-border text-text-primary"
+                        >Export All (Markdown)</button>
+                    </div>
+                </Section>
                 
                 <Section title={t('settings.language')}>
                     <div className="grid grid-cols-2 gap-4">

@@ -199,3 +199,10 @@ export const UnlockIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path d="M7 11V8a5 5 0 0 1 9 0"></path>
     </SVGIcon>
 );
+
+export const HistoryIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <SVGIcon {...props}>
+    <circle cx="12" cy="12" r="10"></circle>
+    <path d="M12 6v6l4 2"></path>
+  </SVGIcon>
+);

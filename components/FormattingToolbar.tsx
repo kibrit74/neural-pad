@@ -2,9 +2,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Editor } from '@tiptap/react';
 import { useTranslations } from '../hooks/useTranslations';
+import TurndownService from 'turndown';
 import {
     BoldIcon, ItalicIcon, UnderlineIcon, StrikeIcon, CodeIcon, ListIcon, ListOrderedIcon, BlockquoteIcon, UndoIcon, RedoIcon, ImageIcon, MicIcon, StopIcon
 } from './icons/Icons';
+
+const TableIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <line x1="3" y1="9" x2="21" y2="9" />
+    <line x1="3" y1="15" x2="21" y2="15" />
+    <line x1="12" y1="3" x2="12" y2="21" />
+  </svg>
+);
 
 interface FormattingToolbarProps {
     editor: Editor | null;
@@ -129,6 +139,38 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
         }
     };
 
+    const copyAsHTML = async () => {
+        const html = editor.getHTML();
+        await navigator.clipboard.writeText(html);
+    };
+
+    const copyAsMarkdown = async () => {
+        const td = new TurndownService();
+        const md = td.turndown(editor.getHTML());
+        await navigator.clipboard.writeText(md);
+    };
+
+    const attachFile = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.onchange = async () => {
+            const file = input.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                const dataUrl = String(reader.result);
+                if (file.type.startsWith('image/')) {
+                    (editor.chain().focus() as any).insertContent({ type: 'image', attrs: { src: dataUrl } }).run();
+                } else {
+                    const name = file.name;
+                    (editor.chain().focus() as any).insertContent(`<a href="${dataUrl}" download="${name}">${name}</a>`).run();
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    };
+
     return (
         <div className="flex items-center gap-1 p-2 border-b border-border-strong bg-background-secondary flex-wrap">
             <select
@@ -195,9 +237,18 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
             <ToolbarButton onClick={onImageUpload} title="Insert Image">
                 <ImageIcon />
             </ToolbarButton>
+            <ToolbarButton onClick={attachFile} title="Attach File">
+                <ImageIcon />
+            </ToolbarButton>
+            <ToolbarButton
+                onClick={() => (editor.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                title="Insert Table"
+            >
+                <TableIcon />
+            </ToolbarButton>
             <ToolbarButton
                 onClick={recording ? stopRecording : startRecording}
-                title={!canRecord ? 'Speech Recognition not available in Electron' : (recording ? t('voice.stop') : t('voice.start'))}
+                title={recording ? t('voice.stop') : t('voice.start')}
                 disabled={!canRecord}
                 isActive={recording}
             >

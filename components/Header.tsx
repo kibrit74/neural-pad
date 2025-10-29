@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useTranslations } from '../hooks/useTranslations';
-import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SearchIcon, HelpCircleIcon, LockIcon, UnlockIcon } from './icons/Icons';
+import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SearchIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon } from './icons/Icons';
 import type { Note } from '../types';
 
 interface HeaderProps {
@@ -12,6 +12,7 @@ interface HeaderProps {
     onSettings: () => void;
     onHelp: () => void;
     onToggleLock: () => void;
+    onOpenHistory?: () => void;
     isLocked: boolean;
     activeNote: Note | null;
     searchQuery: string;
@@ -19,7 +20,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSettings, onHelp, onToggleLock, isLocked, activeNote, searchQuery, onSearchChange 
+    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSettings, onHelp, onToggleLock, onOpenHistory, isLocked, activeNote, searchQuery, onSearchChange 
 }) => {
     const { t } = useTranslations();
 
@@ -89,6 +90,11 @@ const Header: React.FC<HeaderProps> = ({
                 <IconButton onClick={onHelp} title={t('header.help')}>
                     <HelpCircleIcon />
                 </IconButton>
+                {onOpenHistory && (
+                    <IconButton onClick={onOpenHistory} title="History">
+                        <HistoryIcon />
+                    </IconButton>
+                )}
                  <IconButton onClick={onSettings} title={t('header.settings')}>
                     <SettingsIcon />
                 </IconButton>
