@@ -20,6 +20,10 @@
     --color-error-text: #991b1b;
     --color-warning-bg: #fef9c3; 
     --color-warning-text: #854d0e;
+    /* Table variables */
+    --table-border: #334155; /* slate-700 for contrast */
+    --table-header-bg: var(--color-border);
+    --table-header-text: var(--color-text-primary);
   }
 
   [data-theme="twilight"] {
@@ -39,6 +43,10 @@
     --color-error-text: #fecaca;
     --color-warning-bg: #78350f; 
     --color-warning-text: #fde68a;
+    /* Table variables */
+    --table-border: #94a3b8;
+    --table-header-bg: #334155;
+    --table-header-text: #f8fafc;
   }
 
   [data-theme="ocean"] {
@@ -58,6 +66,10 @@
     --color-error-text: #c2410c;
     --color-warning-bg: #fef3c7; 
     --color-warning-text: #b45309;
+    /* Table variables */
+    --table-border: var(--color-text-primary);
+    --table-header-bg: var(--color-border-strong);
+    --table-header-text: var(--color-text-primary);
   }
 
   [data-theme="forest"] {
@@ -77,6 +89,10 @@
     --color-error-text: #991b1b;
     --color-warning-bg: #fef9c3; 
     --color-warning-text: #854d0e;
+    /* Table variables */
+    --table-border: var(--color-text-primary);
+    --table-header-bg: var(--color-border-strong);
+    --table-header-text: var(--color-text-primary);
   }
 
   [data-theme="blossom"] {
@@ -96,6 +112,10 @@
     --color-error-text: #991b1b;
     --color-warning-bg: #fffbeb; 
     --color-warning-text: #b45309;
+    /* Table variables */
+    --table-border: var(--color-text-primary);
+    --table-header-bg: var(--color-border-strong);
+    --table-header-text: var(--color-text-primary);
   }
 
   [data-theme="dusk"] {
@@ -115,6 +135,10 @@
     --color-error-text: #fecaca;
     --color-warning-bg: #5b21b6; 
     --color-warning-text: #fde68a;
+    /* Table variables */
+    --table-border: var(--color-text-secondary);
+    --table-header-bg: var(--color-border);
+    --table-header-text: var(--color-text-primary);
   }
 }
 
@@ -236,6 +260,24 @@
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
   }
 
+  /* Landing slider caption styles */
+  .landing-caption-title {
+    color: var(--color-primary);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  }
+  .landing-caption-desc {
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Tiptap editor area should fill the available height for easier clicking */
+  .landing-image {
+    image-rendering: auto;
+    -ms-interpolation-mode: bicubic; /* IE/old Edge */
+    backface-visibility: hidden;
+    transform: translateZ(0);
+  }
+
   /* Tiptap editor area should fill the available height for easier clicking */
   .ProseMirror {
     min-height: 100%;
@@ -259,27 +301,30 @@
     outline: none;
   }
 
-  /* Table borders */
+  /* Table borders - use theme variables */
   .ProseMirror table {
-    border-collapse: collapse;
+    border-collapse: collapse !important;
     table-layout: fixed;
     width: 100%;
-    margin: 0;
-    overflow: hidden;
+    margin: 16px 0;
+    overflow: visible;
+    border: 2px solid var(--table-border) !important;
   }
   .ProseMirror table td,
   .ProseMirror table th {
-    min-width: 1em;
-    border: 2px solid var(--color-border-strong);
-    padding: 6px 8px;
+    min-width: 2em;
+    border: 2px solid var(--table-border) !important;
+    padding: 10px 14px;
     vertical-align: top;
     box-sizing: border-box;
     position: relative;
+    background-color: var(--color-background);
   }
   .ProseMirror table th {
-    font-weight: bold;
+    font-weight: 700;
     text-align: left;
-    background-color: var(--color-background-secondary);
+    background-color: var(--table-header-bg) !important;
+    color: var(--table-header-text) !important;
   }
   .ProseMirror table .selectedCell:after {
     z-index: 2;
@@ -287,9 +332,36 @@
     content: "";
     left: 0; right: 0; top: 0; bottom: 0;
     background: var(--color-primary);
-    opacity: 0.1;
+    opacity: 0.2;
     pointer-events: none;
   }
+  .ProseMirror table p {
+    margin: 0;
+  }
+
+  /* Increase specificity vs Tailwind Typography (.prose) */
+  .prose .ProseMirror table,
+  .prose .ProseMirror table td,
+  .prose .ProseMirror table th {
+    border-color: var(--table-border) !important;
+    border-width: 2px !important;
+    border-style: solid !important;
+  }
+  .prose .ProseMirror table {
+    border: 2px solid var(--table-border) !important;
+  }
+  .prose .ProseMirror table th {
+    background-color: var(--table-header-bg) !important;
+    color: var(--table-header-text) !important;
+  }
+
+  /* NP table utility classes */
+  .np-table { border: 2px solid var(--table-border) !important; border-collapse: separate !important; border-spacing: 0 !important; }
+  .np-table td, .np-table th { box-shadow: inset 0 0 0 2px var(--table-border) !important; padding: 10px 14px; background: var(--color-background); }
+  .np-zebra tbody tr:nth-child(odd) td { background-color: var(--color-background-secondary); }
+  .np-sticky-header thead th { position: sticky; top: 0; z-index: 1; }
+  .np-borders-none td, .np-borders-none th { box-shadow: none !important; }
+  .np-borders-outside { box-shadow: 0 0 0 2px var(--table-border) inset; }
 
   /* Fix for Tiptap lists with Tailwind Typography */
   .prose ul { 

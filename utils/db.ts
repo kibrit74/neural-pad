@@ -160,11 +160,31 @@ export const getHistory = async (noteId: number): Promise<{ id: number; noteId: 
 export const deleteNote = async (id: number): Promise<void> => {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const transaction = db.transaction([STORE_NAME, 'history'], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
-        const request = store.delete(id);
-
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
+        const historyStore = transaction.objectStore('history');
+        
+        // Delete the note
+        const deleteRequest = store.delete(id);
+        
+        deleteRequest.onsuccess = () => {
+            // Delete all history entries for this note
+            const index = historyStore.index('noteId');
+            const historyRequest = index.openCursor(IDBKeyRange.only(id));
+            
+            historyRequest.onsuccess = (event) => {
+                const cursor = (event.target as IDBRequest).result;
+                if (cursor) {
+                    cursor.delete();
+                    cursor.continue();
+                }
+            };
+            
+            historyRequest.onerror = () => reject(historyRequest.error);
+        };
+        
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
     });
 };

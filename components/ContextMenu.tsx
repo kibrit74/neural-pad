@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useTranslations } from '../hooks/useTranslations';
-import { generateContent, generateTagsForNote } from '../services/geminiService';
+import { toggleTableClass, sortTable } from '../utils/tableUtils';
 import type { Settings, Note } from '../types';
-import { WandIcon, WebhookIcon } from './icons/Icons';
+import { WandIcon } from './icons/Icons';
 import { Editor } from '@tiptap/react';
 
 function maybeTabularToHTML(text: string): string | null {
@@ -22,9 +22,9 @@ function maybeTabularToHTML(text: string): string | null {
             const parseRow = (row: string) => row.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
             const headers = parseRow(lines[0]);
             const rows = lines.slice(2).map(parseRow);
-            const headerHtml = `<tr>${headers.map(h => `<th style="${thStyle}">${h}</th>`).join('')}</tr>`;
-            const bodyHtml = rows.map(r => `<tr>${r.map(c => `<td style="${tdStyle}">${c}</td>`).join('')}</tr>`).join('');
-            return `<table style="${tableStyle}"><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+            const headerHtml = `<tr>${headers.map(h => `<th style=\"${thStyle}\">${h}</th>`).join('')}</tr>`;
+            const bodyHtml = rows.map(r => `<tr>${r.map(c => `<td style=\"${tdStyle}\">${c}</td>`).join('')}</tr>`).join('');
+            return `<table class=\"np-table np-zebra np-sticky-header\" style=\"${tableStyle}\"><caption></caption><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
         }
     }
 
@@ -41,9 +41,9 @@ function maybeTabularToHTML(text: string): string | null {
         const rows = lines.map(split);
         const header = rows[0];
         const body = rows.slice(1);
-        const headerHtml = `<tr>${header.map(h => `<th style="${thStyle}">${h}</th>`).join('')}</tr>`;
-        const bodyHtml = body.map(r => `<tr>${r.map(c => `<td style="${tdStyle}">${c}</td>`).join('')}</tr>`).join('');
-        return `<table style="${tableStyle}"><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+        const headerHtml = `<tr>${header.map(h => `<th style=\"${thStyle}\">${h}</th>`).join('')}</tr>`;
+        const bodyHtml = body.map(r => `<tr>${r.map(c => `<td style=\"${tdStyle}\">${c}</td>`).join('')}</tr>`).join('');
+        return `<table class=\"np-table np-zebra np-sticky-header\" style=\"${tableStyle}\"><caption></caption><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
     }
 
     return null;
@@ -59,11 +59,11 @@ interface ContextMenuProps {
     data?: string; // image src (dataURL)
     activeNote: Note | null;
     onTagsChange: (tags: string[]) => void;
-    onMakeBlueprintOpen?: (selectedText: string) => void;
+    onForceContentUpdate?: () => void; // Force content update callback
 }
 
 const ContextMenu: React.FC<ContextMenuProps> = ({ 
-    editor, onClose, settings, addNotification, anchorEl, type, data, activeNote, onTagsChange, onMakeBlueprintOpen 
+    editor, onClose, settings, addNotification, anchorEl, type, data, activeNote, onTagsChange, onForceContentUpdate 
 }) => {
     const { t } = useTranslations();
     const menuRef = useRef<HTMLDivElement>(null);
@@ -228,16 +228,6 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
         }
     };
 
-    const handleMakeBlueprint = () => {
-        if (!editor || !onMakeBlueprintOpen) return;
-        
-        const { from, to, empty } = editor.state.selection;
-        if (empty) return;
-        
-        const selectedText = editor.state.doc.textBetween(from, to);
-        onMakeBlueprintOpen(selectedText);
-        onClose();
-    };
 
     const textMenuItems = [
         { id: 'improve', label: t('contextMenu.improve'), prompt: t('aiPrompts.improveWriting') },
@@ -254,19 +244,149 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 
     const menuItems = type === 'image' ? imageMenuItems : textMenuItems;
 
+    // Editor içeriğini ProseMirror DOM'dan senkronize et
+    const syncEditorContent = () => {
+        if (!editor) return;
+        
+        // Force editor to update its internal state based on DOM changes
+        // This ensures table modifications are properly saved to editor state
+        try {
+            const transaction = editor.state.tr;
+            editor.view.dispatch(transaction);
+        } catch (error) {
+            console.warn('Failed to sync editor content:', error);
+        }
+    };
+
+    const getSelectedTable = (): HTMLTableElement | null => {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return null;
+        let node = sel.anchorNode as Node | null;
+        while (node && (node as HTMLElement).nodeType === 3) node = (node as any).parentNode;
+        while (node && (node as HTMLElement).tagName !== 'TABLE') node = (node as any).parentNode;
+        return (node as HTMLTableElement) || null;
+    };
+
+    const getCurrentCellIndex = (table: HTMLTableElement): number => {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return 0;
+        let node = sel.anchorNode as Node | null;
+        while (node && (node as HTMLElement).nodeType === 3) node = (node as any).parentNode;
+        while (node && (node as HTMLElement).tagName !== 'TD' && (node as HTMLElement).tagName !== 'TH') node = (node as any).parentNode;
+        const cell = node as HTMLTableCellElement;
+        if (!cell) return 0;
+        return (cell as any).cellIndex || 0;
+    };
+
+    const sortTableByColumn = (ascending: boolean) => {
+        const colIndex = getCurrentCellIndex(getSelectedTable());
+        sortTable(editor, colIndex, ascending);
+        onClose();
+    };
+
+    const addTotalsRow = () => {
+        if (!editor.isActive('table')) return;
+        (editor.chain().focus() as any).addRowAfter().run();
+        onClose();
+    };
+
+    const toggleZebra = () => {
+        toggleTableClass(editor, 'np-zebra');
+        onClose();
+    };
+    const toggleSticky = () => {
+        toggleTableClass(editor, 'np-sticky-header');
+        onClose();
+    };
+    const bordersNone = () => {
+        toggleTableClass(editor, 'np-borders-none');
+        onClose();
+    };
+    const bordersAll = () => {
+        toggleTableClass(editor, 'np-borders-all');
+        onClose();
+    };
+    const bordersOutside = () => {
+        toggleTableClass(editor, 'np-borders-outside');
+        onClose();
+    };
+
+    const exportCSV = async () => {
+        const table = getSelectedTable(); if (!table) return;
+        const rows = Array.from(table.rows).map(r => Array.from(r.cells).map(c => '"'+(c.textContent||'').replace(/"/g,'""')+'"').join(','));
+        const csv = rows.join('\n');
+        await navigator.clipboard.writeText(csv);
+        onClose();
+    };
+
+    const updateTableInEditor = () => {
+        // Force note content update via parent callback
+        setTimeout(() => {
+            if (onForceContentUpdate) {
+                onForceContentUpdate();
+            }
+        }, 10);
+    };
+    
+    const isInTable = () => !!getSelectedTable();
+
     const shareSelection = async () => {
         if (!editor) return;
         const { from, to, empty } = editor.state.selection;
         if (empty) return;
+
+        // Get plain text and HTML of selection
         const text = editor.state.doc.textBetween(from, to);
+        let html = text;
         try {
-            if ((navigator as any).share) {
-                await (navigator as any).share({ text });
-                addNotification(t('notifications.shareSuccess'), 'success');
-            } else {
-                await navigator.clipboard.writeText(text);
-                addNotification(t('notifications.shareUnavailable'), 'warning');
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0).cloneRange();
+                const container = document.createElement('div');
+                container.appendChild(range.cloneContents());
+                html = container.innerHTML || text;
             }
+        } catch {}
+
+        const title = activeNote?.title || 'Neural Pad Selection';
+        const htmlBlob = new Blob([`<!doctype html><meta charset=\"utf-8\"><title>${title}</title>${html}`], { type: 'text/html' });
+        const txtBlob = new Blob([text], { type: 'text/plain' });
+
+        try {
+            const files = [new File([htmlBlob], 'selection.html', { type: 'text/html' }), new File([txtBlob], 'selection.txt', { type: 'text/plain' })];
+            const n = navigator as any;
+            if (n.share && n.canShare?.({ files })) {
+                await n.share({ files, title });
+                addNotification(t('notifications.shareSuccess'), 'success');
+                onClose();
+                return;
+            }
+        } catch {}
+
+        try {
+            const n = navigator as any;
+            if (n.clipboard?.write && (window as any).ClipboardItem) {
+                await n.clipboard.write([
+                    new (window as any).ClipboardItem({
+                        'text/html': htmlBlob,
+                        'text/plain': txtBlob,
+                    }),
+                ]);
+                addNotification(t('notifications.shareSuccess'), 'success');
+                onClose();
+                return;
+            }
+        } catch {}
+
+        // Fallback: download HTML snippet
+        try {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(htmlBlob);
+            a.download = 'selection.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            addNotification(t('notifications.shareUnavailable'), 'warning');
         } catch {}
         onClose();
     };
@@ -323,23 +443,29 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                             </button>
                         </>
                     )}
+
+                    {isInTable() && (
+                        <>
+                            <hr className="my-1 border-border" />
+                            <div className="px-2 py-1 text-xs text-text-secondary">{t('contextMenu.table.title')}</div>
+                            <button onClick={() => sortTableByColumn(true)} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border">{t('contextMenu.table.sortAZ')}</button>
+                            <button onClick={() => sortTableByColumn(false)} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border">{t('contextMenu.table.sortZA')}</button>
+                            <button onClick={addTotalsRow} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border">{t('contextMenu.table.totals')}</button>
+                            <button onClick={toggleZebra} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border">{t('contextMenu.table.zebra')}</button>
+                            <button onClick={toggleSticky} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border">{t('contextMenu.table.sticky')}</button>
+                            <div className="px-2 py-1 text-xs text-text-secondary">{t('contextMenu.table.borders')}</div>
+                            <button onClick={bordersAll} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border">{t('contextMenu.table.bordersAll')}</button>
+                            <button onClick={bordersOutside} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border">{t('contextMenu.table.bordersOutside')}</button>
+                            <button onClick={bordersNone} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border">{t('contextMenu.table.bordersNone')}</button>
+                            <button onClick={exportCSV} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border">{t('contextMenu.table.copyCsv')}</button>
+                        </>
+                    )}
+
                     {type === 'image' && data && (
                         <>
                             <hr className="my-1 border-border" />
                             <button onClick={() => shareImage(data)} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border flex items-center gap-2">
                                 {t('contextMenu.shareImage')}
-                            </button>
-                        </>
-                    )}
-                    {type === 'text' && onMakeBlueprintOpen && (
-                        <>
-                            <hr className="my-1 border-border" />
-                            <button 
-                                onClick={handleMakeBlueprint}
-                                className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border flex items-center gap-2 text-primary font-semibold"
-                            >
-                                <WebhookIcon width="16" height="16" />
-                                Generate Make.com Blueprint
                             </button>
                         </>
                     )}

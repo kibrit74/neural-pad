@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useTranslations } from '../hooks/useTranslations';
-import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SearchIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon } from './icons/Icons';
+import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SearchIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon, DownloadIcon } from './icons/Icons';
 import type { Note } from '../types';
 
 interface HeaderProps {
@@ -13,6 +13,7 @@ interface HeaderProps {
     onHelp: () => void;
     onToggleLock: () => void;
     onOpenHistory?: () => void;
+    onDownload?: () => void;
     isLocked: boolean;
     activeNote: Note | null;
     searchQuery: string;
@@ -20,7 +21,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSettings, onHelp, onToggleLock, onOpenHistory, isLocked, activeNote, searchQuery, onSearchChange 
+    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, isLocked, activeNote, searchQuery, onSearchChange 
 }) => {
     const { t } = useTranslations();
 
@@ -84,6 +85,11 @@ const Header: React.FC<HeaderProps> = ({
                 <IconButton onClick={onSave} title={t('header.save')}>
                     <SaveIcon />
                 </IconButton>
+                {onDownload && (
+                    <IconButton onClick={onDownload} title={t('header.download')}>
+                        <DownloadIcon />
+                    </IconButton>
+                )}
                 <IconButton onClick={onToggleLock} title={isLocked ? t('header.unlock') : t('header.lock')}>
                     {isLocked ? <UnlockIcon /> : <LockIcon />}
                 </IconButton>

@@ -27,3 +27,64 @@ export async function exportAll(format: 'html'|'md') {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+export async function exportBackup() {
+  const notes = await db.getAllNotes();
+  const settings = {
+    theme: localStorage.getItem('theme'),
+    language: localStorage.getItem('language'),
+    apiProvider: localStorage.getItem('apiProvider'),
+    autoSave: localStorage.getItem('autoSave'),
+  };
+
+  const backup = {
+    version: '1.0',
+    exportDate: new Date().toISOString(),
+    notes,
+    settings,
+  };
+
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = new Date().toISOString().split('T')[0];
+  a.download = `neural-pad-backup-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export async function importBackup(file: File): Promise<{ success: boolean; notesCount: number; error?: string }> {
+  try {
+    const text = await file.text();
+    const backup = JSON.parse(text);
+
+    // Validate backup structure
+    if (!backup.version || !backup.notes || !Array.isArray(backup.notes)) {
+      return { success: false, notesCount: 0, error: 'Invalid backup file format' };
+    }
+
+    // Restore settings
+    if (backup.settings) {
+      if (backup.settings.theme) localStorage.setItem('theme', backup.settings.theme);
+      if (backup.settings.language) localStorage.setItem('language', backup.settings.language);
+      if (backup.settings.apiProvider) localStorage.setItem('apiProvider', backup.settings.apiProvider);
+      if (backup.settings.autoSave) localStorage.setItem('autoSave', backup.settings.autoSave);
+    }
+
+    // Restore notes
+    let importedCount = 0;
+    for (const note of backup.notes) {
+      // Remove the old id to create new notes
+      const { id, ...noteData } = note;
+      await db.saveNote(noteData);
+      importedCount++;
+    }
+
+    return { success: true, notesCount: importedCount };
+  } catch (error) {
+    return { success: false, notesCount: 0, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}

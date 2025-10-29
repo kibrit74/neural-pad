@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { setupSpeechRecognition } from './speechRecognition.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -66,9 +67,8 @@ app.whenReady().then(() => {
     app.setAppUserModelId('com.neural-pad.app')
   }
 
-  // Enable Speech Recognition
-  app.commandLine.appendSwitch('enable-speech-dispatcher')
-  app.commandLine.appendSwitch('enable-speech-input')
+  // Setup offline speech recognition
+  setupSpeechRecognition()
 
   createWindow()
 

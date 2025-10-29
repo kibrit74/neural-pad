@@ -1,11 +1,10 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useEditor, EditorContent, Editor as TiptapEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
-import Underline from '@tiptap/extension-underline';
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
@@ -28,14 +27,12 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
-                image: false, // Disable the default image extension to ensure CustomImage is used.
-                underline: false, // Disable underline from StarterKit since we're importing it separately
+                // Configure StarterKit options here if needed
             }),
-            Underline,
             Placeholder.configure({
                 placeholder: t('editor.placeholder'),
             }),
-            CustomImage.configure({
+            (CustomImage as any).configure({
                 inline: false,
                 onAiMenuClick: onAiImageMenu,
             }),
@@ -94,6 +91,18 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
     if (editor) {
         editorRef.current = editor;
     }
+    
+    // Update editor content when content prop changes (only from external sources)
+    useEffect(() => {
+        if (editor && content !== undefined && content !== null) {
+            const currentContent = editor.getHTML();
+            // Only update if content is significantly different (not just formatting)
+            const normalizeContent = (html: string) => html.replace(/\s+/g, ' ').trim();
+            if (normalizeContent(content) !== normalizeContent(currentContent)) {
+                editor.commands.setContent(content, false);
+            }
+        }
+    }, [editor, content]);
 
     const handleImageUpload = useCallback(() => {
         if (!editor) return;

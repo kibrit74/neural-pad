@@ -121,22 +121,66 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                     </div>
                 </Section>
 
-                <Section title="Export">
-                    <div className="flex gap-2">
-                        <button
-                            onClick={async () => {
-                                const { exportAll } = await import('../utils/exportAll');
-                                await exportAll('html');
-                            }}
-                            className="px-3 py-2 rounded-md font-semibold bg-background border border-border-strong hover:bg-border text-text-primary"
-                        >Export All (HTML)</button>
-                        <button
-                            onClick={async () => {
-                                const { exportAll } = await import('../utils/exportAll');
-                                await exportAll('md');
-                            }}
-                            className="px-3 py-2 rounded-md font-semibold bg-background border border-border-strong hover:bg-border text-text-primary"
-                        >Export All (Markdown)</button>
+                <Section title={t('settings.export.title')}>
+                    <div className="space-y-3">
+                        <div className="p-3 rounded-md bg-background-secondary border border-border">
+                            <h4 className="font-semibold text-text-primary mb-2">💾 {t('settings.export.backupTitle')}</h4>
+                            <p className="text-sm text-text-secondary mb-3">{t('settings.export.backupDescription')}</p>
+                            <div className="space-y-2">
+                                <button
+                                    onClick={async () => {
+                                        const { exportBackup } = await import('../utils/exportAll');
+                                        await exportBackup();
+                                    }}
+                                    className="w-full px-4 py-2 rounded-md font-semibold bg-primary text-primary-text hover:bg-primary-hover transition-colors"
+                                >
+                                    📦 {t('settings.export.downloadBackup')}
+                                </button>
+                                <label className="block">
+                                    <input
+                                        type="file"
+                                        accept=".json"
+                                        className="hidden"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const { importBackup } = await import('../utils/exportAll');
+                                            const result = await importBackup(file);
+                                            if (result.success) {
+                                                alert(`✅ ${t('settings.export.importSuccess', { count: String(result.notesCount) })}`);
+                                                window.location.reload();
+                                            } else {
+                                                alert(`❌ ${t('settings.export.importError')}: ${result.error}`);
+                                            }
+                                            e.target.value = '';
+                                        }}
+                                    />
+                                    <span className="w-full px-4 py-2 rounded-md font-semibold bg-background border-2 border-border-strong hover:bg-border text-text-primary transition-colors cursor-pointer block text-center">
+                                        📥 {t('settings.export.restoreBackup')}
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div className="p-3 rounded-md bg-background-secondary border border-border">
+                            <h4 className="font-semibold text-text-primary mb-2">📄 {t('settings.export.exportTitle')}</h4>
+                            <p className="text-sm text-text-secondary mb-3">{t('settings.export.exportDescription')}</p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={async () => {
+                                        const { exportAll } = await import('../utils/exportAll');
+                                        await exportAll('html');
+                                    }}
+                                    className="flex-1 px-3 py-2 rounded-md font-semibold bg-background border border-border-strong hover:bg-border text-text-primary transition-colors"
+                                >HTML</button>
+                                <button
+                                    onClick={async () => {
+                                        const { exportAll } = await import('../utils/exportAll');
+                                        await exportAll('md');
+                                    }}
+                                    className="flex-1 px-3 py-2 rounded-md font-semibold bg-background border border-border-strong hover:bg-border text-text-primary transition-colors"
+                                >Markdown</button>
+                            </div>
+                        </div>
                     </div>
                 </Section>
                 

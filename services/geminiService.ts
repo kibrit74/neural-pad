@@ -388,8 +388,8 @@ async function* streamOpenAI(
             });
         }
         messages.push(
-            ...history.map(({ role, content }) => ({
-                role: role === 'model' ? 'assistant' : 'user',
+            ...history.map(({ role, content }): { role: 'assistant'|'user'|'system'; content: string } => ({
+                role: (role === 'model' ? 'assistant' : 'user') as 'assistant'|'user',
                 content
             }))
         );
@@ -470,8 +470,8 @@ async function* streamClaude(
             });
         }
         messages.push(
-            ...history.map(({ role, content }) => ({
-                role: role === 'model' ? 'assistant' : 'user',
+            ...history.map(({ role, content }): { role: 'assistant'|'user'|'system'; content: string } => ({
+                role: (role === 'model' ? 'assistant' : 'user') as 'assistant'|'user',
                 content
             }))
         );

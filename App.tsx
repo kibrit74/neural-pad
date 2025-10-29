@@ -12,7 +12,6 @@ import Notification from './components/Notification';
 import ResizableHandle from './components/ResizableHandle';
 import WelcomeModal from './components/WelcomeModal';
 import HelpModal from './components/HelpModal';
-import MakeBlueprintModal from './components/MakeBlueprintModal';
 import MarkdownModal from './components/MarkdownModal';
 import HistoryModal from './components/HistoryModal';
 import PasswordModal, { PasswordMode } from './components/PasswordModal';
@@ -65,8 +64,6 @@ const App: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    const [isMakeBlueprintOpen, setMakeBlueprintOpen] = useState(false);
-    const [blueprintSelectedText, setBlueprintSelectedText] = useState('');
     const [isMarkdownModalOpen, setMarkdownModalOpen] = useState(false);
 
     // Password / lock state
@@ -406,10 +403,6 @@ const App: React.FC = () => {
         setContextMenu({ anchorEl: target, type: 'image', data: src });
     };
 
-    const handleMakeBlueprintOpen = (selectedText: string) => {
-        setBlueprintSelectedText(selectedText);
-        setMakeBlueprintOpen(true);
-    };
     
     // UI Toggles
     const toggleNotesSidebar = () => setNotesSidebarOpen(!isNotesSidebarOpen);
@@ -519,6 +512,11 @@ const App: React.FC = () => {
                         setPasswordModalOpen(true);
                     }}
                     onOpenHistory={() => setHistoryModalOpen(true)}
+                    onDownload={() => {
+                        if (!activeNote) return;
+                        const safeTitle = (activeNote.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
+                        import('./utils/fileUtils').then(m => m.downloadRtf(`${safeTitle}.rtf`, activeNote.content || ''));
+                    }}
                     isLocked={!!activeNote?.isLocked}
                     activeNote={activeNote}
                     searchQuery={searchQuery}
@@ -572,7 +570,13 @@ const App: React.FC = () => {
                             data={contextMenu.data}
                             activeNote={activeNote}
                             onTagsChange={handleTagsChange}
-                            onMakeBlueprintOpen={handleMakeBlueprintOpen}
+                            onForceContentUpdate={() => {
+                                // Force update note content from editor
+                                if (editorRef.current && activeNote) {
+                                    const currentContent = editorRef.current.getHTML();
+                                    setActiveNote(prev => prev ? { ...prev, content: currentContent } : null);
+                                }
+                            }}
                         />
                     )}
                 </div>
@@ -715,12 +719,6 @@ const App: React.FC = () => {
                 }}
             />
 
-            <MakeBlueprintModal
-                isOpen={isMakeBlueprintOpen}
-                selectedText={blueprintSelectedText}
-                onClose={() => setMakeBlueprintOpen(false)}
-                addNotification={addNotification}
-            />
 
             <MarkdownModal
                 isOpen={isMarkdownModalOpen}

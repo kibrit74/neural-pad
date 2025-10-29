@@ -29,12 +29,12 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, noteId, currentHtml
 
   const footer = (
     <div className="flex gap-2">
-      <button onClick={onClose} className="px-4 py-2 rounded-md font-semibold bg-border hover:bg-border-strong text-text-primary">Close</button>
+      <button onClick={onClose} className="px-4 py-2 rounded-md font-semibold bg-border hover:bg-border-strong text-text-primary">Kapat</button>
       <button
         onClick={() => { if (selected) onRestore(selected.content); }}
-        className="px-4 py-2 rounded-md font-semibold bg-primary text-primary-text hover:bg-primary-hover"
+        className="px-4 py-2 rounded-md font-semibold bg-primary text-primary-text hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={!selected}
-      >Restore</button>
+      >Geri Yükle</button>
     </div>
   );
 
@@ -52,18 +52,22 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, noteId, currentHtml
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="History" footer={footer}>
+    <Modal isOpen={isOpen} onClose={onClose} title="Geçmiş" footer={footer}>
       <div className="p-4 flex gap-4 h-[70vh]">
         <div className="w-1/3 overflow-auto border-r border-border pr-2">
-          {items.map(i => (
-            <button key={i.id} onClick={() => setSelectedId(i.id)} className={`block w-full text-left p-2 rounded mb-1 ${i.id===selectedId?'bg-primary text-primary-text':'hover:bg-border'}`}>
-              <div className="text-xs text-text-secondary">{new Date(i.timestamp).toLocaleString()}</div>
-              <div className="truncate">{i.title || '(untitled)'}</div>
-            </button>
-          ))}
+          {items.length === 0 ? (
+            <div className="text-text-secondary text-sm p-4">Henüz geçmiş kaydı yok</div>
+          ) : (
+            items.map(i => (
+              <button key={i.id} onClick={() => setSelectedId(i.id)} className={`block w-full text-left p-2 rounded mb-1 ${i.id===selectedId?'bg-primary text-primary-text':'hover:bg-border'}`}>
+                <div className="text-xs text-text-secondary">{new Date(i.timestamp).toLocaleString('tr-TR')}</div>
+                <div className="truncate">{i.title || '(Başlıksız)'}</div>
+              </button>
+            ))
+          )}
         </div>
         <div className="w-2/3 overflow-auto">
-          {selected ? renderDiff() : <div className="text-text-secondary">No selection</div>}
+          {selected ? renderDiff() : <div className="text-text-secondary">Bir versiyon seçin</div>}
         </div>
       </div>
     </Modal>

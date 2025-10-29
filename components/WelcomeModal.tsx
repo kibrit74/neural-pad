@@ -1,14 +1,33 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslations } from '../hooks/useTranslations';
-import { SparkleIcon, ImageIcon, ChatIcon, TagIcon, AppleIcon, WindowsIcon, LinuxIcon } from './icons/Icons';
+import { useLanguage } from '../contexts/LanguageContext';
+import { SparkleIcon, ImageIcon, ChatIcon, TagIcon, AppleIcon, WindowsIcon, LinuxIcon, ChevronDownIcon, DownloadIcon, LockIcon } from './icons/Icons';
 
 interface LandingPageProps {
     isOpen: boolean;
-    onClose: () => void; // This will now function as onEnter
+    onClose: () => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
     const { t } = useTranslations();
+    const { language, setLanguage } = useLanguage();
+
+    // Slider state for mockups
+    const images = Array.from({ length: 8 }, (_, i) => `./${i + 1}.png`);
+    const captions = Array.from({ length: 8 }, (_, i) => ({
+        title: t(`landingPage.mockupsItems.i${i + 1}.title`),
+        desc: t(`landingPage.mockupsItems.i${i + 1}.desc`),
+    }));
+    const [current, setCurrent] = useState(0);
+    const isHoveringRef = useRef(false);
+    useEffect(() => {
+        const id = window.setInterval(() => {
+            if (!isHoveringRef.current) setCurrent((c) => (c + 1) % images.length);
+        }, 4000);
+        return () => window.clearInterval(id);
+    }, []);
+    const next = () => setCurrent((c) => (c + 1) % images.length);
+    const prev = () => setCurrent((c) => (c - 1 + images.length) % images.length);
 
     if (!isOpen) {
         return null;
@@ -33,8 +52,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-background z-[100] overflow-y-auto animate-modal-enter">
+            <div className="fixed top-6 right-6 z-10 flex gap-2">
+                <button
+                    onClick={() => setLanguage('en')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        language === 'en'
+                            ? 'bg-primary text-primary-text shadow-lg'
+                            : 'bg-background-secondary text-text-secondary hover:bg-border'
+                    }`}
+                >
+                    EN
+                </button>
+                <button
+                    onClick={() => setLanguage('tr')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        language === 'tr'
+                            ? 'bg-primary text-primary-text shadow-lg'
+                            : 'bg-background-secondary text-text-secondary hover:bg-border'
+                    }`}
+                >
+                    TR
+                </button>
+            </div>
+            
             <main className="max-w-5xl mx-auto px-6">
-                {/* Hero Section */}
                 <section className="text-center flex flex-col items-center py-20 md:py-32">
                     <div className="w-24 h-24 mb-6 flex items-center justify-center animate-float">
                         <img src="./Logo.png" alt="Logo" className="w-full h-full object-contain" />
@@ -54,7 +95,91 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                     </button>
                 </section>
 
-                {/* Features Section */}
+                <section className="py-12 md:py-16">
+                    <div className="text-center mb-8 animate-fade-in">
+                        <h2 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
+                            {t('landingPage.mockupsTitle')}
+                        </h2>
+                        <p className="text-sm md:text-base text-text-secondary mt-2">
+                            {t('landingPage.mockupsSubtitle')}
+                        </p>
+                    </div>
+
+                    <div
+                        className="relative"
+                        onMouseEnter={() => (isHoveringRef.current = true)}
+                        onMouseLeave={() => (isHoveringRef.current = false)}
+                    >
+                        <div className="rounded-2xl border border-border bg-background-secondary/80 backdrop-blur p-3 shadow-2xl animate-fade-in-up">
+<div className="relative h-80 md:h-[32rem] overflow-hidden rounded-xl bg-background">
+                                {/* Browser chrome */}
+                                <div className="absolute top-3 left-4 z-10 flex gap-2">
+                                    <span className="w-3 h-3 rounded-full bg-red-400/70"></span>
+                                    <span className="w-3 h-3 rounded-full bg-yellow-400/70"></span>
+                                    <span className="w-3 h-3 rounded-full bg-green-500/70"></span>
+                                </div>
+
+                                {/* Slides */}
+                                <div
+                                    className="h-full w-full flex transition-transform duration-700 ease-in-out"
+                                    style={{ transform: `translateX(-${current * 100}%)` }}
+                                >
+                                    {images.map((src, i) => (
+                                        <div key={i} className="h-full w-full flex-shrink-0 relative">
+<img src={src} alt={`Mockup ${i + 1}`} className="absolute inset-0 w-full h-full object-contain bg-background landing-image" loading="lazy" />
+
+                                            <div className="absolute bottom-0 left-0 right-0">
+<div className="px-5 py-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent backdrop-blur-sm border-t border-border landing-caption">
+<h3 className="text-lg md:text-xl font-semibold landing-caption-title">
+                                                        {captions[i]?.title}
+                                                    </h3>
+<p className="text-sm md:text-base mt-1 landing-caption-desc">
+                                                        {captions[i]?.desc}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Controls */}
+                                <button
+                                    aria-label="Previous"
+                                    onClick={prev}
+                                    className="absolute inset-y-0 left-0 w-10 md:w-12 grid place-items-center"
+                                >
+                                    <span className="rounded-full bg-background/70 border border-border backdrop-blur p-1 hover:bg-background/90 transition">
+                                        <ChevronDownIcon className="w-5 h-5 -rotate-90" />
+                                    </span>
+                                </button>
+                                <button
+                                    aria-label="Next"
+                                    onClick={next}
+                                    className="absolute inset-y-0 right-0 w-10 md:w-12 grid place-items-center"
+                                >
+                                    <span className="rounded-full bg-background/70 border border-border backdrop-blur p-1 hover:bg-background/90 transition">
+                                        <ChevronDownIcon className="w-5 h-5 rotate-90" />
+                                    </span>
+                                </button>
+
+                                {/* Dots */}
+                                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
+                                    {images.map((_, i) => (
+                                        <button
+                                            key={i}
+                                            aria-label={`Go to slide ${i + 1}`}
+                                            onClick={() => setCurrent(i)}
+                                            className={`h-2.5 w-2.5 rounded-full transition-all ${
+                                                current === i ? 'bg-primary w-5' : 'bg-border'
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <section className="py-16 md:py-24">
                      <div className="text-center mb-16 animate-fade-in">
                         <h2 className="text-3xl md:text-4xl font-bold text-text-primary tracking-tight">
@@ -90,11 +215,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                                 descriptionKey="welcome.feature4Description"
                             />
                         </div>
+                        <div className="animate-fade-in-up" style={{animationDelay: '0.5s'}}>
+                            <Feature 
+                                icon={<DownloadIcon width="24" height="24" />} 
+                                titleKey="landingPage.newFeatures.backupTitle"
+                                descriptionKey="landingPage.newFeatures.backupDesc"
+                            />
+                        </div>
+                        <div className="animate-fade-in-up" style={{animationDelay: '0.6s'}}>
+                            <Feature 
+                                icon={<LockIcon width="24" height="24" />} 
+                                titleKey="landingPage.newFeatures.secureTitle"
+                                descriptionKey="landingPage.newFeatures.secureDesc"
+                            />
+                        </div>
                     </div>
                 </section>
 
-                 {/* Download Section */}
-                <section className="py-16 md:py-24 text-center">
+
+                 <section className="py-16 md:py-24 text-center">
                     <h2 className="text-3xl md:text-4xl font-bold text-text-primary tracking-tight mb-4 animate-fade-in">
                         {t('landingPage.downloadTitle')}
                     </h2>
@@ -115,7 +254,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                 </section>
 
             </main>
-            {/* Footer */}
             <footer className="text-center py-10 border-t border-border">
                 <p className="text-text-secondary">{t('landingPage.footerText', { year: new Date().getFullYear().toString() })}</p>
             </footer>
