@@ -2,7 +2,7 @@
 export const translations = {
     en: {
         header: {
-            title: "Gemini Writer",
+            title: "Neural Pad",
             lastSaved: "Last saved:",
             toggleNotes: "Toggle Notes Sidebar",
             save: "Save Note (Ctrl+S)",
@@ -107,7 +107,7 @@ export const translations = {
             delete: "Delete",
         },
         welcome: {
-            title: "Welcome to Gemini Writer",
+            title: "Welcome to Neural Pad",
             subtitle: "Your intelligent writing companion, powered by Google's Gemini. Enhance your creativity, streamline your workflow, and bring your ideas to life.",
             feature1Title: "AI-Powered Writing",
             feature1Description: "Improve, summarize, or fix grammar in your selected text with a single click.",
@@ -127,7 +127,7 @@ export const translations = {
             downloadTitle: "Get the Desktop App",
             downloadSubtitle: "Enjoy a focused, native experience on your favorite operating system. (Coming Soon)",
             downloadFor: "Download for",
-            footerText: "© {{year}} Gemini Writer. All rights reserved.",
+            footerText: "© {{year}} Neural Pad. All rights reserved.",
         },
         help: {
             title: "Help & Shortcuts",
@@ -171,10 +171,25 @@ export const translations = {
             start: "Start Voice Input",
             stop: "Stop Voice Input",
         },
+        toolbar: {
+            bold: "Bold",
+            italic: "Italic",
+            underline: "Underline",
+            strike: "Strikethrough",
+            code: "Code",
+            bulletList: "Bullet List",
+            orderedList: "Numbered List",
+            blockquote: "Blockquote",
+            insertImage: "Insert Image",
+            attachFile: "Attach File",
+            insertTable: "Insert Table",
+            undo: "Undo",
+            redo: "Redo",
+        },
     },
     tr: {
         header: {
-            title: "Gemini Yazar",
+            title: "Neural Pad",
             lastSaved: "Son kayıt:",
             toggleNotes: "Not Kenar Çubuğunu Aç/Kapat",
             save: "Notu Kaydet (Ctrl+S)",
@@ -279,7 +294,7 @@ export const translations = {
             delete: "Sil",
         },
         welcome: {
-            title: "Gemini Yazar'a Hoş Geldiniz",
+            title: "Neural Pad'e Hoş Geldiniz",
             subtitle: "Google Gemini tarafından desteklenen akıllı yazı arkadaşınız. Yaratıcılığınızı artırın, iş akışınızı kolaylaştırın ve fikirlerinizi hayata geçirin.",
             feature1Title: "Yapay Zeka Destekli Yazı",
             feature1Description: "Seçtiğiniz metni tek bir tıklamayla iyileştirin, özetleyin veya dilbilgisini düzeltin.",
@@ -299,7 +314,7 @@ export const translations = {
             downloadTitle: "Masaüstü Uygulamasını Edinin",
             downloadSubtitle: "Favori işletim sisteminizde odaklanmış, yerel bir deneyimin keyfini çıkarın. (Yakında)",
             downloadFor: "İçin İndir",
-            footerText: "© {{year}} Gemini Yazar. Tüm hakları saklıdır.",
+            footerText: "© {{year}} Neural Pad. Tüm hakları saklıdır.",
         },
         help: {
             title: "Yardım & Kısayollar",
@@ -342,6 +357,21 @@ export const translations = {
         voice: {
             start: "Sesli Girişi Başlat",
             stop: "Sesli Girişi Durdur",
+        },
+        toolbar: {
+            bold: "Kalın",
+            italic: "İtalik",
+            underline: "Alt Çizgi",
+            strike: "Üstü Çizgili",
+            code: "Kod",
+            bulletList: "Madde İşaretli Liste",
+            orderedList: "Numaralı Liste",
+            blockquote: "Alıntı",
+            insertImage: "Resim Ekle",
+            attachFile: "Dosya Ekle",
+            insertTable: "Tablo Ekle",
+            undo: "Geri Al",
+            redo: "Yinele",
         },
     },
 };

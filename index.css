@@ -259,6 +259,38 @@
     outline: none;
   }
 
+  /* Table borders */
+  .ProseMirror table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+  .ProseMirror table td,
+  .ProseMirror table th {
+    min-width: 1em;
+    border: 2px solid var(--color-border-strong);
+    padding: 6px 8px;
+    vertical-align: top;
+    box-sizing: border-box;
+    position: relative;
+  }
+  .ProseMirror table th {
+    font-weight: bold;
+    text-align: left;
+    background-color: var(--color-background-secondary);
+  }
+  .ProseMirror table .selectedCell:after {
+    z-index: 2;
+    position: absolute;
+    content: "";
+    left: 0; right: 0; top: 0; bottom: 0;
+    background: var(--color-primary);
+    opacity: 0.1;
+    pointer-events: none;
+  }
+
   /* Fix for Tiptap lists with Tailwind Typography */
   .prose ul { 
     list-style-type: disc;

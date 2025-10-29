@@ -4,7 +4,7 @@ import { Editor } from '@tiptap/react';
 import { useTranslations } from '../hooks/useTranslations';
 import TurndownService from 'turndown';
 import {
-    BoldIcon, ItalicIcon, UnderlineIcon, StrikeIcon, CodeIcon, ListIcon, ListOrderedIcon, BlockquoteIcon, UndoIcon, RedoIcon, ImageIcon, MicIcon, StopIcon
+    BoldIcon, ItalicIcon, UnderlineIcon, StrikeIcon, CodeIcon, ListIcon, ListOrderedIcon, BlockquoteIcon, UndoIcon, RedoIcon, ImageIcon, MicIcon, StopIcon, PaperclipIcon
 } from './icons/Icons';
 
 const TableIcon = () => (
@@ -93,11 +93,17 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
 
     const startRecording = () => {
         const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (!SR) return;
+        if (!SR) {
+            console.error('Speech Recognition API not available');
+            return;
+        }
+        
+        console.log('Starting speech recognition...');
         const rec = new SR();
         rec.lang = document.documentElement.lang || navigator.language || 'en-US';
         rec.continuous = true;
         rec.interimResults = true;
+        
         rec.onresult = (e: any) => {
             let finalText = '';
             for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -105,15 +111,33 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                 if (res.isFinal) finalText += res[0].transcript + ' ';
             }
             if (finalText) {
+                console.log('Recognized text:', finalText);
                 editor.chain().focus().insertContent(finalText).run();
             }
         };
-        rec.onend = () => setRecording(false);
+        
+        rec.onerror = (event: any) => {
+            console.error('Speech recognition error:', event.error, event);
+            setRecording(false);
+        };
+        
+        rec.onend = () => {
+            console.log('Speech recognition ended');
+            setRecording(false);
+        };
+        
+        rec.onstart = () => {
+            console.log('Speech recognition started successfully');
+        };
+        
         try {
             rec.start();
             recognitionRef.current = rec;
             setRecording(true);
-        } catch {}
+        } catch (error) {
+            console.error('Failed to start speech recognition:', error);
+            setRecording(false);
+        }
     };
 
     const stopRecording = () => {
@@ -210,39 +234,39 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
 
             <div className="mx-2 h-6 border-l border-border"></div>
             {/* FIX: Cast to any to bypass TypeScript error for missing commands. */}
-            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleBold().run()} title="Bold" isActive={editor.isActive('bold')} disabled={!(editor.can() as any).toggleBold()}>
+            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleBold().run()} title={t('toolbar.bold')} isActive={editor.isActive('bold')} disabled={!(editor.can() as any).toggleBold()}>
                 <BoldIcon />
             </ToolbarButton>
-            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleItalic().run()} title="Italic" isActive={editor.isActive('italic')} disabled={!(editor.can() as any).toggleItalic()}>
+            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleItalic().run()} title={t('toolbar.italic')} isActive={editor.isActive('italic')} disabled={!(editor.can() as any).toggleItalic()}>
                 <ItalicIcon />
             </ToolbarButton>
-            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleUnderline().run()} title="Underline" isActive={editor.isActive('underline')} disabled={!(editor.can() as any).toggleUnderline()}>
+            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleUnderline().run()} title={t('toolbar.underline')} isActive={editor.isActive('underline')} disabled={!(editor.can() as any).toggleUnderline()}>
                 <UnderlineIcon />
             </ToolbarButton>
-            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleStrike().run()} title="Strikethrough" isActive={editor.isActive('strike')} disabled={!(editor.can() as any).toggleStrike()}>
+            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleStrike().run()} title={t('toolbar.strike')} isActive={editor.isActive('strike')} disabled={!(editor.can() as any).toggleStrike()}>
                 <StrikeIcon />
             </ToolbarButton>
-            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleCode().run()} title="Code" isActive={editor.isActive('code')} disabled={!(editor.can() as any).toggleCode()}>
+            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleCode().run()} title={t('toolbar.code')} isActive={editor.isActive('code')} disabled={!(editor.can() as any).toggleCode()}>
                 <CodeIcon />
             </ToolbarButton>
-            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleBulletList().run()} title="Bullet List" isActive={editor.isActive('bulletList')} disabled={!(editor.can() as any).toggleBulletList()}>
+            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleBulletList().run()} title={t('toolbar.bulletList')} isActive={editor.isActive('bulletList')} disabled={!(editor.can() as any).toggleBulletList()}>
                 <ListIcon />
             </ToolbarButton>
-            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleOrderedList().run()} title="Numbered List" isActive={editor.isActive('orderedList')} disabled={!(editor.can() as any).toggleOrderedList()}>
+            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleOrderedList().run()} title={t('toolbar.orderedList')} isActive={editor.isActive('orderedList')} disabled={!(editor.can() as any).toggleOrderedList()}>
                 <ListOrderedIcon />
             </ToolbarButton>
-            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleBlockquote().run()} title="Blockquote" isActive={editor.isActive('blockquote')} disabled={!(editor.can() as any).toggleBlockquote()}>
+            <ToolbarButton onClick={() => (editor.chain().focus() as any).toggleBlockquote().run()} title={t('toolbar.blockquote')} isActive={editor.isActive('blockquote')} disabled={!(editor.can() as any).toggleBlockquote()}>
                 <BlockquoteIcon />
             </ToolbarButton>
-            <ToolbarButton onClick={onImageUpload} title="Insert Image">
+            <ToolbarButton onClick={onImageUpload} title={t('toolbar.insertImage')}>
                 <ImageIcon />
             </ToolbarButton>
-            <ToolbarButton onClick={attachFile} title="Attach File">
-                <ImageIcon />
+            <ToolbarButton onClick={attachFile} title={t('toolbar.attachFile')}>
+                <PaperclipIcon />
             </ToolbarButton>
             <ToolbarButton
                 onClick={() => (editor.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-                title="Insert Table"
+                title={t('toolbar.insertTable')}
             >
                 <TableIcon />
             </ToolbarButton>
@@ -255,10 +279,10 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                 {recording ? <StopIcon /> : <MicIcon />}
             </ToolbarButton>
              <div className="mx-2 h-6 border-l border-border"></div>
-            <ToolbarButton onClick={() => (editor.chain().focus() as any).undo().run()} title="Undo" disabled={!(editor.can() as any).undo()}>
+            <ToolbarButton onClick={() => (editor.chain().focus() as any).undo().run()} title={t('toolbar.undo')} disabled={!(editor.can() as any).undo()}>
                 <UndoIcon />
             </ToolbarButton>
-            <ToolbarButton onClick={() => (editor.chain().focus() as any).redo().run()} title="Redo" disabled={!(editor.can() as any).redo()}>
+            <ToolbarButton onClick={() => (editor.chain().focus() as any).redo().run()} title={t('toolbar.redo')} disabled={!(editor.can() as any).redo()}>
                 <RedoIcon />
             </ToolbarButton>
         </div>
