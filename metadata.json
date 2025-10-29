@@ -1,0 +1,5 @@
+{
+  "name": "NEURAL PAD",
+  "description": "An intelligent notepad that allows users to write text, interpret pasted images, and summarize video links using the Gemini API. Users can manage their own API key and export notes to TXT or PDF.",
+  "requestFramePermissions": []
+}

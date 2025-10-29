@@ -1,0 +1,40 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Simplified book/notepad -->
+  <g>
+    <!-- Book spine -->
+    <rect x="2" y="4" width="3" height="24" rx="1" fill="#2D5A5A"/>
+    
+    <!-- Left page -->
+    <rect x="5" y="4" width="10" height="24" rx="1" fill="#F8F9FA" stroke="#2D5A5A" stroke-width="1"/>
+    
+    <!-- Right page -->
+    <rect x="15" y="4" width="10" height="24" rx="1" fill="#F8F9FA" stroke="#2D5A5A" stroke-width="1"/>
+    
+    <!-- Page binding -->
+    <line x1="15" y1="4" x2="15" y2="28" stroke="#2D5A5A" stroke-width="0.5"/>
+    
+    <!-- Simplified neural network on right page -->
+    <g transform="translate(17, 10)">
+      <!-- Central node -->
+      <circle cx="4" cy="6" r="1.5" fill="#2D5A5A"/>
+      
+      <!-- Surrounding nodes -->
+      <circle cx="1" cy="3" r="1" fill="#4A7C7C"/>
+      <circle cx="7" cy="3" r="1" fill="#4A7C7C"/>
+      <circle cx="1" cy="9" r="1" fill="#4A7C7C"/>
+      <circle cx="7" cy="9" r="1" fill="#4A7C7C"/>
+      
+      <!-- Connections -->
+      <line x1="2" y1="4" x2="3" y2="5" stroke="#2D5A5A" stroke-width="0.8"/>
+      <line x1="6" y1="4" x2="5" y2="5" stroke="#2D5A5A" stroke-width="0.8"/>
+      <line x1="2" y1="8" x2="3" y2="7" stroke="#2D5A5A" stroke-width="0.8"/>
+      <line x1="6" y1="8" x2="5" y2="7" stroke="#2D5A5A" stroke-width="0.8"/>
+    </g>
+    
+    <!-- Small pen -->
+    <g transform="translate(26, 6) rotate(15)">
+      <rect x="0" y="0" width="1.5" height="8" rx="0.5" fill="#2D5A5A"/>
+      <polygon points="0.75,8 0.5,9 1,9" fill="#1A3A3A"/>
+    </g>
+  </g>
+</svg>

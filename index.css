@@ -1,0 +1,274 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root, [data-theme="default"] {
+    --color-primary: #3b82f6;
+    --color-primary-hover: #2563eb;
+    --color-primary-text: #ffffff;
+    --color-background: #ffffff;
+    --color-background-secondary: #f8fafc;
+    --color-text-primary: #1e293b;
+    --color-text-secondary: #64748b;
+    --color-border: #e2e8f0;
+    --color-border-strong: #cbd5e1;
+    --color-backdrop: rgba(15, 23, 42, 0.5);
+    --color-success-bg: #dcfce7; 
+    --color-success-text: #166534;
+    --color-error-bg: #fee2e2; 
+    --color-error-text: #991b1b;
+    --color-warning-bg: #fef9c3; 
+    --color-warning-text: #854d0e;
+  }
+
+  [data-theme="twilight"] {
+    --color-primary: #818cf8;
+    --color-primary-hover: #6366f1;
+    --color-primary-text: #1e1b4b;
+    --color-background: #1e293b;
+    --color-background-secondary: #0f172a;
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #94a3b8;
+    --color-border: #334155;
+    --color-border-strong: #475569;
+    --color-backdrop: rgba(0, 0, 0, 0.6);
+    --color-success-bg: #14532d; 
+    --color-success-text: #bbf7d0;
+    --color-error-bg: #7f1d1d; 
+    --color-error-text: #fecaca;
+    --color-warning-bg: #78350f; 
+    --color-warning-text: #fde68a;
+  }
+
+  [data-theme="ocean"] {
+    --color-primary: #22d3ee;
+    --color-primary-hover: #06b6d4;
+    --color-primary-text: #083344;
+    --color-background: #f0f9ff;
+    --color-background-secondary: #e0f2fe;
+    --color-text-primary: #0c4a6e;
+    --color-text-secondary: #38bdf8;
+    --color-border: #bae6fd;
+    --color-border-strong: #7dd3fc;
+    --color-backdrop: rgba(12, 74, 110, 0.5);
+    --color-success-bg: #a7f3d0; 
+    --color-success-text: #047857;
+    --color-error-bg: #ffedd5; 
+    --color-error-text: #c2410c;
+    --color-warning-bg: #fef3c7; 
+    --color-warning-text: #b45309;
+  }
+
+  [data-theme="forest"] {
+    --color-primary: #4ade80;
+    --color-primary-hover: #22c55e;
+    --color-primary-text: #14532d;
+    --color-background: #f0fdf4;
+    --color-background-secondary: #dcfce7;
+    --color-text-primary: #166534;
+    --color-text-secondary: #15803d;
+    --color-border: #bbf7d0;
+    --color-border-strong: #86efac;
+    --color-backdrop: rgba(20, 83, 45, 0.5);
+    --color-success-bg: #dcfce7; 
+    --color-success-text: #166534;
+    --color-error-bg: #fee2e2; 
+    --color-error-text: #991b1b;
+    --color-warning-bg: #fef9c3; 
+    --color-warning-text: #854d0e;
+  }
+
+  [data-theme="blossom"] {
+    --color-primary: #f472b6;
+    --color-primary-hover: #ec4899;
+    --color-primary-text: #ffffff;
+    --color-background: #fff1f2;
+    --color-background-secondary: #ffe4e6;
+    --color-text-primary: #9d174d;
+    --color-text-secondary: #be185d;
+    --color-border: #fecdd3;
+    --color-border-strong: #fda4af;
+    --color-backdrop: rgba(157, 23, 77, 0.5);
+    --color-success-bg: #d1fae5; 
+    --color-success-text: #065f46;
+    --color-error-bg: #fee2e2; 
+    --color-error-text: #991b1b;
+    --color-warning-bg: #fffbeb; 
+    --color-warning-text: #b45309;
+  }
+
+  [data-theme="dusk"] {
+    --color-primary: #c084fc;
+    --color-primary-hover: #a855f7;
+    --color-primary-text: #f5f3ff;
+    --color-background: #1e1b4b;
+    --color-background-secondary: #312e81;
+    --color-text-primary: #e0e7ff;
+    --color-text-secondary: #a5b4fc;
+    --color-border: #4f46e5;
+    --color-border-strong: #6366f1;
+    --color-backdrop: rgba(49, 46, 129, 0.6);
+    --color-success-bg: #312e81; 
+    --color-success-text: #a7f3d0;
+    --color-error-bg: #4c1d95; 
+    --color-error-text: #fecaca;
+    --color-warning-bg: #5b21b6; 
+    --color-warning-text: #fde68a;
+  }
+}
+
+/* Global custom scrollbar styling */
+@layer base {
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+  /* Chrome, Edge, Safari */
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-border-strong);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-border);
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+@layer components {
+  /* Modal animations */
+  .modal-enter { animation: modal-enter; }
+  .modal-exit { animation: modal-exit; }
+  .modal-content-enter { animation: modal-content-enter; }
+  .modal-content-exit { animation: modal-content-exit; }
+
+  /* Landing page animations */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .feature-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .download-btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .download-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+
+  .download-btn:hover::before {
+    left: 100%;
+  }
+
+  .download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Tiptap editor area should fill the available height for easier clicking */
+  .ProseMirror {
+    min-height: 100%;
+    border: none;
+    outline: none;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+  }
+  /* Also remove any default focus outline/border that some browsers render */
+  .ProseMirror:focus, [contenteditable="true"]:focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  /* Tiptap editor focus ring */
+  .ProseMirror:focus {
+    outline: none;
+  }
+
+  /* Fix for Tiptap lists with Tailwind Typography */
+  .prose ul { 
+    list-style-type: disc;
+    padding-left: 1.5rem;
+  }
+  .prose ol { 
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+  }
+  .prose ul > li::marker, .prose ol > li::marker {
+    color: var(--color-text-secondary);
+  }
+}

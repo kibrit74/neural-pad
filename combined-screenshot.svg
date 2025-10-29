@@ -1,0 +1,50 @@
+<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <!-- Arka plan -->
+  <rect width="1200" height="600" fill="#f5f5f5"/>
+  
+  <!-- Başlık -->
+  <text x="600" y="40" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">
+    Neural Pad - Logo Görünümleri
+  </text>
+  
+  <!-- Sol Panel - Logo.png -->
+  <g id="panel1">
+    <rect x="50" y="80" width="350" height="450" fill="white" stroke="#ddd" stroke-width="2" rx="8"/>
+    <text x="225" y="110" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#666">
+      Logo (Büyük)
+    </text>
+    <image x="75" y="140" width="300" height="300" xlink:href="Logo.png" preserveAspectRatio="xMidYMid meet"/>
+    <text x="225" y="470" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#999">
+      257x193 px
+    </text>
+  </g>
+  
+  <!-- Orta Panel - favicon.png -->
+  <g id="panel2">
+    <rect x="425" y="80" width="350" height="450" fill="white" stroke="#ddd" stroke-width="2" rx="8"/>
+    <text x="600" y="110" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#666">
+      Favicon (Orta)
+    </text>
+    <image x="450" y="140" width="300" height="300" xlink:href="favicon.png" preserveAspectRatio="xMidYMid meet"/>
+    <text x="600" y="470" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#999">
+      257x193 px
+    </text>
+  </g>
+  
+  <!-- Sağ Panel - logo.png -->
+  <g id="panel3">
+    <rect x="800" y="80" width="350" height="450" fill="white" stroke="#ddd" stroke-width="2" rx="8"/>
+    <text x="975" y="110" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#666">
+      Logo (Küçük)
+    </text>
+    <image x="825" y="140" width="300" height="300" xlink:href="logo.png" preserveAspectRatio="xMidYMid meet"/>
+    <text x="975" y="470" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#999">
+      Küçük versiyon
+    </text>
+  </g>
+  
+  <!-- Alt bilgi -->
+  <text x="600" y="580" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#999">
+    Generated with SVG
+  </text>
+</svg>

@@ -1,0 +1,46 @@
+{
+  "name": "neural-pad",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "dev:electron": "concurrently -k -n VITE,ELECTRON -c blue,green \"npm:dev\" \"wait-on tcp:5175 && electron .\"",
+    "build": "vite build",
+    "build:electron": "vite build",
+    "start:electron": "electron .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@google/genai": "^1.26.0",
+    "@tiptap/core": "^3.8.0",
+    "@tiptap/extension-color": "^3.7.2",
+    "@tiptap/extension-font-family": "^3.7.2",
+    "@tiptap/extension-image": "^3.7.2",
+    "@tiptap/extension-placeholder": "^3.7.2",
+    "@tiptap/extension-text-style": "^3.7.2",
+    "@tiptap/extension-underline": "^3.7.2",
+    "@tiptap/react": "^3.7.2",
+    "@tiptap/starter-kit": "^3.7.2",
+    "jspdf": "^3.0.3",
+    "marked": "^16.4.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.0.1",
+    "electron": "^33.2.0",
+    "png-to-ico": "^3.0.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "wait-on": "^8.0.2"
+  }
+}
