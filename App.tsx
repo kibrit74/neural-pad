@@ -250,13 +250,25 @@ const App: React.FC = () => {
     useEffect(() => {
         const loadInitialData = async () => {
             const isElectron = (window as any)?.electron?.isElectron === true;
-            const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeScreen');
-            if (!hasSeenWelcome && !isElectron) {
-                setShowWelcome(true);
-            } else {
-                // Electron veya daha önce görüldüyse, hoş geldin ekranını atla
+            console.log('Electron Detection:', {
+                isElectron,
+                windowElectron: (window as any)?.electron,
+                platform: (window as any)?.electron?.platform
+            });
+            
+            if (isElectron) {
+                // Electron'da welcome ekranını asla gösterme
+                console.log('Running in Electron - skipping welcome screen');
                 setShowWelcome(false);
-                localStorage.setItem('hasSeenWelcomeScreen', 'true');
+            } else {
+                // Web versiyonunda localStorage kontrolü yap
+                const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeScreen');
+                console.log('Running in Web - hasSeenWelcome:', hasSeenWelcome);
+                if (!hasSeenWelcome) {
+                    setShowWelcome(true);
+                } else {
+                    setShowWelcome(false);
+                }
             }
 
             const saved = localStorage.getItem('gemini-writer-settings');

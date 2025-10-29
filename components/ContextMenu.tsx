@@ -5,6 +5,50 @@ import type { Settings, Note } from '../types';
 import { WandIcon, WebhookIcon } from './icons/Icons';
 import { Editor } from '@tiptap/react';
 
+function maybeTabularToHTML(text: string): string | null {
+    const trimmed = text.trim();
+    if (!trimmed) return null;
+    const lines = trimmed.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (lines.length < 2) return null;
+
+    const tableStyle = 'border-collapse:collapse;width:100%';
+    const thStyle = 'border:1px solid var(--color-border-strong);padding:6px 8px;background:var(--color-background-secondary);text-align:left;font-weight:700';
+    const tdStyle = 'border:1px solid var(--color-border-strong);padding:6px 8px;text-align:left';
+
+    // Markdown table: header | header\n|---|---|\nrow
+    if (/\|/.test(lines[0]) && /[-|:]/.test(lines[1])) {
+        const sepMatch = /^\s*\|?\s*[-:|\s]+\s*\|?\s*$/.test(lines[1]);
+        if (sepMatch) {
+            const parseRow = (row: string) => row.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+            const headers = parseRow(lines[0]);
+            const rows = lines.slice(2).map(parseRow);
+            const headerHtml = `<tr>${headers.map(h => `<th style="${thStyle}">${h}</th>`).join('')}</tr>`;
+            const bodyHtml = rows.map(r => `<tr>${r.map(c => `<td style="${tdStyle}">${c}</td>`).join('')}</tr>`).join('');
+            return `<table style="${tableStyle}"><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+        }
+    }
+
+    // CSV/TSV/pipe detection
+    const candidates = ['\t', ';', '|', ','];
+    let bestDelim = ',';
+    let bestScore = -1;
+    for (const d of candidates) {
+        const score = lines.slice(0, Math.min(10, lines.length)).reduce((acc, l) => acc + (l.split(d).length - 1), 0);
+        if (score > bestScore) { bestScore = score; bestDelim = d; }
+    }
+    if (bestScore > 0) {
+        const split = (s: string) => s.split(bestDelim).map(c => c.trim());
+        const rows = lines.map(split);
+        const header = rows[0];
+        const body = rows.slice(1);
+        const headerHtml = `<tr>${header.map(h => `<th style="${thStyle}">${h}</th>`).join('')}</tr>`;
+        const bodyHtml = body.map(r => `<tr>${r.map(c => `<td style="${tdStyle}">${c}</td>`).join('')}</tr>`).join('');
+        return `<table style="${tableStyle}"><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+    }
+
+    return null;
+}
+
 interface ContextMenuProps {
     editor: Editor;
     onClose: () => void;
@@ -157,7 +201,14 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                 }
             } else {
                 const result = await generateContent(fullPrompt, settings, imagePayload);
-                const responseHtml = `<br><div class="ai-response p-2 my-2 border-l-4 border-primary bg-background text-text-primary"><strong>${t('aiPrompts.responseTitle')}:</strong><br/>${result.replace(/\n/g, '<br/>')}</div>`;
+                let innerHtml = result.replace(/\n/g, '<br/>');
+                const tableHtml = maybeTabularToHTML(result);
+                if (actionId === 'makeTable' && tableHtml) {
+                    innerHtml = tableHtml;
+                } else if (tableHtml) {
+                    innerHtml = tableHtml; // auto-convert if AI returned a table
+                }
+                const responseHtml = `<br><div class=\"ai-response p-2 my-2 border-l-4 border-primary bg-background text-text-primary\"><strong>${t('aiPrompts.responseTitle')}:</strong><br/>${innerHtml}</div>`;
                 editor.chain().focus().insertContentAt(insertionPos, responseHtml).run();
                 addNotification(t('notifications.aiSuccess'), 'success');
             }
@@ -193,6 +244,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
         { id: 'fix', label: t('contextMenu.fix'), prompt: t('aiPrompts.fixSpelling') },
         { id: 'summarize', label: t('contextMenu.summarize'), prompt: t('aiPrompts.summarize') },
         { id: 'generateTags', label: t('contextMenu.generateTags'), prompt: t('aiPrompts.generateTags') },
+        { id: 'makeTable', label: t('contextMenu.makeTable'), prompt: 'Convert the selected text into a clear table. Output CSV only without commentary.' },
     ];
     
     const imageMenuItems = [
@@ -201,6 +253,46 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
     ];
 
     const menuItems = type === 'image' ? imageMenuItems : textMenuItems;
+
+    const shareSelection = async () => {
+        if (!editor) return;
+        const { from, to, empty } = editor.state.selection;
+        if (empty) return;
+        const text = editor.state.doc.textBetween(from, to);
+        try {
+            if ((navigator as any).share) {
+                await (navigator as any).share({ text });
+                addNotification(t('notifications.shareSuccess'), 'success');
+            } else {
+                await navigator.clipboard.writeText(text);
+                addNotification(t('notifications.shareUnavailable'), 'warning');
+            }
+        } catch {}
+        onClose();
+    };
+
+    const shareImage = async (dataUrl: string) => {
+        try {
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            const ext = (blob.type.split('/')[1] || 'png').split(';')[0];
+            const file = new File([blob], `image.${ext}`, { type: blob.type });
+            if ((navigator as any).share && (navigator as any).canShare?.({ files: [file] })) {
+                await (navigator as any).share({ files: [file], title: 'Shared image' });
+                addNotification(t('notifications.shareSuccess'), 'success');
+            } else if ((navigator as any).clipboard?.write) {
+                await (navigator as any).clipboard.write([new (window as any).ClipboardItem({ [blob.type]: blob })]);
+                addNotification(t('notifications.shareUnavailable'), 'warning');
+            } else {
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = 'image.' + ext;
+                a.click();
+                addNotification(t('notifications.shareUnavailable'), 'warning');
+            }
+        } catch {}
+        onClose();
+    };
     
     const btnPrimary = "w-full mt-1.5 bg-primary hover:bg-primary-hover text-primary-text text-sm flex items-center justify-center gap-1 px-4 py-2 rounded-md font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
@@ -223,6 +315,22 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                             {item.label}
                         </button>
                     ))}
+                    {type === 'text' && (
+                        <>
+                            <hr className="my-1 border-border" />
+                            <button onClick={shareSelection} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border flex items-center gap-2">
+                                {t('contextMenu.shareSelection')}
+                            </button>
+                        </>
+                    )}
+                    {type === 'image' && data && (
+                        <>
+                            <hr className="my-1 border-border" />
+                            <button onClick={() => shareImage(data)} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border flex items-center gap-2">
+                                {t('contextMenu.shareImage')}
+                            </button>
+                        </>
+                    )}
                     {type === 'text' && onMakeBlueprintOpen && (
                         <>
                             <hr className="my-1 border-border" />

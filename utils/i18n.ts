@@ -51,6 +51,9 @@ export const translations = {
             generateTags: "Generate Tags",
             describeImage: "Describe image",
             suggestCaption: "Suggest a caption",
+            makeTable: "Convert to Table",
+            shareSelection: "Share selection",
+            shareImage: "Share image",
             customPromptPlaceholder: "Or type your own prompt...",
             submit: "Submit",
         },
@@ -95,6 +98,8 @@ export const translations = {
             wrongPassword: "Wrong password.",
             lockRemoved: "Lock removed.",
             cannotSaveLocked: "Cannot save locked note without password.",
+            shareSuccess: "Shared successfully.",
+            shareUnavailable: "Sharing not available here. Copied to clipboard instead.",
         },
         common: {
             save: "Save",
@@ -162,6 +167,10 @@ export const translations = {
             placeholder: "Enter password",
             confirm: "Confirm",
         },
+        voice: {
+            start: "Start Voice Input",
+            stop: "Stop Voice Input",
+        },
     },
     tr: {
         header: {
@@ -214,6 +223,9 @@ export const translations = {
             generateTags: "Etiket Oluştur",
             describeImage: "Resmi betimle",
             suggestCaption: "Bir başlık öner",
+            makeTable: "Tabloya dönüştür",
+            shareSelection: "Seçimi paylaş",
+            shareImage: "Resmi paylaş",
             customPromptPlaceholder: "Veya kendi isteminizi yazın...",
             submit: "Gönder",
         },
@@ -258,6 +270,8 @@ export const translations = {
             wrongPassword: "Şifre yanlış.",
             lockRemoved: "Kilit kaldırıldı.",
             cannotSaveLocked: "Şifre olmadan kilitli not kaydedilemez.",
+            shareSuccess: "Başarıyla paylaşıldı.",
+            shareUnavailable: "Paylaşım burada desteklenmiyor. Panoya kopyalandı.",
         },
         common: {
             save: "Kaydet",
@@ -324,6 +338,10 @@ export const translations = {
             passwordLabel: "Şifre",
             placeholder: "Şifre girin",
             confirm: "Onayla",
+        },
+        voice: {
+            start: "Sesli Girişi Başlat",
+            stop: "Sesli Girişi Durdur",
         },
     },
 };

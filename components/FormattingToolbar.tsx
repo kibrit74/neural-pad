@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Editor } from '@tiptap/react';
+import { useTranslations } from '../hooks/useTranslations';
 import {
-    BoldIcon, ItalicIcon, UnderlineIcon, StrikeIcon, CodeIcon, ListIcon, ListOrderedIcon, BlockquoteIcon, UndoIcon, RedoIcon, ImageIcon
+    BoldIcon, ItalicIcon, UnderlineIcon, StrikeIcon, CodeIcon, ListIcon, ListOrderedIcon, BlockquoteIcon, UndoIcon, RedoIcon, ImageIcon, MicIcon, StopIcon
 } from './icons/Icons';
 
 interface FormattingToolbarProps {
@@ -40,6 +41,7 @@ const FONT_SIZE_LIST = [
 ];
 
 const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUpload }) => {
+    const { t } = useTranslations();
     if (!editor) {
         return null;
     }
@@ -54,6 +56,49 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
             {children}
         </button>
     );
+
+    // Voice input
+    const recognitionRef = useRef<any>(null);
+    const [recording, setRecording] = useState(false);
+    const [canRecord, setCanRecord] = useState(false);
+
+    useEffect(() => {
+        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        setCanRecord(!!SR);
+        return () => {
+            try { recognitionRef.current?.stop?.(); } catch {}
+        };
+    }, []);
+
+    const startRecording = () => {
+        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SR) return;
+        const rec = new SR();
+        rec.lang = document.documentElement.lang || navigator.language || 'en-US';
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.onresult = (e: any) => {
+            let finalText = '';
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+                const res = e.results[i];
+                if (res.isFinal) finalText += res[0].transcript + ' ';
+            }
+            if (finalText) {
+                editor.chain().focus().insertContent(finalText).run();
+            }
+        };
+        rec.onend = () => setRecording(false);
+        try {
+            rec.start();
+            recognitionRef.current = rec;
+            setRecording(true);
+        } catch {}
+    };
+
+    const stopRecording = () => {
+        try { recognitionRef.current?.stop?.(); } catch {}
+        setRecording(false);
+    };
     
     const currentFont = editor.getAttributes('textStyle').fontFamily || '';
     const currentFontSize = editor.getAttributes('textStyle').fontSize || '';
@@ -138,6 +183,14 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
             </ToolbarButton>
             <ToolbarButton onClick={onImageUpload} title="Insert Image">
                 <ImageIcon />
+            </ToolbarButton>
+            <ToolbarButton
+                onClick={recording ? stopRecording : startRecording}
+title={recording ? t('voice.stop') : t('voice.start')}
+                disabled={!canRecord}
+                isActive={recording}
+            >
+                {recording ? <StopIcon /> : <MicIcon />}
             </ToolbarButton>
              <div className="mx-2 h-6 border-l border-border"></div>
             <ToolbarButton onClick={() => (editor.chain().focus() as any).undo().run()} title="Undo" disabled={!(editor.can() as any).undo()}>

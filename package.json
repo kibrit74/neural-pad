@@ -10,7 +10,9 @@
     "build": "vite build",
     "build:electron": "vite build",
     "start:electron": "electron .",
-    "preview": "vite preview"
+    "icon:gen": "node scripts/generate-icons.mjs",
+    "preview": "vite preview",
+    "dist:win": "npm run build && npm run icon:gen && electron-builder -w"
   },
   "dependencies": {
     "@google/genai": "^1.26.0",
@@ -36,11 +38,32 @@
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.0.1",
     "electron": "^33.2.0",
-    "png-to-ico": "^3.0.1",
+    "electron-builder": "^24.13.3",
+    "icon-gen": "^5.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "com.neural-pad.app",
+    "productName": "Neural Pad",
+    "files": [
+      "dist/**",
+      "electron/**",
+      "build/icons/**",
+      "public/**",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icons/app.ico"
+    },
+    "mac": {
+      "icon": "build/icons/app.icns"
+    },
+    "linux": {
+      "icon": "build/icons"
+    }
   }
 }

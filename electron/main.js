@@ -9,13 +9,20 @@ const isDev = !!process.env.VITE_DEV_SERVER_URL || process.env.NODE_ENV === 'dev
 
 let mainWindow = null
 
+function resolveIconPath() {
+  const iconsDir = path.join(__dirname, '../build/icons')
+  if (process.platform === 'win32') return path.join(iconsDir, 'app.ico')
+  if (process.platform === 'darwin') return path.join(iconsDir, 'app.icns')
+  return path.join(__dirname, '../public/Logo.png')
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     show: false,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, '../logo.png'),
+    icon: resolveIconPath(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
