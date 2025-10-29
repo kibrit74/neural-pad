@@ -44,7 +44,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
     );
 
     const DownloadButton: React.FC<{ icon: React.ReactElement; osName: string }> = ({ icon, osName }) => (
-        <button className="download-btn flex items-center justify-center gap-3 w-full px-6 py-4 bg-background-secondary rounded-lg font-semibold text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background">
+        <button className="download-btn flex items-center justify-center gap-3 w-full px-6 py-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-300/30 rounded-lg font-semibold text-text-primary focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-background transition-all duration-300">
             {icon}
             <span>{t('landingPage.downloadFor')} {osName}</span>
         </button>
@@ -254,43 +254,45 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                 </section>
 
             </main>
-            <footer className="bg-gradient-to-r from-background-secondary/50 to-background-secondary/30 border-t border-border">
+            <footer className="bg-gradient-to-r from-gray-700 to-gray-800 border-t border-gray-600">
                 <div className="max-w-6xl mx-auto px-6 py-12">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                         {/* Logo ve Açıklama */}
                         <div className="text-center md:text-left">
                             <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
-                                <SparkleIcon className="w-8 h-8 text-primary" />
-                                <h3 className="text-xl font-bold text-text-primary">Neural Pad</h3>
+                                <div className="w-12 h-12 flex-shrink-0 rounded-full bg-white p-1 shadow-sm">
+                                    <img src="/Logo.png" alt="Neural Pad Logo" className="w-full h-full object-contain" />
+                                </div>
+                                <h3 className="text-xl font-bold text-white">Neural Pad</h3>
                             </div>
-                            <p className="text-text-secondary text-sm leading-relaxed">
+                            <p className="text-gray-300 text-sm leading-relaxed">
                                 {language === 'tr' 
-                                    ? 'Yapay zeka destekli not alma ve yazma deneyimi. Düşüncelerinizi organize edin, yaratıcılığınızı artırın.'
-                                    : 'AI-powered note-taking and writing experience. Organize your thoughts, boost your creativity.'
+                                    ? 'AI destekli akıllı not defteri. Notlarınızı yazın, organize edin, güvenle saklayın ve yapay zeka ile geliştirin.'
+                                    : 'AI-powered smart notebook. Write, organize, secure your notes and enhance them with artificial intelligence.'
                                 }
                             </p>
                         </div>
 
                         {/* Hızlı Linkler */}
                         <div className="text-center">
-                            <h4 className="text-lg font-semibold text-text-primary mb-4">
+                            <h4 className="text-lg font-semibold text-white mb-4">
                                 {language === 'tr' ? 'Özellikler' : 'Features'}
                             </h4>
-                            <ul className="space-y-2 text-sm text-text-secondary">
+                            <ul className="space-y-2 text-sm text-gray-300">
                                 <li className="flex items-center justify-center gap-2">
-                                    <ChatIcon className="w-4 h-4 text-primary" />
+                                    <ChatIcon className="w-4 h-4 text-purple-400" />
                                     <span>{language === 'tr' ? 'AI Sohbet' : 'AI Chat'}</span>
                                 </li>
                                 <li className="flex items-center justify-center gap-2">
-                                    <ImageIcon className="w-4 h-4 text-primary" />
+                                    <ImageIcon className="w-4 h-4 text-purple-400" />
                                     <span>{language === 'tr' ? 'Görsel Analiz' : 'Image Analysis'}</span>
                                 </li>
                                 <li className="flex items-center justify-center gap-2">
-                                    <TagIcon className="w-4 h-4 text-primary" />
+                                    <TagIcon className="w-4 h-4 text-purple-400" />
                                     <span>{language === 'tr' ? 'Etiketleme' : 'Tagging'}</span>
                                 </li>
                                 <li className="flex items-center justify-center gap-2">
-                                    <LockIcon className="w-4 h-4 text-primary" />
+                                    <LockIcon className="w-4 h-4 text-purple-400" />
                                     <span>{language === 'tr' ? 'Güvenli Notlar' : 'Secure Notes'}</span>
                                 </li>
                             </ul>
@@ -298,7 +300,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
 
                         {/* İletişim */}
                         <div className="text-center md:text-right">
-                            <h4 className="text-lg font-semibold text-text-primary mb-4">
+                            <h4 className="text-lg font-semibold text-white mb-4">
                                 {language === 'tr' ? 'İletişim' : 'Contact'}
                             </h4>
                             <div className="space-y-3">
@@ -309,7 +311,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                                     </svg>
                                     <a 
                                         href="mailto:zubobilisim@gmail.com" 
-                                        className="text-text-secondary hover:text-primary transition-colors duration-200 text-sm"
+                                        className="text-gray-300 hover:text-purple-400 transition-colors duration-200 text-sm"
                                     >
                                         zubobilisim@gmail.com
                                     </a>
@@ -318,10 +320,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                                 {/* Sosyal Medya İkonları */}
                                 <div className="flex items-center justify-center md:justify-end gap-4 mt-4">
                                     <a 
-                                        href="https://github.com" 
+                                        href="https://github.com/kibrit74/neural-pad" 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="p-2 rounded-full bg-background-secondary hover:bg-primary/10 text-text-secondary hover:text-primary transition-all duration-200"
+                                        className="p-2 rounded-full bg-gray-600 hover:bg-purple-500/20 text-gray-300 hover:text-purple-400 transition-all duration-200"
                                         aria-label="GitHub"
                                     >
                                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -332,7 +334,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                                         href="https://twitter.com" 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="p-2 rounded-full bg-background-secondary hover:bg-primary/10 text-text-secondary hover:text-primary transition-all duration-200"
+                                        className="p-2 rounded-full bg-gray-600 hover:bg-purple-500/20 text-gray-300 hover:text-purple-400 transition-all duration-200"
                                         aria-label="Twitter"
                                     >
                                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -343,7 +345,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                                         href="https://linkedin.com" 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="p-2 rounded-full bg-background-secondary hover:bg-primary/10 text-text-secondary hover:text-primary transition-all duration-200"
+                                        className="p-2 rounded-full bg-gray-600 hover:bg-purple-500/20 text-gray-300 hover:text-purple-400 transition-all duration-200"
                                         aria-label="LinkedIn"
                                     >
                                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -356,19 +358,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                     </div>
 
                     {/* Alt Çizgi ve Telif Hakkı */}
-                    <div className="border-t border-border pt-6">
+                    <div className="border-t border-gray-600 pt-6">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <p className="text-text-secondary text-sm">
+                            <p className="text-gray-400 text-sm">
                                 {t('landingPage.footerText', { year: new Date().getFullYear().toString() })}
                             </p>
-                            <div className="flex items-center gap-6 text-sm text-text-secondary">
-                                <span className="hover:text-primary cursor-pointer transition-colors">
+                            <div className="flex items-center gap-6 text-sm text-gray-400">
+                                <span className="hover:text-purple-400 cursor-pointer transition-colors">
                                     {language === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}
                                 </span>
-                                <span className="hover:text-primary cursor-pointer transition-colors">
+                                <span className="hover:text-purple-400 cursor-pointer transition-colors">
                                     {language === 'tr' ? 'Kullanım Şartları' : 'Terms of Service'}
                                 </span>
-                                <span className="hover:text-primary cursor-pointer transition-colors">
+                                <span className="hover:text-purple-400 cursor-pointer transition-colors">
                                     {language === 'tr' ? 'Destek' : 'Support'}
                                 </span>
                             </div>

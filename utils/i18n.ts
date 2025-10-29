@@ -151,7 +151,7 @@ export const translations = {
         },
         landingPage: {
             heroTitle: "Rethink Your Notes.",
-            heroSubtitle: "An intelligent, minimalist writing space powered by AI. Transform your ideas into structured, polished text, effortlessly.",
+            heroSubtitle: "AI-powered smart notebook. Write, organize, secure your notes and enhance them with artificial intelligence.",
             cta: "Launch Writer",
             featuresTitle: "Designed for Clarity and Power",
             mockupsTitle: "Product Screenshots",
@@ -418,9 +418,10 @@ export const translations = {
             cta: "Başlayın",
         },
         landingPage: {
-            heroTitle: "Notlarınızı Yeniden Düşünün.",
-            heroSubtitle: "Yapay zeka destekli, minimalist ve akıllı bir yazma alanı. Fikirlerinizi zahmetsizce yapılandırılmış, kusursuz metinlere dönüştürün.",
+            heroTitle: "Akıllı Not Tutmanın Geleceği",
+            heroSubtitle: "AI destekli akıllı not defteri. Notlarınızı yazın, organize edin, güvenle saklayın ve yapay zeka ile geliştirin.",
             cta: "Yazar'ı Başlat",
+            featuresTitle: "Netlik ve Güç İçin Tasarlandı",
             mockupsTitle: "Uygulamadan Görseller",
             mockupsSubtitle: "Öne çıkan ekran görüntüleri",
             mockupsItems: {
