@@ -401,7 +401,7 @@ async function* streamOpenAI(
                 'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: DEFAULT_MODELS.openai,
+                model: settings.model || DEFAULT_MODELS.openai,
                 messages,
                 stream: true,
                 temperature: config.temperature,
@@ -489,7 +489,7 @@ async function* streamClaude(
                 'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
-                model: DEFAULT_MODELS.claude,
+                model: settings.model || DEFAULT_MODELS.claude,
                 messages,
                 stream: true,
                 max_tokens: config.maxTokens || 4096,

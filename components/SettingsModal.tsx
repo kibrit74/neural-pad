@@ -33,11 +33,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
     };
 
     const handleProviderChange = (provider: ApiProvider) => {
-        setLocalSettings(prev => ({ ...prev, apiProvider: provider }));
+        setLocalSettings(prev => ({ ...prev, apiProvider: provider, model: defaultModels[provider] }));
     };
     
     const themes: Theme[] = ['default', 'twilight', 'ocean', 'forest', 'blossom', 'dusk'];
     const providers: ApiProvider[] = ['gemini', 'openai', 'claude'];
+    const defaultModels: Record<ApiProvider, string> = {
+        gemini: 'gemini-2.5-flash',
+        openai: 'gpt-4o',
+        claude: 'claude-3-5-sonnet-20241022'
+    };
+    const openaiModels = ['gpt-4o', 'gpt-4o-mini'];
+    const claudeModels = ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'];
 
     const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
         <div>
@@ -234,40 +241,60 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
 
                 {localSettings.apiProvider === 'openai' && (
                     <Section title="OpenAI">
-                        <div className="space-y-2">
-                            <label htmlFor="openaiApiKey" className="text-text-secondary">{t('settings.apiKey')}</label>
-                            <input
-                                type="password"
-                                id="openaiApiKey"
-                                name="openaiApiKey"
-                                value={localSettings.openaiApiKey || ''}
-                                onChange={handleInputChange}
-                                placeholder={t('settings.apiKeyPlaceholder')}
-                                className="w-full p-2 rounded bg-background border border-border-strong focus:outline-none focus:ring-2 focus:ring-primary text-text-primary"
-                            />
-                            <a href="https://platform.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                                {t('settings.getApiKeyHere', { provider: 'OpenAI' })}
-                            </a>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label htmlFor="openaiApiKey" className="text-text-secondary">{t('settings.apiKey')}</label>
+                                <input
+                                    type="password"
+                                    id="openaiApiKey"
+                                    name="openaiApiKey"
+                                    value={localSettings.openaiApiKey || ''}
+                                    onChange={handleInputChange}
+                                    placeholder={t('settings.apiKeyPlaceholder')}
+                                    className="w-full p-2 rounded bg-background border border-border-strong focus:outline-none focus:ring-2 focus:ring-primary text-text-primary"
+                                />
+                                <a href="https://platform.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                                    {t('settings.getApiKeyHere', { provider: 'OpenAI' })}
+                                </a>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                                <label htmlFor="model" className="md:col-span-1 text-text-secondary">{t('settings.model')}</label>
+                                <select id="model" name="model" value={localSettings.model} onChange={handleInputChange} className="p-2 rounded bg-background border border-border-strong md:col-span-2 focus:outline-none focus:ring-2 focus:ring-primary text-text-primary">
+                                    {openaiModels.map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </Section>
                 )}
 
                 {localSettings.apiProvider === 'claude' && (
                     <Section title="Anthropic (Claude)">
-                        <div className="space-y-2">
-                            <label htmlFor="claudeApiKey" className="text-text-secondary">{t('settings.apiKey')}</label>
-                            <input
-                                type="password"
-                                id="claudeApiKey"
-                                name="claudeApiKey"
-                                value={localSettings.claudeApiKey || ''}
-                                onChange={handleInputChange}
-                                placeholder={t('settings.apiKeyPlaceholder')}
-                                className="w-full p-2 rounded bg-background border border-border-strong focus:outline-none focus:ring-2 focus:ring-primary text-text-primary"
-                            />
-                            <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                                {t('settings.getApiKeyHere', { provider: 'Anthropic' })}
-                            </a>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label htmlFor="claudeApiKey" className="text-text-secondary">{t('settings.apiKey')}</label>
+                                <input
+                                    type="password"
+                                    id="claudeApiKey"
+                                    name="claudeApiKey"
+                                    value={localSettings.claudeApiKey || ''}
+                                    onChange={handleInputChange}
+                                    placeholder={t('settings.apiKeyPlaceholder')}
+                                    className="w-full p-2 rounded bg-background border border-border-strong focus:outline-none focus:ring-2 focus:ring-primary text-text-primary"
+                                />
+                                <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                                    {t('settings.getApiKeyHere', { provider: 'Anthropic' })}
+                                </a>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                                <label htmlFor="model" className="md:col-span-1 text-text-secondary">{t('settings.model')}</label>
+                                <select id="model" name="model" value={localSettings.model} onChange={handleInputChange} className="p-2 rounded bg-background border border-border-strong md:col-span-2 focus:outline-none focus:ring-2 focus:ring-primary text-text-primary">
+                                    {claudeModels.map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </Section>
                 )}
