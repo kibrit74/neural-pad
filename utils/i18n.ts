@@ -94,6 +94,11 @@ export const translations = {
             apiKey: "API Key",
             apiKeyPlaceholder: "Enter your API key here",
             getApiKeyHere: "Get your {{provider}} API key here",
+            deleteApiKey: "Delete API Key",
+            confirmDeleteApiKey: "Are you sure you want to delete this API key? This action cannot be undone.",
+            apiKeyDeleted: "API key deleted successfully",
+            showApiKey: "Show API Key",
+            hideApiKey: "Hide API Key",
             export: {
                 title: "Export & Backup",
                 backupTitle: "Full Backup",
@@ -169,6 +174,10 @@ export const translations = {
                 secureDesc: "Lock notes with a password. Content stays encrypted.",
             },
             downloadTitle: "Get the Desktop App",
+            downloadSubtitle: "Enjoy a focused, native experience on your favorite operating system. (Coming Soon)",
+            downloadFor: "Download for",
+            footerText: "© {{year}} Neural Pad. All rights reserved.",
+            contactEmail: "Contact us at",
         },
         help: {
             title: "Help & Shortcuts",
@@ -353,6 +362,11 @@ export const translations = {
             apiKey: "API Anahtarı",
             apiKeyPlaceholder: "API anahtarınızı buraya girin",
             getApiKeyHere: "{{provider}} API anahtarınızı buradan alın",
+            deleteApiKey: "API Anahtarını Sil",
+            confirmDeleteApiKey: "Bu API anahtarını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+            apiKeyDeleted: "API anahtarı başarıyla silindi",
+            showApiKey: "API Anahtarını Göster",
+            hideApiKey: "API Anahtarını Gizle",
             export: {
                 title: "Dışa Aktar & Yedekle",
                 backupTitle: "Tam Yedekleme",
@@ -430,6 +444,7 @@ export const translations = {
             downloadSubtitle: "Favori işletim sisteminizde odaklanmış, yerel bir deneyimin keyfini çıkarın. (Yakında)",
             downloadFor: "İçin İndir",
             footerText: "© {{year}} Neural Pad. Tüm hakları saklıdır.",
+            contactEmail: "İletişim:",
         },
         help: {
             title: "Yardım & Kısayollar",

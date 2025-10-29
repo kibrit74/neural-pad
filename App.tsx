@@ -54,7 +54,7 @@ const App: React.FC = () => {
     const [isChatSidebarOpen, setChatSidebarOpen] = useState(false);
     const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
     const [isHelpModalOpen, setHelpModalOpen] = useState(false);
-    const [showWelcome, setShowWelcome] = useState(false);
+    const [showWelcome, setShowWelcome] = useState<boolean | null>(null);
     const [contextMenu, setContextMenu] = useState<{ 
         anchorEl: HTMLElement | null;
         type?: 'text' | 'image';
@@ -469,6 +469,18 @@ const App: React.FC = () => {
         
         return notesToFilter;
     }, [notes, selectedTag, searchQuery]);
+
+    // Loading state - show nothing until we determine if welcome should be shown
+    if (showWelcome === null) {
+        return (
+            <div className="flex h-screen w-screen bg-background text-text-primary items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-text-secondary">Yükleniyor...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (showWelcome) {
         return <WelcomeModal isOpen={showWelcome} onClose={handleEnterApp} />;

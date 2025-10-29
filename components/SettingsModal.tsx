@@ -35,6 +35,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
     const handleProviderChange = (provider: ApiProvider) => {
         setLocalSettings(prev => ({ ...prev, apiProvider: provider, model: defaultModels[provider] }));
     };
+
+    const handleDeleteApiKey = (provider: ApiProvider) => {
+        if (window.confirm(t('settings.confirmDeleteApiKey'))) {
+            const keyName = `${provider}ApiKey` as keyof Settings;
+            setLocalSettings(prev => ({ ...prev, [keyName]: '' }));
+            // Show success notification
+            const event = new CustomEvent('showNotification', {
+                detail: { message: t('settings.apiKeyDeleted'), type: 'success' }
+            });
+            window.dispatchEvent(event);
+        }
+    };
     
     const themes: Theme[] = ['default', 'twilight', 'ocean', 'forest', 'blossom', 'dusk'];
     const providers: ApiProvider[] = ['gemini', 'openai', 'claude'];
@@ -53,8 +65,60 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
         </div>
     );
 
+    const ApiKeyInput: React.FC<{ 
+        provider: ApiProvider; 
+        keyName: keyof Settings; 
+        value: string; 
+        linkUrl: string; 
+        linkText: string 
+    }> = ({ provider, keyName, value, linkUrl, linkText }) => (
+        <div className="space-y-2">
+            <label htmlFor={keyName as string} className="text-text-secondary">{t('settings.apiKey')}</label>
+            <div className="relative">
+                <input
+                    type="password"
+                    id={keyName as string}
+                    name={keyName as string}
+                    value={value || ''}
+                    onChange={handleInputChange}
+                    placeholder={t('settings.apiKeyPlaceholder')}
+                    className="w-full p-2 pr-12 rounded bg-background border border-border-strong focus:outline-none focus:ring-2 focus:ring-primary text-text-primary select-none"
+                    style={{ 
+                        userSelect: 'none', 
+                        WebkitUserSelect: 'none',
+                        fontFamily: 'monospace',
+                        letterSpacing: '2px'
+                    }}
+                    onCopy={(e) => e.preventDefault()}
+                    onCut={(e) => e.preventDefault()}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onDragStart={(e) => e.preventDefault()}
+                    autoComplete="off"
+                    spellCheck={false}
+                />
+                {value && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                        <button
+                            type="button"
+                            onClick={() => handleDeleteApiKey(provider)}
+                            className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                            title={t('settings.deleteApiKey')}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                )}
+            </div>
+            <a href={linkUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                {linkText}
+            </a>
+        </div>
+    );
+
     const ProviderButton: React.FC<{ provider: ApiProvider }> = ({ provider }) => (
-         <button
+        <button
             onClick={() => handleProviderChange(provider)}
             className={`p-3 rounded-md border-2 transition-colors capitalize text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary w-full ${
                 localSettings.apiProvider === provider
@@ -242,21 +306,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                 {localSettings.apiProvider === 'openai' && (
                     <Section title="OpenAI">
                         <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label htmlFor="openaiApiKey" className="text-text-secondary">{t('settings.apiKey')}</label>
-                                <input
-                                    type="password"
-                                    id="openaiApiKey"
-                                    name="openaiApiKey"
-                                    value={localSettings.openaiApiKey || ''}
-                                    onChange={handleInputChange}
-                                    placeholder={t('settings.apiKeyPlaceholder')}
-                                    className="w-full p-2 rounded bg-background border border-border-strong focus:outline-none focus:ring-2 focus:ring-primary text-text-primary"
-                                />
-                                <a href="https://platform.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                                    {t('settings.getApiKeyHere', { provider: 'OpenAI' })}
-                                </a>
-                            </div>
+                            <ApiKeyInput
+                                provider="openai"
+                                keyName="openaiApiKey"
+                                value={localSettings.openaiApiKey || ''}
+                                linkUrl="https://platform.openai.com/account/api-keys"
+                                linkText={t('settings.getApiKeyHere', { provider: 'OpenAI' })}
+                            />
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                                 <label htmlFor="model" className="md:col-span-1 text-text-secondary">{t('settings.model')}</label>
                                 <select id="model" name="model" value={localSettings.model} onChange={handleInputChange} className="p-2 rounded bg-background border border-border-strong md:col-span-2 focus:outline-none focus:ring-2 focus:ring-primary text-text-primary">
@@ -272,21 +328,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                 {localSettings.apiProvider === 'claude' && (
                     <Section title="Anthropic (Claude)">
                         <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label htmlFor="claudeApiKey" className="text-text-secondary">{t('settings.apiKey')}</label>
-                                <input
-                                    type="password"
-                                    id="claudeApiKey"
-                                    name="claudeApiKey"
-                                    value={localSettings.claudeApiKey || ''}
-                                    onChange={handleInputChange}
-                                    placeholder={t('settings.apiKeyPlaceholder')}
-                                    className="w-full p-2 rounded bg-background border border-border-strong focus:outline-none focus:ring-2 focus:ring-primary text-text-primary"
-                                />
-                                <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                                    {t('settings.getApiKeyHere', { provider: 'Anthropic' })}
-                                </a>
-                            </div>
+                            <ApiKeyInput
+                                provider="claude"
+                                keyName="claudeApiKey"
+                                value={localSettings.claudeApiKey || ''}
+                                linkUrl="https://console.anthropic.com/settings/keys"
+                                linkText={t('settings.getApiKeyHere', { provider: 'Anthropic' })}
+                            />
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                                 <label htmlFor="model" className="md:col-span-1 text-text-secondary">{t('settings.model')}</label>
                                 <select id="model" name="model" value={localSettings.model} onChange={handleInputChange} className="p-2 rounded bg-background border border-border-strong md:col-span-2 focus:outline-none focus:ring-2 focus:ring-primary text-text-primary">
@@ -302,21 +350,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                 {localSettings.apiProvider === 'gemini' && (
                     <>
                         <Section title="Google Gemini">
-                            <div className="space-y-2">
-                                <label htmlFor="geminiApiKey" className="text-text-secondary">{t('settings.apiKey')}</label>
-                                <input
-                                    type="password"
-                                    id="geminiApiKey"
-                                    name="geminiApiKey"
-                                    value={localSettings.geminiApiKey || ''}
-                                    onChange={handleInputChange}
-                                    placeholder={t('settings.apiKeyPlaceholder')}
-                                    className="w-full p-2 rounded bg-background border border-border-strong focus:outline-none focus:ring-2 focus:ring-primary text-text-primary"
-                                />
-                                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                                    {t('settings.getApiKeyHere', { provider: 'Google AI Studio' })}
-                                </a>
-                            </div>
+                            <ApiKeyInput
+                                provider="gemini"
+                                keyName="geminiApiKey"
+                                value={localSettings.geminiApiKey || ''}
+                                linkUrl="https://aistudio.google.com/app/apikey"
+                                linkText={t('settings.getApiKeyHere', { provider: 'Google AI Studio' })}
+                            />
                         </Section>
                         
                         <Section title={t('settings.modelConfig')}>

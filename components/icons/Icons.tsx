@@ -94,7 +94,7 @@ export const UndoIcon = () => <SVGIcon><path d="M3 7v6h6"></path><path d="M21 17
 export const ImageIcon = (props: React.SVGProps<SVGSVGElement>) => <SVGIcon {...props}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></SVGIcon>;
 export const SendIcon = () => <SVGIcon width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></SVGIcon>;
 export const PlusIcon = () => <SVGIcon><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></SVGIcon>;
-export const ChevronDownIcon = () => <SVGIcon width="16" height="16"><polyline points="4 6 8 10 12 6"></polyline></SVGIcon>;
+export const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => <SVGIcon width="16" height="16" {...props}><polyline points="4 6 8 10 12 6"></polyline></SVGIcon>;
 export const ChevronUpIcon = () => <SVGIcon width="16" height="16"><polyline points="12 10 8 6 4 10"></polyline></SVGIcon>;
 export const UserIcon = () => <SVGIcon width="20" height="20"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></SVGIcon>;
 export const BotIcon = () => <SVGIcon width="20" height="20"><path d="M12 8V4H8"></path><rect x="4" y="12" width="16" height="8" rx="2"></rect><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M12 12v-1.5a2.5 2.5 0 0 0-5 0V12"></path></SVGIcon>;
