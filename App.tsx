@@ -80,8 +80,10 @@ const App: React.FC = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    const notificationIdRef = useRef(0);
+    
     const addNotification = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
-        const id = Date.now();
+        const id = ++notificationIdRef.current;
         setNotifications(prev => [...prev, { id, message, type }]);
     };
     

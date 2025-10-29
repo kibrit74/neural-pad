@@ -58,6 +58,7 @@
   "build": {
     "appId": "com.neural-pad.app",
     "productName": "Neural Pad",
+    "electronVersion": "33.2.0",
     "files": [
       "dist/**",
       "electron/**",
@@ -66,7 +67,8 @@
       "package.json"
     ],
     "win": {
-      "icon": "build/icons/app.ico"
+      "icon": "build/icons/app.ico",
+      "target": "dir"
     },
     "mac": {
       "icon": "build/icons/app.icns"

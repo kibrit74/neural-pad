@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useTranslations } from '../hooks/useTranslations';
 import { toggleTableClass, sortTable } from '../utils/tableUtils';
+import { generateContent, generateTagsForNote } from '../services/geminiService';
 import type { Settings, Note } from '../types';
 import { WandIcon } from './icons/Icons';
 import { Editor } from '@tiptap/react';
@@ -205,9 +206,8 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                 const tableHtml = maybeTabularToHTML(result);
                 if (actionId === 'makeTable' && tableHtml) {
                     innerHtml = tableHtml;
-                } else if (tableHtml) {
-                    innerHtml = tableHtml; // auto-convert if AI returned a table
                 }
+                // Otomatik tablo dönüştürme kaldırıldı - sadece makeTable aksiyonunda tablo oluşturulur
                 const responseHtml = `<br><div class=\"ai-response p-2 my-2 border-l-4 border-primary bg-background text-text-primary\"><strong>${t('aiPrompts.responseTitle')}:</strong><br/>${innerHtml}</div>`;
                 editor.chain().focus().insertContentAt(insertionPos, responseHtml).run();
                 addNotification(t('notifications.aiSuccess'), 'success');

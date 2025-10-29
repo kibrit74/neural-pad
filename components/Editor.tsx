@@ -71,18 +71,6 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
                     }
                 }
 
-                const text = event.clipboardData?.getData('text/plain') || '';
-                if (text && /\t|\n/.test(text)) {
-                    const rows = text.split(/\r?\n/).filter(r => r.length);
-                    const matrix = rows.map(r => r.split('\t'));
-                    const header = matrix[0];
-                    const body = matrix.slice(1);
-                    const th = `<tr>${header.map(h => `<th>${h}</th>`).join('')}</tr>`;
-                    const tb = body.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
-                    const html = `<table><thead>${th}</thead><tbody>${tb}</tbody></table>`;
-                    (editorRef.current as any)?.chain().focus().insertContent(html).run();
-                    return true;
-                }
                 return false;
             },
         },
