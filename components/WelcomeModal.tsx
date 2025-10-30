@@ -297,35 +297,35 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                             </p>
                         </div>
 
-                        {/* Hızlı Linkler */}
+                        {/* Features */}
                         <div className="text-center">
                             <h4 className="text-lg font-semibold text-white mb-4">
-                                {t('welcome.quickLinks.features')}
+                                {language === 'tr' ? 'Özellikler' : 'Features'}
                             </h4>
                             <ul className="space-y-2 text-sm text-gray-300">
                                 <li className="flex items-center justify-center gap-2">
                                     <ChatIcon className="w-4 h-4 text-purple-400" />
-                                    <span>{t('welcome.quickLinks.aiChat')}</span>
+                                    <span>{language === 'tr' ? 'AI Sohbet Asistanı' : 'AI Chat Assistant'}</span>
                                 </li>
                                 <li className="flex items-center justify-center gap-2">
                                     <ImageIcon className="w-4 h-4 text-purple-400" />
-                                    <span>{t('welcome.quickLinks.imageAnalysis')}</span>
+                                    <span>{language === 'tr' ? 'Görsel Zeka' : 'Visual Intelligence'}</span>
                                 </li>
                                 <li className="flex items-center justify-center gap-2">
                                     <TagIcon className="w-4 h-4 text-purple-400" />
-                                    <span>{t('welcome.quickLinks.tagging')}</span>
+                                    <span>{language === 'tr' ? 'Akıllı Etiketleme' : 'Smart Tagging'}</span>
                                 </li>
                                 <li className="flex items-center justify-center gap-2">
                                     <LockIcon className="w-4 h-4 text-purple-400" />
-                                    <span>{t('landingPage.newFeatures.secureTitle')}</span>
+                                    <span>{language === 'tr' ? 'Şifreli Notlar' : 'Encrypted Notes'}</span>
                                 </li>
                             </ul>
                         </div>
 
-                        {/* İletişim */}
+                        {/* Contact */}
                         <div className="text-center md:text-right">
                             <h4 className="text-lg font-semibold text-white mb-4">
-                                {t('welcome.quickLinks.contact')}
+                                {language === 'tr' ? 'İletişim' : 'Contact'}
                             </h4>
                             <div className="space-y-3">
                                 <div className="flex items-center justify-center md:justify-end gap-2">
