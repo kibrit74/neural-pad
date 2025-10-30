@@ -26,13 +26,32 @@ interface FormattingToolbarProps {
 const FONT_FAMILY_LIST = [
     { name: 'Default', value: '' },
     { name: 'Roboto', value: 'Roboto' },
+    { name: 'Open Sans', value: 'Open Sans' },
+    { name: 'Lato', value: 'Lato' },
+    { name: 'Montserrat', value: 'Montserrat' },
+    { name: 'Nunito', value: 'Nunito' },
     { name: 'Merriweather', value: 'Merriweather' },
+    { name: 'Lora', value: 'Lora' },
+    { name: 'Playfair Display', value: 'Playfair Display' },
+    { name: 'Raleway', value: 'Raleway' },
+    { name: 'Ubuntu', value: 'Ubuntu' },
 ];
 
 const FONT_SIZE_LIST = [
     { name: 'Default', value: '' },
-    { name: '14px', value: '14px' },
-    { name: '16px', value: '16px' },
+    { name: '10pt', value: '10pt' },
+    { name: '12pt', value: '12pt' },
+    { name: '14pt', value: '14pt' },
+    { name: '16pt', value: '16pt' },
+    { name: '18pt', value: '18pt' },
+    { name: '20pt', value: '20pt' },
+    { name: '24pt', value: '24pt' },
+    { name: '28pt', value: '28pt' },
+    { name: '32pt', value: '32pt' },
+    { name: '36pt', value: '36pt' },
+    { name: '40pt', value: '40pt' },
+    { name: '48pt', value: '48pt' },
+    { name: '50pt', value: '50pt' },
 ];
 
 const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUpload }) => {
@@ -106,7 +125,8 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
         if (value) {
             editor.chain().focus().setMark('textStyle', { fontSize: value }).run();
         } else {
-            editor.chain().focus().unsetMark('textStyle').run();
+            // Only reset fontSize to default, preserve other textStyle attributes
+            editor.chain().focus().setMark('textStyle', { fontSize: null }).run();
         }
     };
 
