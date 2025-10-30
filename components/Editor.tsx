@@ -88,7 +88,7 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
             // Only update if content is significantly different (not just formatting)
             const normalizeContent = (html: string) => html.replace(/\s+/g, ' ').trim();
             if (normalizeContent(content) !== normalizeContent(currentContent)) {
-                editor.commands.setContent(content, false);
+                editor.commands.setContent(content, { emitUpdate: false });
             }
         }
     }, [editor, content]);
