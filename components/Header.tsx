@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useTranslations } from '../hooks/useTranslations';
-import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SearchIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon, DownloadIcon } from './icons/Icons';
+import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SearchIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon, DownloadIcon, HomeIcon } from './icons/Icons';
 import type { Note } from '../types';
 
 interface HeaderProps {
@@ -14,6 +14,7 @@ interface HeaderProps {
     onToggleLock: () => void;
     onOpenHistory?: () => void;
     onDownload?: () => void;
+    onOpenLandingPage?: () => void;
     isLocked: boolean;
     activeNote: Note | null;
     searchQuery: string;
@@ -21,9 +22,12 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, isLocked, activeNote, searchQuery, onSearchChange 
+    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, onOpenLandingPage, isLocked, activeNote, searchQuery, onSearchChange 
 }) => {
     const { t } = useTranslations();
+    
+    // Check if running in Electron
+    const isElectron = typeof window !== 'undefined' && window.electron;
 
     const formatDate = (date: Date) => {
         return new Intl.DateTimeFormat(undefined, {
@@ -83,6 +87,11 @@ const Header: React.FC<HeaderProps> = ({
 
             {/* Right section */}
             <div className="flex items-center gap-2 flex-shrink-0">
+                {!isElectron && onOpenLandingPage && (
+                    <IconButton onClick={onOpenLandingPage} title={t('header.backToLanding')}>
+                        <HomeIcon />
+                    </IconButton>
+                )}
                 <IconButton onClick={onSave} title={t('header.save')}>
                     <SaveIcon />
                 </IconButton>

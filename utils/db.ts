@@ -7,6 +7,17 @@ const STORE_NAME = 'notes';
 
 let db: IDBDatabase;
 
+// Request persistent storage to prevent browser from auto-deleting data
+if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().then((persistent) => {
+        if (persistent) {
+            console.log('✅ Storage will not be cleared automatically by the browser.');
+        } else {
+            console.warn('⚠️ Storage may be cleared by the browser under storage pressure.');
+        }
+    });
+}
+
 const openDB = (): Promise<IDBDatabase> => {
     return new Promise((resolve, reject) => {
         if (db) {
@@ -27,6 +38,10 @@ const openDB = (): Promise<IDBDatabase> => {
 
         request.onupgradeneeded = (event) => {
             const dbInstance = (event.target as IDBOpenDBRequest).result;
+            const oldVersion = (event as any).oldVersion;
+            
+            console.log(`Database upgrade: v${oldVersion} -> v${DB_VERSION}`);
+            
             let store;
             if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
                 store = dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });

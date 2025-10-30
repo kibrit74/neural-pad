@@ -1,7 +1,9 @@
 {
   "name": "neural-pad",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "AI-powered note-taking application",
+  "author": "Your Name",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -11,8 +13,9 @@
     "build:electron": "vite build",
     "start:electron": "electron .",
     "icon:gen": "node scripts/generate-icons.mjs",
+    "prebuild:clean": "cross-env NODE_ENV=production node scripts/prebuild-clean.mjs",
     "preview": "vite preview",
-    "dist:win": "npm run build && npm run icon:gen && electron-builder -w"
+    "dist:win": "npm run prebuild:clean && npm run build && npm run icon:gen && electron-builder -w"
   },
   "dependencies": {
     "@google/genai": "^1.26.0",
@@ -45,6 +48,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.0.1",
+    "cross-env": "^10.1.0",
     "electron": "^33.2.0",
     "electron-builder": "^24.13.3",
     "icon-gen": "^5.0.0",
@@ -68,7 +72,12 @@
     ],
     "win": {
       "icon": "build/icons/app.ico",
-      "target": "dir"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
     },
     "mac": {
       "icon": "build/icons/app.icns"

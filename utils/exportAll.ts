@@ -54,6 +54,9 @@ export async function exportBackup() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  
+  // Update last backup date to reset the reminder
+  localStorage.setItem('lastBackupDate', new Date().toISOString());
 }
 
 export async function importBackup(file: File): Promise<{ success: boolean; notesCount: number; error?: string }> {

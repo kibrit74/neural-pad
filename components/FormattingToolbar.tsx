@@ -25,16 +25,30 @@ interface FormattingToolbarProps {
 
 const FONT_FAMILY_LIST = [
     { name: 'Default', value: '' },
+    { name: 'Arial', value: 'Arial' },
+    { name: 'Helvetica', value: 'Helvetica' },
+    { name: 'Times New Roman', value: 'Times New Roman' },
+    { name: 'Georgia', value: 'Georgia' },
+    { name: 'Verdana', value: 'Verdana' },
+    { name: 'Calibri', value: 'Calibri' },
+    { name: 'Trebuchet MS', value: 'Trebuchet MS' },
+    { name: 'Tahoma', value: 'Tahoma' },
     { name: 'Roboto', value: 'Roboto' },
     { name: 'Open Sans', value: 'Open Sans' },
     { name: 'Lato', value: 'Lato' },
     { name: 'Montserrat', value: 'Montserrat' },
     { name: 'Nunito', value: 'Nunito' },
+    { name: 'Poppins', value: 'Poppins' },
+    { name: 'Inter', value: 'Inter' },
+    { name: 'Source Sans Pro', value: 'Source Sans Pro' },
     { name: 'Merriweather', value: 'Merriweather' },
     { name: 'Lora', value: 'Lora' },
     { name: 'Playfair Display', value: 'Playfair Display' },
     { name: 'Raleway', value: 'Raleway' },
     { name: 'Ubuntu', value: 'Ubuntu' },
+    { name: 'Fira Sans', value: 'Fira Sans' },
+    { name: 'PT Sans', value: 'PT Sans' },
+    { name: 'Crimson Text', value: 'Crimson Text' },
 ];
 
 const FONT_SIZE_LIST = [

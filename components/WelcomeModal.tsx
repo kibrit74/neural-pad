@@ -43,15 +43,27 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
         </div>
     );
 
-    const DownloadButton: React.FC<{ icon: React.ReactElement; osName: string }> = ({ icon, osName }) => (
-        <button className="download-btn flex items-center justify-center gap-3 w-full px-6 py-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-300/30 rounded-lg font-semibold text-text-primary focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-background transition-all duration-300">
-            {icon}
-            <span>{t('landingPage.downloadFor')} {osName}</span>
-        </button>
-    );
+    const DownloadButton: React.FC<{ icon: React.ReactElement; osName: string; downloadUrl?: string }> = ({ icon, osName, downloadUrl }) => {
+        const handleDownload = () => {
+            if (downloadUrl) {
+                window.open(downloadUrl, '_blank');
+            }
+        };
+
+        return (
+            <button 
+                onClick={handleDownload}
+                disabled={!downloadUrl}
+                className={`download-btn flex items-center justify-center gap-3 w-full px-6 py-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-300/30 rounded-lg font-semibold text-text-primary focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-background transition-all duration-300 ${!downloadUrl ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+                {icon}
+                <span>{t('landingPage.downloadFor')} {osName}</span>
+            </button>
+        );
+    };
 
     return (
-        <div className="fixed inset-0 bg-background z-[100] overflow-y-auto animate-modal-enter">
+        <div className="fixed inset-0 bg-background z-[100] overflow-y-auto animate-modal-enter" data-theme="default">
             <div className="fixed top-6 right-6 z-10 flex gap-2">
                 <button
                     onClick={() => setLanguage('en')}
@@ -245,7 +257,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                             <DownloadButton icon={<AppleIcon />} osName="macOS" />
                         </div>
                         <div className="animate-fade-in-up" style={{animationDelay: '0.2s'}}>
-                            <DownloadButton icon={<WindowsIcon />} osName="Windows" />
+                            <DownloadButton 
+                                icon={<WindowsIcon />} 
+                                osName="Windows" 
+                                downloadUrl="https://github.com/kibrit74/neural-pad/releases/download/v1.0.0/Neural.Pad.Setup.1.0.0.exe"
+                            />
                         </div>
                         <div className="animate-fade-in-up" style={{animationDelay: '0.3s'}}>
                             <DownloadButton icon={<LinuxIcon />} osName="Linux" />

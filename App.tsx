@@ -11,6 +11,7 @@ import SettingsModal from './components/SettingsModal';
 import Notification from './components/Notification';
 import ResizableHandle from './components/ResizableHandle';
 import WelcomeModal from './components/WelcomeModal';
+import SetupWizard from './components/SetupWizard';
 import HelpModal from './components/HelpModal';
 import MarkdownModal from './components/MarkdownModal';
 import HistoryModal from './components/HistoryModal';
@@ -55,6 +56,7 @@ const App: React.FC = () => {
     const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
     const [isHelpModalOpen, setHelpModalOpen] = useState(false);
     const [showWelcome, setShowWelcome] = useState<boolean | null>(null);
+    const [showSetupWizard, setShowSetupWizard] = useState<boolean | null>(null);
     const [contextMenu, setContextMenu] = useState<{ 
         anchorEl: HTMLElement | null;
         type?: 'text' | 'image';
@@ -123,6 +125,40 @@ const App: React.FC = () => {
             return prev;
         });
     }, [settings, t]);
+
+    // Backup reminder system
+    useEffect(() => {
+        const BACKUP_REMINDER_ID = -2;
+        const isElectron = (window as any)?.electron?.isElectron === true;
+        
+        // Only show backup reminder for web version
+        if (!isElectron) {
+            const lastBackup = localStorage.getItem('lastBackupDate');
+            const daysSince = lastBackup ? 
+                Math.floor((Date.now() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24)) : 999;
+            
+            setNotifications(prev => {
+                const hasReminder = prev.some(n => n.id === BACKUP_REMINDER_ID);
+                
+                if (daysSince > 7 && notes.length > 0) {
+                    if (!hasReminder) {
+                        return [...prev, {
+                            id: BACKUP_REMINDER_ID,
+                            message: t('notifications.backupReminder'),
+                            type: 'warning',
+                            persistent: true,
+                            onClick: () => setSettingsModalOpen(true)
+                        }];
+                    }
+                } else {
+                    if (hasReminder) {
+                        return prev.filter(n => n.id !== BACKUP_REMINDER_ID);
+                    }
+                }
+                return prev;
+            });
+        }
+    }, [notes.length, t]);
 
 
     // Note Management
@@ -260,10 +296,19 @@ const App: React.FC = () => {
                 platform: (window as any)?.electron?.platform
             });
             
-            if (isElectron) {
+            // Check if this is the first time running the app
+            const hasCompletedSetup = localStorage.getItem('hasCompletedSetup');
+            
+            if (!hasCompletedSetup) {
+                // First time setup - show setup wizard
+                console.log('First time setup - showing setup wizard');
+                setShowSetupWizard(true);
+                setShowWelcome(false);
+            } else if (isElectron) {
                 // Electron'da welcome ekranını asla gösterme
                 console.log('Running in Electron - skipping welcome screen');
                 setShowWelcome(false);
+                setShowSetupWizard(false);
             } else {
                 // Web versiyonunda localStorage kontrolü yap
                 const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeScreen');
@@ -273,6 +318,7 @@ const App: React.FC = () => {
                 } else {
                     setShowWelcome(false);
                 }
+                setShowSetupWizard(false);
             }
 
             const saved = localStorage.getItem('gemini-writer-settings');
@@ -298,6 +344,34 @@ const App: React.FC = () => {
     const handleEnterApp = () => {
         setShowWelcome(false);
         localStorage.setItem('hasSeenWelcomeScreen', 'true');
+    };
+
+    const handleSetupComplete = (setupData: {
+        theme: 'light' | 'dark';
+        language: 'en' | 'tr';
+        apiProvider: 'openai' | 'claude' | 'gemini';
+    }) => {
+        // Apply the setup configuration
+        const newSettings = {
+            ...settings,
+            apiProvider: setupData.apiProvider,
+        };
+        
+        setSettings(newSettings);
+        localStorage.setItem('gemini-writer-settings', JSON.stringify(newSettings));
+        
+        // Save theme and language preferences
+        localStorage.setItem('theme', setupData.theme);
+        localStorage.setItem('language', setupData.language);
+        
+        // Mark setup as completed
+        localStorage.setItem('hasCompletedSetup', 'true');
+        
+        // Close setup wizard
+        setShowSetupWizard(false);
+        
+        // Show success notification
+        addNotification(t('notifications.setupComplete'), 'success');
     };
 
     const handleTitleChange = (newTitle: string) => {
@@ -531,6 +605,10 @@ const App: React.FC = () => {
                         const safeTitle = (activeNote.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
                         import('./utils/fileUtils').then(m => m.downloadRtf(`${safeTitle}.rtf`, activeNote.content || ''));
                     }}
+                    onOpenLandingPage={() => {
+                        localStorage.removeItem('hasSeenWelcome');
+                        setShowWelcome(true);
+                    }}
                     isLocked={!!activeNote?.isLocked}
                     activeNote={activeNote}
                     searchQuery={searchQuery}
@@ -753,6 +831,12 @@ const App: React.FC = () => {
                     setHistoryModalOpen(false);
                 }}
             />
+
+            {showSetupWizard && (
+                <SetupWizard
+                    onComplete={handleSetupComplete}
+                />
+            )}
             
             <div className="absolute bottom-4 right-4 z-50 space-y-2 w-full max-w-sm" role="region" aria-live="polite" aria-relevant="additions" aria-atomic="false">
                 {notifications.map(n => (
