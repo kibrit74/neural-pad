@@ -625,22 +625,37 @@ const App: React.FC = () => {
                         className="w-full text-2xl font-bold bg-transparent focus:outline-none text-text-primary placeholder:text-text-secondary"
                         aria-label="Note Title"
                     />
-                     {activeNote?.tags && activeNote.tags.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {activeNote.tags.map(tag => (
-                                <span key={tag} className="flex items-center bg-border text-text-secondary text-xs font-semibold px-2 py-1 rounded-full">
-                                    {tag}
-                                    <button 
-                                        onClick={() => handleRemoveTag(tag)} 
-                                        className="ml-1.5 -mr-1 p-0.5 rounded-full hover:bg-background"
-                                        aria-label={`Remove tag ${tag}`}
-                                    >
-                                        <CloseIcon width="12" height="12" />
-                                    </button>
-                                </span>
-                            ))}
-                        </div>
-                    )}
+                    <div className="mt-3 flex flex-wrap gap-2 items-center">
+                        {activeNote?.tags && activeNote.tags.map(tag => (
+                            <span key={tag} className="flex items-center bg-border text-text-secondary text-xs font-semibold px-2 py-1 rounded-full">
+                                {tag}
+                                <button 
+                                    onClick={() => handleRemoveTag(tag)} 
+                                    className="ml-1.5 -mr-1 p-0.5 rounded-full hover:bg-background"
+                                    aria-label={`Remove tag ${tag}`}
+                                >
+                                    <CloseIcon width="12" height="12" />
+                                </button>
+                            </span>
+                        ))}
+                        <input
+                            type="text"
+                            placeholder={t('addTag') || 'Add tag...'}
+                            className="text-xs bg-transparent border border-border rounded-full px-3 py-1 focus:outline-none focus:border-primary text-text-primary placeholder:text-text-secondary min-w-[100px]"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const input = e.currentTarget;
+                                    const newTag = input.value.trim();
+                                    if (newTag && activeNote && !activeNote.tags?.includes(newTag)) {
+                                        handleTagsChange([...(activeNote.tags || []), newTag]);
+                                        input.value = '';
+                                    }
+                                }
+                            }}
+                            aria-label="Add new tag"
+                        />
+                    </div>
                 </div>
                 <div className="flex-grow overflow-hidden relative" onContextMenu={handleContextMenu}>
                     <div className="absolute right-4 top-4 z-10 flex gap-2">

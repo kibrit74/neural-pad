@@ -14,6 +14,7 @@ export const translations = {
             backToLanding: "Back to Landing Page",
         },
         defaultNoteTitle: "Untitled Note",
+        addTag: "Add tag...",
         editor: {
             placeholder: "Start writing your next great idea...",
         },
@@ -357,6 +358,7 @@ export const translations = {
             backToLanding: "Ana Sayfaya Dön",
         },
         defaultNoteTitle: "Başlıksız Not",
+        addTag: "Etiket ekle...",
         editor: {
             placeholder: "Bir sonraki harika fikrinizi yazmaya başlayın...",
         },
