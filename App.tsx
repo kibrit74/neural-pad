@@ -296,29 +296,30 @@ const App: React.FC = () => {
                 platform: (window as any)?.electron?.platform
             });
             
-            // Check if this is the first time running the app
-            const hasCompletedSetup = localStorage.getItem('hasCompletedSetup');
-            
-            if (!hasCompletedSetup) {
-                // First time setup - show setup wizard
-                console.log('First time setup - showing setup wizard');
-                setShowSetupWizard(true);
-                setShowWelcome(false);
-            } else if (isElectron) {
-                // Electron'da welcome ekranını asla gösterme
-                console.log('Running in Electron - skipping welcome screen');
-                setShowWelcome(false);
-                setShowSetupWizard(false);
-            } else {
-                // Web versiyonunda localStorage kontrolü yap
-                const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeScreen');
-                console.log('Running in Web - hasSeenWelcome:', hasSeenWelcome);
-                if (!hasSeenWelcome) {
-                    setShowWelcome(true);
+            if (isElectron) {
+                // Electron: Show setup wizard on first run only
+                const hasCompletedSetup = localStorage.getItem('hasCompletedSetup');
+                console.log('Running in Electron - hasCompletedSetup:', hasCompletedSetup);
+                
+                if (!hasCompletedSetup) {
+                    setShowSetupWizard(true);
+                    setShowWelcome(false);
                 } else {
+                    setShowSetupWizard(false);
                     setShowWelcome(false);
                 }
-                setShowSetupWizard(false);
+            } else {
+                // Web: Show landing page (WelcomeModal) on first visit
+                const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeScreen');
+                console.log('Running in Web - hasSeenWelcome:', hasSeenWelcome);
+                
+                if (!hasSeenWelcome) {
+                    setShowWelcome(true);
+                    setShowSetupWizard(false);
+                } else {
+                    setShowWelcome(false);
+                    setShowSetupWizard(false);
+                }
             }
 
             const saved = localStorage.getItem('gemini-writer-settings');
