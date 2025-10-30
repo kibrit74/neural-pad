@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useTranslations } from '../hooks/useTranslations';
-import { toggleTableClass, sortTable } from '../utils/tableUtils';
+import { toggleTableClass, sortTable, setTableBorderClass } from '../utils/tableUtils';
 import { generateContent, generateTagsForNote } from '../services/geminiService';
 import type { Settings, Note } from '../types';
 import { WandIcon } from './icons/Icons';
@@ -234,7 +234,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
         { id: 'fix', label: t('contextMenu.fix'), prompt: t('aiPrompts.fixSpelling') },
         { id: 'summarize', label: t('contextMenu.summarize'), prompt: t('aiPrompts.summarize') },
         { id: 'generateTags', label: t('contextMenu.generateTags'), prompt: t('aiPrompts.generateTags') },
-        { id: 'makeTable', label: t('contextMenu.makeTable'), prompt: 'Convert the selected text into a clear table. Output CSV only without commentary.' },
+        { id: 'makeTable', label: t('contextMenu.makeTable'), prompt: t('aiPrompts.makeTable') },
     ];
     
     const imageMenuItems = [
@@ -278,36 +278,65 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
         return (cell as any).cellIndex || 0;
     };
 
+    const getCurrentCellElement = (): HTMLTableCellElement | null => {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return null;
+        let node = sel.anchorNode as Node | null;
+        while (node && (node as HTMLElement).nodeType === 3) node = (node as any).parentNode;
+        while (node && (node as HTMLElement).tagName !== 'TD' && (node as HTMLElement).tagName !== 'TH') node = (node as any).parentNode;
+        return (node as HTMLTableCellElement) || null;
+    };
+
+    const ensureSelectionInTable = () => {
+        try {
+            const cell = getCurrentCellElement();
+            if (cell && (editor as any)?.view?.posAtDOM) {
+                const pos = (editor as any).view.posAtDOM(cell, 0);
+                (editor as any).chain().focus().setTextSelection(pos).run();
+            } else {
+                (editor as any).chain().focus().run();
+            }
+        } catch {
+            (editor as any).chain().focus().run();
+        }
+    };
+
     const sortTableByColumn = (ascending: boolean) => {
+        ensureSelectionInTable();
         const colIndex = getCurrentCellIndex(getSelectedTable());
         sortTable(editor, colIndex, ascending);
         onClose();
     };
 
     const addTotalsRow = () => {
-        if (!editor.isActive('table')) return;
+        ensureSelectionInTable();
         (editor.chain().focus() as any).addRowAfter().run();
         onClose();
     };
 
     const toggleZebra = () => {
+        ensureSelectionInTable();
         toggleTableClass(editor, 'np-zebra');
         onClose();
     };
     const toggleSticky = () => {
+        ensureSelectionInTable();
         toggleTableClass(editor, 'np-sticky-header');
         onClose();
     };
     const bordersNone = () => {
-        toggleTableClass(editor, 'np-borders-none');
+        ensureSelectionInTable();
+        setTableBorderClass(editor, 'np-borders-none');
         onClose();
     };
     const bordersAll = () => {
-        toggleTableClass(editor, 'np-borders-all');
+        ensureSelectionInTable();
+        setTableBorderClass(editor, 'np-borders-all');
         onClose();
     };
     const bordersOutside = () => {
-        toggleTableClass(editor, 'np-borders-outside');
+        ensureSelectionInTable();
+        setTableBorderClass(editor, 'np-borders-outside');
         onClose();
     };
 

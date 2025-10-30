@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal';
+import { useTranslations } from '../hooks/useTranslations';
 import TurndownService from 'turndown';
 import { marked } from 'marked';
 
@@ -11,6 +12,7 @@ interface MarkdownModalProps {
 }
 
 const MarkdownModal: React.FC<MarkdownModalProps> = ({ isOpen, html, onClose, onApply }) => {
+  const { t } = useTranslations();
   const td = useMemo(() => new TurndownService(), []);
   const [mode, setMode] = useState<'view'|'edit'>('view');
   const [markdown, setMarkdown] = useState('');
@@ -24,7 +26,7 @@ const MarkdownModal: React.FC<MarkdownModalProps> = ({ isOpen, html, onClose, on
 
   const footer = (
     <div className="flex gap-2">
-      <button onClick={onClose} className="px-4 py-2 rounded-md font-semibold bg-border hover:bg-border-strong text-text-primary">Close</button>
+      <button onClick={onClose} className="px-4 py-2 rounded-md font-semibold bg-border hover:bg-border-strong text-text-primary">{t('common.close')}</button>
       <button
         onClick={() => {
           const newHtml = marked(markdown) as string;
@@ -32,15 +34,15 @@ const MarkdownModal: React.FC<MarkdownModalProps> = ({ isOpen, html, onClose, on
           onClose();
         }}
         className="px-4 py-2 rounded-md font-semibold bg-primary text-primary-text hover:bg-primary-hover"
-      >Apply</button>
+      >{t('common.apply')}</button>
     </div>
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Markdown" footer={footer}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('common.markdown')} footer={footer}>
       <div className="p-4 flex gap-4 h-[70vh]">
         <div className="w-1/2 flex flex-col">
-          <div className="text-sm text-text-secondary mb-2">Markdown</div>
+          <div className="text-sm text-text-secondary mb-2">{t('common.markdown')}</div>
           <textarea
             className="flex-1 w-full p-2 bg-background border border-border rounded resize-none"
             value={markdown}
@@ -48,7 +50,7 @@ const MarkdownModal: React.FC<MarkdownModalProps> = ({ isOpen, html, onClose, on
           />
         </div>
         <div className="w-1/2 overflow-auto">
-          <div className="text-sm text-text-secondary mb-2">Preview</div>
+          <div className="text-sm text-text-secondary mb-2">{t('common.preview')}</div>
           <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: marked(markdown) as string }} />
         </div>
       </div>

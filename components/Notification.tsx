@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CloseIcon } from './icons/Icons';
+import { useTranslations } from '../hooks/useTranslations';
 
 interface NotificationProps {
     message: string;
@@ -11,6 +12,7 @@ interface NotificationProps {
 }
 
 const Notification: React.FC<NotificationProps> = ({ message, type, onDismiss, persistent, onClick }) => {
+    const { t } = useTranslations();
     const [visible, setVisible] = useState(true);
 
     const colorClasses = {
@@ -33,6 +35,9 @@ const Notification: React.FC<NotificationProps> = ({ message, type, onDismiss, p
         setTimeout(onDismiss, 300);
     };
 
+    const ariaRole = type === 'error' || type === 'warning' ? 'alert' : 'status';
+    const ariaLive = type === 'error' || type === 'warning' ? 'assertive' : 'polite';
+
     return (
         <div className={`
             p-4 rounded-md shadow-lg flex items-center justify-between gap-4
@@ -40,6 +45,9 @@ const Notification: React.FC<NotificationProps> = ({ message, type, onDismiss, p
             ${colorClasses}
             ${onClick ? 'cursor-pointer' : ''}
         `}
+        role={ariaRole}
+        aria-live={ariaLive}
+        aria-atomic="true"
         onClick={onClick}
         >
             <span>{message}</span>
@@ -49,6 +57,7 @@ const Notification: React.FC<NotificationProps> = ({ message, type, onDismiss, p
                     handleDismiss();
                 }} 
                 className="p-1 rounded-full hover:bg-white/20"
+                aria-label={t('common.close')}
             >
                 <CloseIcon />
             </button>

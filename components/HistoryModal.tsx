@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal';
 import * as db from '../utils/db';
 import { diffWords } from 'diff';
+import { useTranslations } from '../hooks/useTranslations';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -12,6 +14,8 @@ interface HistoryModalProps {
 }
 
 const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, noteId, currentHtml, onClose, onRestore }) => {
+  const { t } = useTranslations();
+  const { language } = useLanguage();
   const [items, setItems] = useState<{ id: number; timestamp: string; content: string; title: string }[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
@@ -29,12 +33,12 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, noteId, currentHtml
 
   const footer = (
     <div className="flex gap-2">
-      <button onClick={onClose} className="px-4 py-2 rounded-md font-semibold bg-border hover:bg-border-strong text-text-primary">Kapat</button>
+      <button onClick={onClose} className="px-4 py-2 rounded-md font-semibold bg-border hover:bg-border-strong text-text-primary">{t('common.close')}</button>
       <button
         onClick={() => { if (selected) onRestore(selected.content); }}
         className="px-4 py-2 rounded-md font-semibold bg-primary text-primary-text hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={!selected}
-      >Geri Yükle</button>
+      >{t('common.restore')}</button>
     </div>
   );
 
@@ -52,22 +56,22 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, noteId, currentHtml
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Geçmiş" footer={footer}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('history.title')} footer={footer}>
       <div className="p-4 flex gap-4 h-[70vh]">
         <div className="w-1/3 overflow-auto border-r border-border pr-2">
           {items.length === 0 ? (
-            <div className="text-text-secondary text-sm p-4">Henüz geçmiş kaydı yok</div>
+            <div className="text-text-secondary text-sm p-4">{t('history.empty')}</div>
           ) : (
             items.map(i => (
               <button key={i.id} onClick={() => setSelectedId(i.id)} className={`block w-full text-left p-2 rounded mb-1 ${i.id===selectedId?'bg-primary text-primary-text':'hover:bg-border'}`}>
-                <div className="text-xs text-text-secondary">{new Date(i.timestamp).toLocaleString('tr-TR')}</div>
-                <div className="truncate">{i.title || '(Başlıksız)'}</div>
+                <div className="text-xs text-text-secondary">{new Date(i.timestamp).toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')}</div>
+                <div className="truncate">{i.title || t('defaultNoteTitle')}</div>
               </button>
             ))
           )}
         </div>
         <div className="w-2/3 overflow-auto">
-          {selected ? renderDiff() : <div className="text-text-secondary">Bir versiyon seçin</div>}
+          {selected ? renderDiff() : <div className="text-text-secondary">{t('history.selectVersion')}</div>}
         </div>
       </div>
     </Modal>

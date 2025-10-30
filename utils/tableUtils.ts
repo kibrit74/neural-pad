@@ -1,75 +1,96 @@
 import { Editor } from '@tiptap/react';
 
-// Placeholder for table utility functions
+// Robustly locate the table node and its position in the document
+function findTable(editor: Editor): { tableNode: any; tablePos: number } | null {
+  const { selection } = editor.state;
+  const $from = selection.$from;
+  for (let d = $from.depth; d >= 0; d--) {
+    const node = $from.node(d);
+    if (node && node.type && node.type.name === 'table') {
+      // Position before the table node
+      const tablePos = $from.before(d);
+      return { tableNode: node, tablePos };
+    }
+  }
+  return null;
+}
 
 export const sortTable = (editor: Editor, colIndex: number, ascending: boolean) => {
-  if (!editor.isActive('table')) return;
-
   const { state, view } = editor;
-  const { selection } = state;
-  const tableNode = selection.$from.node(-2);
-  const tableStart = selection.$from.start(-2) - 1;
+  const found = findTable(editor);
+  if (!found) return;
+  const { tableNode, tablePos } = found;
 
-  if (!tableNode || tableNode.type.name !== 'table') return;
-
-  const rows = [];
+  // Extract rows preserving full content and attributes
+  const rowsPM: any[] = [];
   for (let i = 0; i < tableNode.childCount; i++) {
-      const rowNode = tableNode.child(i);
-      const cells = [];
-      for (let j = 0; j < rowNode.childCount; j++) {
-          cells.push(rowNode.child(j).textContent);
-      }
-      rows.push(cells);
+    rowsPM.push(tableNode.child(i));
   }
 
-  const header = rows.shift();
+  const firstRow = rowsPM[0];
+  const hasHeader = !!firstRow && firstRow.childCount > 0 &&
+    Array.from({ length: firstRow.childCount }).some((_, idx) => firstRow.child(idx).type.name === 'tableHeader');
 
-  rows.sort((a, b) => {
-      const valA = a[colIndex] || '';
-      const valB = b[colIndex] || '';
-      return ascending ? valA.localeCompare(valB) : valB.localeCompare(valA);
-  });
+  const bodyRows = rowsPM.slice(hasHeader ? 1 : 0);
 
-  if (header) rows.unshift(header);
+  const getCellText = (rowNode: any, index: number): string => {
+    if (!rowNode || rowNode.childCount === 0) return '';
+    const cell = rowNode.child(index) || rowNode.child(0);
+    return (cell && cell.textContent) ? cell.textContent : '';
+  };
 
-  const newTable = state.schema.nodes.table.create(null, 
-      rows.map(row => 
-          state.schema.nodes.tableRow.create(null, 
-              row.map(content => 
-                  state.schema.nodes.tableCell.create(null, 
-                      content ? state.schema.text(content) : null
-                  )
-              )
-          )
-      )
-  );
+  const comparator = (a: any, b: any) => {
+    const A = getCellText(a, colIndex);
+    const B = getCellText(b, colIndex);
+    const numA = parseFloat(A.replace(/[^0-9.\-]/g, ''));
+    const numB = parseFloat(B.replace(/[^0-9.\-]/g, ''));
+    const isNumA = !isNaN(numA) && /^-?\d/.test(A);
+    const isNumB = !isNaN(numB) && /^-?\d/.test(B);
+    if (isNumA && isNumB) return ascending ? numA - numB : numB - numA;
+    return ascending ? A.localeCompare(B) : B.localeCompare(A);
+  };
 
-  const tr = state.tr.replaceWith(tableStart, tableStart + tableNode.nodeSize, newTable);
+  bodyRows.sort(comparator);
+
+  const newRows = hasHeader ? [firstRow, ...bodyRows] : bodyRows;
+  const newTable = tableNode.type.create(tableNode.attrs, newRows);
+
+  const tr = state.tr.replaceWith(tablePos, tablePos + tableNode.nodeSize, newTable);
   view.dispatch(tr);
 };
 
 export const toggleTableClass = (editor: Editor, className: string) => {
-  if (!editor.isActive('table')) return;
-
-  const { state, view } = editor;
-  const { selection } = state;
-  const tableNode = selection.$from.node(-2);
-  const tableStart = selection.$from.start(-2) - 1;
-
-  if (!tableNode || tableNode.type.name !== 'table') return;
+  const found = findTable(editor);
+  if (!found) return;
+  const { tableNode } = found;
 
   const currentAttrs = tableNode.attrs || {};
   const currentClasses = (currentAttrs.class || '').split(' ').filter(Boolean);
-  
-  let newClasses;
+
+  let newClasses: string[];
   if (currentClasses.includes(className)) {
     newClasses = currentClasses.filter(c => c !== className);
   } else {
     newClasses = [...currentClasses, className];
   }
 
-  const newAttrs = { ...currentAttrs, class: newClasses.join(' ') };
+  editor.commands.updateAttributes('table', { class: newClasses.join(' ') });
+};
 
-  const tr = state.tr.setNodeMarkup(tableStart, undefined, newAttrs);
-  view.dispatch(tr);
+// Ensure border classes are mutually exclusive (only one active at a time)
+export const setTableBorderClass = (
+  editor: Editor,
+  borderClass: 'np-borders-none' | 'np-borders-all' | 'np-borders-outside'
+) => {
+  const found = findTable(editor);
+  if (!found) return;
+  const { tableNode } = found;
+
+  const currentAttrs = tableNode.attrs || {};
+  const currentClasses = (currentAttrs.class || '').split(' ').filter(Boolean);
+  const borderClasses = ['np-borders-none', 'np-borders-all', 'np-borders-outside'];
+
+  const filtered = currentClasses.filter(c => !borderClasses.includes(c));
+  const newClasses = [...filtered, borderClass];
+  editor.commands.updateAttributes('table', { class: newClasses.join(' ') });
 };

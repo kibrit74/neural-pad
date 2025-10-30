@@ -39,6 +39,7 @@ const Header: React.FC<HeaderProps> = ({
         <button
             onClick={onClick}
             title={title}
+            aria-label={title}
             className={`p-2 rounded-full transition-colors ${
                 isActive ? 'bg-primary text-primary-text' : 'hover:bg-border'
             } ${className}`}
@@ -97,7 +98,7 @@ const Header: React.FC<HeaderProps> = ({
                     <HelpCircleIcon />
                 </IconButton>
                 {onOpenHistory && (
-                    <IconButton onClick={onOpenHistory} title="History">
+                    <IconButton onClick={onOpenHistory} title={t('history.title')}>
                         <HistoryIcon />
                     </IconButton>
                 )}

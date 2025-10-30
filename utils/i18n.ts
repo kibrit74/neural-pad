@@ -55,6 +55,7 @@ export const translations = {
             makeTable: "Convert to Table",
             shareSelection: "Share selection",
             shareImage: "Share image",
+            defaultSelectionTitle: "Neural Pad Selection",
             table: {
                 title: "Table",
                 sortAZ: "Sort A→Z (column)",
@@ -135,6 +136,17 @@ export const translations = {
             save: "Save",
             cancel: "Cancel",
             delete: "Delete",
+            close: "Close",
+            apply: "Apply",
+            preview: "Preview",
+            markdown: "Markdown",
+            loading: "Loading...",
+            restore: "Restore",
+        },
+        history: {
+            title: "History",
+            empty: "No history records yet",
+            selectVersion: "Select a version",
         },
         welcome: {
             title: "Welcome to Neural Pad",
@@ -148,6 +160,18 @@ export const translations = {
             feature4Title: "Smart Organization",
             feature4Description: "Automatically generate relevant tags for your notes to keep everything organized.",
             cta: "Get Started",
+            quickLinks: {
+                features: "Features",
+                items: {
+                    aiChat: "AI Chat",
+                    imageAnalysis: "Image Analysis",
+                    tagging: "Tagging",
+                },
+                support: "Support",
+                privacyPolicy: "Privacy Policy",
+                termsOfService: "Terms of Service",
+                contact: "Contact",
+            },
         },
         landingPage: {
             heroTitle: "Rethink Your Notes.",
@@ -236,6 +260,7 @@ export const translations = {
             generateTags: "Generate relevant tags for the following text",
             describeImage: "Describe this image in detail",
             suggestCaption: "Suggest a creative and engaging caption for this image",
+            makeTable: "Convert the selected text into a clear table. Output CSV only without commentary.",
         },
         openNote: {
             noNotes: "No notes yet. Create one!",
@@ -323,6 +348,7 @@ export const translations = {
             makeTable: "Tabloya dönüştür",
             shareSelection: "Seçimi paylaş",
             shareImage: "Resmi paylaş",
+            defaultSelectionTitle: "Neural Pad Seçimi",
             table: {
                 title: "Tablo",
                 sortAZ: "A→Z sırala (sütun)",
@@ -403,6 +429,17 @@ export const translations = {
             save: "Kaydet",
             cancel: "İptal",
             delete: "Sil",
+            close: "Kapat",
+            apply: "Uygula",
+            preview: "Önizleme",
+            markdown: "Markdown",
+            loading: "Yükleniyor...",
+            restore: "Geri Yükle",
+        },
+        history: {
+            title: "Geçmiş",
+            empty: "Henüz geçmiş kaydı yok",
+            selectVersion: "Bir versiyon seçin",
         },
         welcome: {
             title: "Neural Pad'e Hoş Geldiniz",
@@ -416,6 +453,18 @@ export const translations = {
             feature4Title: "Akıllı Organizasyon",
             feature4Description: "Her şeyi düzenli tutmak için notlarınız için otomatik olarak ilgili etiketler oluşturun.",
             cta: "Başlayın",
+            quickLinks: {
+                features: "Özellikler",
+                items: {
+                    aiChat: "AI Sohbet",
+                    imageAnalysis: "Görsel Analiz",
+                    tagging: "Etiketleme",
+                },
+                support: "Destek",
+                privacyPolicy: "Gizlilik Politikası",
+                termsOfService: "Hizmet Şartları",
+                contact: "İletişim",
+            },
         },
         landingPage: {
             heroTitle: "Akıllı Not Tutmanın Geleceği",
@@ -504,6 +553,7 @@ export const translations = {
             generateTags: "Aşağıdaki metin için ilgili etiketler oluşturun",
             describeImage: "Bu resmi ayrıntılı olarak açıklayın",
             suggestCaption: "Bu resim için yaratıcı ve ilgi çekici bir başlık önerin",
+            makeTable: "Seçilen metni net bir tabloya dönüştür. Yorum olmadan yalnızca CSV çıktı ver.",
         },
         openNote: {
             noNotes: "Henüz not yok. Bir tane oluşturun!",

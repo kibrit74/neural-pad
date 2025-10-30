@@ -276,24 +276,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                         {/* Hızlı Linkler */}
                         <div className="text-center">
                             <h4 className="text-lg font-semibold text-white mb-4">
-                                {language === 'tr' ? 'Özellikler' : 'Features'}
+                                {t('welcome.quickLinks.features')}
                             </h4>
                             <ul className="space-y-2 text-sm text-gray-300">
                                 <li className="flex items-center justify-center gap-2">
                                     <ChatIcon className="w-4 h-4 text-purple-400" />
-                                    <span>{language === 'tr' ? 'AI Sohbet' : 'AI Chat'}</span>
+                                    <span>{t('welcome.quickLinks.aiChat')}</span>
                                 </li>
                                 <li className="flex items-center justify-center gap-2">
                                     <ImageIcon className="w-4 h-4 text-purple-400" />
-                                    <span>{language === 'tr' ? 'Görsel Analiz' : 'Image Analysis'}</span>
+                                    <span>{t('welcome.quickLinks.imageAnalysis')}</span>
                                 </li>
                                 <li className="flex items-center justify-center gap-2">
                                     <TagIcon className="w-4 h-4 text-purple-400" />
-                                    <span>{language === 'tr' ? 'Etiketleme' : 'Tagging'}</span>
+                                    <span>{t('welcome.quickLinks.tagging')}</span>
                                 </li>
                                 <li className="flex items-center justify-center gap-2">
                                     <LockIcon className="w-4 h-4 text-purple-400" />
-                                    <span>{language === 'tr' ? 'Güvenli Notlar' : 'Secure Notes'}</span>
+                                    <span>{t('landingPage.newFeatures.secureTitle')}</span>
                                 </li>
                             </ul>
                         </div>
@@ -301,7 +301,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                         {/* İletişim */}
                         <div className="text-center md:text-right">
                             <h4 className="text-lg font-semibold text-white mb-4">
-                                {language === 'tr' ? 'İletişim' : 'Contact'}
+                                {t('welcome.quickLinks.contact')}
                             </h4>
                             <div className="space-y-3">
                                 <div className="flex items-center justify-center md:justify-end gap-2">
@@ -365,13 +365,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                             </p>
                             <div className="flex items-center gap-6 text-sm text-gray-400">
                                 <span className="hover:text-purple-400 cursor-pointer transition-colors">
-                                    {language === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}
+                                    {t('welcome.quickLinks.privacyPolicy')}
                                 </span>
                                 <span className="hover:text-purple-400 cursor-pointer transition-colors">
-                                    {language === 'tr' ? 'Kullanım Şartları' : 'Terms of Service'}
+                                    {t('welcome.quickLinks.termsOfService')}
                                 </span>
                                 <span className="hover:text-purple-400 cursor-pointer transition-colors">
-                                    {language === 'tr' ? 'Destek' : 'Support'}
+                                    {t('welcome.quickLinks.support')}
                                 </span>
                             </div>
                         </div>

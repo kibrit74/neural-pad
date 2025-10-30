@@ -476,7 +476,7 @@ const App: React.FC = () => {
             <div className="flex h-screen w-screen bg-background text-text-primary items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-text-secondary">Yükleniyor...</p>
+                        <p className="text-text-secondary">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -565,7 +565,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex-grow overflow-hidden relative" onContextMenu={handleContextMenu}>
                     <div className="absolute right-4 top-4 z-10 flex gap-2">
-                        <button onClick={() => setMarkdownModalOpen(true)} className="px-2 py-1 text-xs rounded bg-background border border-border text-text-primary hover:bg-border">MD</button>
+                        <button onClick={() => setMarkdownModalOpen(true)} className="px-2 py-1 text-xs rounded bg-background border border-border text-text-primary hover:bg-border">{t('common.markdown')}</button>
                     </div>
                     <Editor
                         content={activeNote?.content || ''}
@@ -754,7 +754,7 @@ const App: React.FC = () => {
                 }}
             />
             
-            <div className="absolute bottom-4 right-4 z-50 space-y-2 w-full max-w-sm">
+            <div className="absolute bottom-4 right-4 z-50 space-y-2 w-full max-w-sm" role="region" aria-live="polite" aria-relevant="additions" aria-atomic="false">
                 {notifications.map(n => (
                     <Notification key={n.id} {...n} onDismiss={() => removeNotification(n.id)} />
                 ))}

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CloseIcon } from './icons/Icons';
+import { useTranslations } from '../hooks/useTranslations';
 
 interface ModalProps {
     isOpen: boolean;
@@ -11,6 +12,7 @@ interface ModalProps {
 }
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, size = 'lg' }) => {
+    const { t } = useTranslations();
     const [isRendered, setIsRendered] = useState(isOpen);
     const modalContentRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +79,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
                     <button
                         onClick={onClose}
                         className="p-1 rounded-full hover:bg-border text-text-secondary hover:text-text-primary"
-                        aria-label="Close"
+                        aria-label={t('common.close')}
                     >
                         <CloseIcon />
                     </button>

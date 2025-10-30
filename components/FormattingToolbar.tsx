@@ -90,6 +90,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
         <button
             onClick={onClick}
             title={title}
+            aria-label={title}
             disabled={disabled}
             className={`p-2 rounded transition-colors ${isActive ? 'bg-primary text-primary-text' : 'hover:bg-border'} disabled:opacity-50 disabled:cursor-not-allowed`}
         >

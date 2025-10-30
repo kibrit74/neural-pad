@@ -249,7 +249,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                                         await exportAll('md');
                                     }}
                                     className="flex-1 px-3 py-2 rounded-md font-semibold bg-background border border-border-strong hover:bg-border text-text-primary transition-colors"
-                                >Markdown</button>
+                                >{t('common.markdown')}</button>
                             </div>
                         </div>
                     </div>

@@ -5,7 +5,8 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
-import { Table } from '@tiptap/extension-table';
+// Use custom table that supports dynamic class attributes
+import { CustomTable } from '../utils/tiptapCustomTable';
 import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
@@ -39,7 +40,7 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
             TextStyle,
             FontFamily,
             FontSize,
-            Table.configure({ resizable: true }),
+            CustomTable.configure({ resizable: true }),
             TableRow,
             TableHeader,
             TableCell,
