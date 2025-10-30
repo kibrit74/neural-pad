@@ -254,7 +254,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
                         <div className="animate-fade-in-up" style={{animationDelay: '0.1s'}}>
-                            <DownloadButton icon={<AppleIcon />} osName="macOS" />
+                            <DownloadButton 
+                                icon={<AppleIcon />} 
+                                osName="macOS" 
+                                downloadUrl="https://github.com/kibrit74/neural-pad/releases/download/v1.0.0/Neural.Pad-1.0.0.dmg"
+                            />
                         </div>
                         <div className="animate-fade-in-up" style={{animationDelay: '0.2s'}}>
                             <DownloadButton 
@@ -264,7 +268,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                             />
                         </div>
                         <div className="animate-fade-in-up" style={{animationDelay: '0.3s'}}>
-                            <DownloadButton icon={<LinuxIcon />} osName="Linux" />
+                            <DownloadButton 
+                                icon={<LinuxIcon />} 
+                                osName="Linux" 
+                                downloadUrl="https://github.com/kibrit74/neural-pad/releases/download/v1.0.0/Neural.Pad-1.0.0.AppImage"
+                            />
                         </div>
                     </div>
                 </section>
