@@ -79,6 +79,13 @@
         }
       ]
     },
+    "nsis": {
+      "oneClick": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Neural Pad",
+      "runAfterFinish": true
+    },
     "mac": {
       "icon": "build/icons/app.icns"
     },
