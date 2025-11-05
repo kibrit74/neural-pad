@@ -1,29 +1,39 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Settings, ChatMessage, WebSource } from '../types';
 import { useTranslations } from '../hooks/useTranslations';
+import { useLanguage } from '../contexts/LanguageContext';
 import * as apiService from '../services/geminiService';
 import type { EditorContext } from '../services/geminiService';
-import { SendIcon, BotIcon, UserIcon, CloseIcon, SparkleIcon, SearchIcon } from './icons/Icons';
+import { SendIcon, BotIcon, UserIcon, CloseIcon, SparkleIcon, SearchIcon, MicIcon } from './icons/Icons';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useVoiceRecognitionUnified } from '../hooks/useVoiceRecognitionUnified';
+import VoiceInputModal from './VoiceInputModal';
 
 interface ChatProps {
     settings: Settings;
     addNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
     onClose: () => void;
     getEditorContext?: () => EditorContext;
+    onInsertToEditor?: (content: string) => void;
 }
 
 type Session = { id: string; title: string; messages: ChatMessage[] };
 
-const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEditorContext }) => {
+const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEditorContext, onInsertToEditor }) => {
     const { t } = useTranslations();
+    const { language } = useLanguage();
     const [sessions, setSessions] = useState<Session[]>([{ id: String(Date.now()), title: 'Chat 1', messages: [] }]);
     const [activeSessionId, setActiveSessionId] = useState<string>(() => sessions[0].id);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [useWebSearch, setUseWebSearch] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Voice recognition state
+    const [showVoiceModal, setShowVoiceModal] = useState(false);
+    const [interimTranscript, setInterimTranscript] = useState('');
+    const [finalTranscript, setFinalTranscript] = useState('');
 
     // Clear current session when provider changes to start a fresh chat
     useEffect(() => {
@@ -51,7 +61,7 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
 
         try {
             const ctx = getEditorContext ? getEditorContext() : undefined;
-            const stream = apiService.getChatStream(currentHistory, settings, useWebSearch, ctx);
+            const stream = apiService.getChatStream(currentHistory, settings, useWebSearch, ctx, language);
             
             let modelResponse: ChatMessage = { role: 'model', content: '', sources: [] };
             setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, modelResponse] } : s));
@@ -95,7 +105,123 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
         } finally {
             setIsLoading(false);
         }
-    }, [input, isLoading, addNotification, t, useWebSearch, settings, activeSessionId, sessions]);
+    }, [input, isLoading, addNotification, t, useWebSearch, settings, activeSessionId, sessions, language, getEditorContext, activeSession.messages]);
+
+    // Send helper for voice input (bypasses local input state)
+    const handleSendVoice = useCallback(async (text: string) => {
+        const trimmed = text.trim();
+        if (!trimmed || isLoading) return;
+
+        const userInput: ChatMessage = { role: 'user', content: trimmed };
+        const currentHistory = [...activeSession.messages, userInput];
+
+        setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, messages: currentHistory } : s));
+        setIsLoading(true);
+
+        try {
+            const ctx = getEditorContext ? getEditorContext() : undefined;
+            const stream = apiService.getChatStream(currentHistory, settings, useWebSearch, ctx, language);
+
+            let modelResponse: ChatMessage = { role: 'model', content: '', sources: [] };
+            setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, modelResponse] } : s));
+
+            for await (const chunk of stream) {
+                setSessions(prev => prev.map(s => {
+                    if (s.id !== activeSessionId) return s;
+                    const lastMessage = s.messages[s.messages.length - 1];
+                    if (lastMessage?.role === 'model') {
+                        const updatedContent = lastMessage.content + (chunk.text || '');
+                        const newSources = chunk.sources || [];
+                        const existingSources = lastMessage.sources || [];
+                        const combinedSources = [...existingSources, ...newSources];
+                        const uniqueSources = Array.from(new Map(combinedSources.map(item => [item.uri, item])).values());
+                        const updatedMessage = { ...lastMessage, content: updatedContent, sources: uniqueSources };
+                        return { ...s, messages: [...s.messages.slice(0, -1), updatedMessage] };
+                    }
+                    return s;
+                }));
+            }
+        } catch (error: any) {
+            const provider = settings.apiProvider.charAt(0).toUpperCase() + settings.apiProvider.slice(1);
+            let notificationMessage = t('notifications.aiError', { message: error.message });
+
+            if (error.message === 'QUOTA_EXCEEDED') {
+                notificationMessage = t('notifications.quotaError', { provider });
+            } else if (error.message === 'API_KEY_INVALID') {
+                notificationMessage = t('notifications.apiKeyInvalid', { provider });
+            }
+
+            addNotification(notificationMessage, 'error');
+
+            setSessions(prev => prev.map(s => {
+                if (s.id !== activeSessionId) return s;
+                const lastUserIndex = s.messages.map(m => m.role).lastIndexOf('user');
+                if (lastUserIndex !== -1) {
+                    return { ...s, messages: s.messages.slice(0, lastUserIndex) };
+                }
+                return s;
+            }));
+        } finally {
+            setIsLoading(false);
+        }
+    }, [isLoading, addNotification, t, useWebSearch, settings, activeSessionId, sessions, getEditorContext, activeSession.messages, language]);
+
+    // Voice recognition hook
+    const { isRecording, isInitializing, start, stop } = useVoiceRecognitionUnified({
+        onResult: (transcript, isFinal) => {
+            if (isFinal) {
+                setFinalTranscript(prev => (prev ? prev + ' ' : '') + transcript);
+            } else {
+                setInterimTranscript(transcript);
+            }
+        },
+        onError: (error) => {
+            console.error('Voice recognition error:', error);
+            let errorMessage = t('voice.error') || 'Ses tanıma hatası';
+            if (error === 'network') {
+                errorMessage = t('voice.networkError') || 'Ağ hatası. Lütfen internet bağlantınızı kontrol edin.';
+            } else if (error === 'not-allowed') {
+                errorMessage = t('voice.permissionError') || 'Mikrofon izni verilmedi. Lütfen tarayıcı ayarlarını kontrol edin.';
+            } else if (error === 'service-not-allowed') {
+                errorMessage = t('voice.serviceNotAllowedError') || 'Ses tanıma hizmetine izin verilmedi. Lütfen tarayıcı ayarlarını kontrol edin.';
+            } else if (error === 'bad-grammar') {
+                errorMessage = t('voice.badGrammarError') || 'Ses tanıma dilbilgisi hatası. Lütfen tekrar deneyin.';
+            } else if ((error as any)?.message === 'not_supported') {
+                errorMessage = t('voice.error') || 'Ses tanıma desteklenmiyor. Lütfen farklı bir tarayıcı deneyin.';
+            } else if ((error as any)?.message === 'secure_context_required') {
+                errorMessage = t('voice.error') || 'Güvenli bağlantı gerekli. Lütfen HTTPS bağlantısı kullanın.';
+            }
+            addNotification(errorMessage, 'error');
+        },
+    });
+
+    const handleOpenVoiceModal = () => {
+        setShowVoiceModal(true);
+        setFinalTranscript('');
+        setInterimTranscript('');
+    };
+
+    const handleToggleRecording = () => {
+        if (isRecording) {
+            stop();
+        } else {
+            start();
+        }
+    };
+
+    const handleSubmitVoice = (text: string) => {
+        // Send the transcribed text to chat
+        handleSendVoice(text);
+        setFinalTranscript('');
+        setInterimTranscript('');
+    };
+
+    const handleCloseVoiceModal = () => {
+        if (isRecording) stop();
+        setShowVoiceModal(false);
+        setFinalTranscript('');
+        setInterimTranscript('');
+    };
 
     const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -108,12 +234,28 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
         const isUser = message.role === 'user';
         const Icon = isUser ? UserIcon : BotIcon;
         
+        const handleInsert = () => {
+            if (onInsertToEditor && message.content) {
+                onInsertToEditor(message.content);
+                addNotification(t('chat.insertedToEditor') || 'Editöre eklendi', 'success');
+            }
+        };
+        
         return (
             <div className={`flex items-start gap-3 my-4 ${isUser ? 'flex-row' : ''}`}>
                 <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${isUser ? 'bg-primary/20 text-primary' : 'bg-border text-text-secondary'}`}>
                     <Icon />
                 </div>
-                <div className="flex-grow p-3 rounded-lg bg-background min-w-0">
+                <div className="flex-grow p-3 rounded-lg bg-background min-w-0 group relative">
+                    {onInsertToEditor && message.content && (
+                        <button
+                            onClick={handleInsert}
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-primary text-primary-text rounded text-xs hover:bg-primary-hover"
+                            title={t('chat.insertToEditor') || 'Editöre Ekle'}
+                        >
+                            ↓ {t('chat.insertToEditor') || 'Editöre Ekle'}
+                        </button>
+                    )}
                     <div className="prose prose-sm dark:prose-invert max-w-none text-text-primary">
                         <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
                     </div>
@@ -228,6 +370,13 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
                         disabled={isLoading}
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        <button
+                            onClick={handleOpenVoiceModal}
+                            title={t('voice.start')}
+                            className={`p-1.5 rounded-full transition-colors hover:bg-border`}
+                        >
+                            <MicIcon width="16" height="16" />
+                        </button>
                         {settings.apiProvider === 'gemini' && (
                              <button
                                 onClick={() => setUseWebSearch(!useWebSearch)}
@@ -248,6 +397,17 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
                     </div>
                 </div>
             </footer>
+            {showVoiceModal && (
+                <VoiceInputModal
+                    interimTranscript={interimTranscript}
+                    finalTranscript={finalTranscript}
+                    isRecording={isRecording}
+                    isInitializing={isInitializing}
+                    onToggleRecording={handleToggleRecording}
+                    onSubmit={handleSubmitVoice}
+                    onClose={handleCloseVoiceModal}
+                />
+            )}
         </div>
     );
 };

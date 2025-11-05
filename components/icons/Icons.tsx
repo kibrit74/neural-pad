@@ -92,7 +92,7 @@ export const BlockquoteIcon = () => <SVGIcon><path d="M3 21c3 0 7-1 7-8V5c0-1.25
 export const RedoIcon = () => <SVGIcon><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path></SVGIcon>;
 export const UndoIcon = () => <SVGIcon><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3l-3 2.7"></path></SVGIcon>;
 export const ImageIcon = (props: React.SVGProps<SVGSVGElement>) => <SVGIcon {...props}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></SVGIcon>;
-export const SendIcon = () => <SVGIcon width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></SVGIcon>;
+export const SendIcon = (props: React.SVGProps<SVGSVGElement>) => <SVGIcon width="20" height="20" {...props}><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></SVGIcon>;
 export const PlusIcon = () => <SVGIcon><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></SVGIcon>;
 export const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => <SVGIcon width="16" height="16" {...props}><polyline points="4 6 8 10 12 6"></polyline></SVGIcon>;
 export const ChevronUpIcon = () => <SVGIcon width="16" height="16"><polyline points="12 10 8 6 4 10"></polyline></SVGIcon>;
@@ -259,4 +259,10 @@ export const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
     <polyline points="9 22 9 12 15 12 15 22"></polyline>
   </SVGIcon>
+);
+
+export const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <SVGIcon {...props}>
+        <polyline points="20 6 9 17 4 12"></polyline>
+    </SVGIcon>
 );

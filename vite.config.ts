@@ -19,12 +19,7 @@ export default defineConfig(() => {
       build: {
         chunkSizeWarningLimit: 1500,
         rollupOptions: {
-          output: {
-            manualChunks: {
-              'react-vendor': ['react', 'react-dom'],
-              'tiptap-vendor': ['@tiptap/react', '@tiptap/core', '@tiptap/starter-kit'],
-            }
-          }
+          external: ['electron', 'better-sqlite3', 'knex', 'path', 'fs', 'crypto', 'util', 'stream', 'events', 'assert', 'timers', 'tty']
         }
       }
     };

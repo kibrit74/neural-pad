@@ -69,7 +69,7 @@ export const toggleTableClass = (editor: Editor, className: string) => {
 
   let newClasses: string[];
   if (currentClasses.includes(className)) {
-    newClasses = currentClasses.filter(c => c !== className);
+    newClasses = currentClasses.filter((c: string) => c !== className);
   } else {
     newClasses = [...currentClasses, className];
   }
@@ -90,7 +90,7 @@ export const setTableBorderClass = (
   const currentClasses = (currentAttrs.class || '').split(' ').filter(Boolean);
   const borderClasses = ['np-borders-none', 'np-borders-all', 'np-borders-outside'];
 
-  const filtered = currentClasses.filter(c => !borderClasses.includes(c));
+  const filtered = currentClasses.filter((c: string) => !borderClasses.includes(c));
   const newClasses = [...filtered, borderClass];
   editor.commands.updateAttributes('table', { class: newClasses.join(' ') });
 };

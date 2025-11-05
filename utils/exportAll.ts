@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import TurndownService from 'turndown';
-import * as db from './db';
+import * as db from '../services/database';
 
 export async function exportAll(format: 'html'|'md') {
   const notes = await db.getAllNotes();

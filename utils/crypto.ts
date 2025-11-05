@@ -36,6 +36,7 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
+      // @ts-ignore
       salt,
       iterations: 150000,
       hash: 'SHA-256',
@@ -63,6 +64,7 @@ export async function encryptString(plainText: string, password: string): Promis
     textEncoder.encode(plainText)
   );
   return {
+    // @ts-ignore
     salt: bufToBase64(salt.buffer),
     iv: bufToBase64(iv.buffer),
     data: bufToBase64(cipherBuf),
@@ -77,6 +79,7 @@ export async function decryptString(payload: EncryptedPayload, password: string)
   const plainBuf = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv },
     key,
+    // @ts-ignore
     data
   );
   return textDecoder.decode(plainBuf);

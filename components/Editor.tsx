@@ -1,11 +1,27 @@
-
 import React, { useCallback, useEffect } from 'react';
 import { useEditor, EditorContent, Editor as TiptapEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
+import Document from '@tiptap/extension-document';
+import Paragraph from '@tiptap/extension-paragraph';
+import Text from '@tiptap/extension-text';
+import Bold from '@tiptap/extension-bold';
+import Italic from '@tiptap/extension-italic';
+import Strike from '@tiptap/extension-strike';
+import Underline from '@tiptap/extension-underline';
+import Blockquote from '@tiptap/extension-blockquote';
+import CodeBlock from '@tiptap/extension-code-block';
+import Code from '@tiptap/extension-code';
+import HardBreak from '@tiptap/extension-hard-break';
+import Heading from '@tiptap/extension-heading';
+import HorizontalRule from '@tiptap/extension-horizontal-rule';
+import ListItem from '@tiptap/extension-list-item';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import History from '@tiptap/extension-history';
+import Dropcursor from '@tiptap/extension-dropcursor';
+import Gapcursor from '@tiptap/extension-gapcursor';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
-// Use custom table that supports dynamic class attributes
 import { CustomTable } from '../utils/tiptapCustomTable';
 import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
@@ -21,18 +37,41 @@ interface EditorProps {
     onChange: (html: string) => void;
     editorRef: React.MutableRefObject<TiptapEditor | null>;
     onAiImageMenu: (target: HTMLElement, src: string) => void;
+    addNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
+    onVoiceSave?: () => void | Promise<void>;
 }
 
-const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImageMenu }) => {
+const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImageMenu, addNotification, onVoiceSave }) => {
     const { t } = useTranslations();
     const editor = useEditor({
         extensions: [
-            StarterKit.configure({
-                // Configure StarterKit options here if needed
-            }),
+            // --- Replaces StarterKit ---
+            Document,
+            Paragraph,
+            Text,
+            Bold,
+            Italic,
+            Strike,
+            Underline,
+            Blockquote,
+            // Inline code mark for toolbar's toggleCode command
+            Code,
+            CodeBlock,
+            HardBreak,
+            Heading.configure({ levels: [1, 2, 3] }),
+            HorizontalRule,
+            ListItem,
+            BulletList,
+            OrderedList,
+            History,
+            Dropcursor,
+            Gapcursor,
+            // --- End of StarterKit replacements ---
+
             Placeholder.configure({
                 placeholder: t('editor.placeholder'),
             }),
+            // Our custom image extension is now guaranteed to handle image events
             (CustomImage as any).configure({
                 inline: false,
                 onAiMenuClick: onAiImageMenu,
@@ -49,43 +88,15 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML());
         },
-        editorProps: {
-            handlePaste: (view, event) => {
-                const items = event.clipboardData?.items;
-                if (items) {
-                    for (let i = 0; i < items.length; i++) {
-                        const item = items[i];
-                        if (item.type.startsWith('image/')) {
-                            const file = item.getAsFile();
-                            if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (readerEvent) => {
-                                    const url = readerEvent.target?.result as string | undefined;
-                                    if (typeof url === 'string') {
-                                        (editorRef.current as any)?.chain().focus().insertContent({ type: 'image', attrs: { src: url } }).run();
-                                    }
-                                };
-                                reader.readAsDataURL(file);
-                                return true;
-                            }
-                        }
-                    }
-                }
-
-                return false;
-            },
-        },
     });
 
     if (editor) {
         editorRef.current = editor;
     }
     
-    // Update editor content when content prop changes (only from external sources)
     useEffect(() => {
         if (editor && content !== undefined && content !== null) {
             const currentContent = editor.getHTML();
-            // Only update if content is significantly different (not just formatting)
             const normalizeContent = (html: string) => html.replace(/\s+/g, ' ').trim();
             if (normalizeContent(content) !== normalizeContent(currentContent)) {
                 editor.commands.setContent(content, { emitUpdate: false });
@@ -101,16 +112,15 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
         input.onchange = (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = (readerEvent) => {
-                    const url = readerEvent.target?.result;
-                    if (url) {
-                        // FIX: Property 'setImage' does not exist on type 'ChainedCommands'.
-                        // Replaced with `insertContent` which is a more generic way to add nodes.
-                        editor.chain().focus().insertContent({ type: 'image', attrs: { src: url as string } }).run();
-                    }
-                };
-                reader.readAsDataURL(file);
+                // Replicate the logic from our CustomImage plugin's handlePaste/handleDrop
+                file.arrayBuffer().then(buffer => {
+                    (window as any).electron.files.saveImage(new Uint8Array(buffer))
+                        .then((url: string | null) => {
+                            if (url && editor) {
+                                editor.chain().focus().insertContent({ type: 'image', attrs: { src: url } }).run();
+                            }
+                        });
+                });
             }
         };
         input.click();
@@ -118,7 +128,7 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
     
     return (
         <div className="flex flex-col h-full bg-background text-text-primary">
-            <FormattingToolbar editor={editor} onImageUpload={handleImageUpload} />
+            <FormattingToolbar editor={editor} onImageUpload={handleImageUpload} addNotification={addNotification} onVoiceSave={onVoiceSave} />
             <div className="relative flex-grow overflow-y-auto" onClick={() => editor?.commands.focus()}>
                  <EditorContent editor={editor} className="prose dark:prose-invert max-w-none px-6 pb-6 pt-2 focus:outline-none h-full" />
             </div>

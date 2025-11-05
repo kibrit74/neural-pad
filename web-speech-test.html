@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Speech API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .start-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .stop-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        .disabled {
+            background-color: #cccccc !important;
+            cursor: not-allowed;
+        }
+        .transcript-box {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 100px;
+            background-color: #f9f9f9;
+            margin-top: 20px;
+        }
+        .final {
+            font-weight: bold;
+        }
+        .interim {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Web Speech API Test</h1>
+    <p>This test uses the browser's built-in Web Speech API for speech recognition without recording audio to disk.</p>
+    
+    <div>
+        <button id="startBtn" class="start-btn">Start Recording</button>
+        <button id="stopBtn" class="stop-btn">Stop Recording</button>
+    </div>
+    
+    <div class="transcript-box">
+        <h3>Transcript:</h3>
+        <div id="finalTranscript" class="final"></div>
+        <h3>Interim Results:</h3>
+        <div id="interimTranscript" class="interim"></div>
+    </div>
+
+    <script>
+        let recognition;
+        let isRecording = false;
+        
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const finalTranscriptEl = document.getElementById('finalTranscript');
+        const interimTranscriptEl = document.getElementById('interimTranscript');
+        
+        // Check for Web Speech API support
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'tr-TR'; // Turkish language
+            
+            recognition.onresult = function(event) {
+                let interim = '';
+                let final = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        final += transcript + ' ';
+                    } else {
+                        interim += transcript;
+                    }
+                }
+                
+                if (final) {
+                    finalTranscriptEl.textContent += final;
+                }
+                
+                interimTranscriptEl.textContent = interim;
+            };
+            
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                alert('Speech recognition error: ' + event.error);
+            };
+            
+            recognition.onend = function() {
+                if (isRecording) {
+                    // Auto-restart if we're still supposed to be recording
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.error('Failed to restart recognition:', e);
+                    }
+                }
+            };
+            
+            startBtn.addEventListener('click', function() {
+                if (!isRecording) {
+                    try {
+                        recognition.start();
+                        isRecording = true;
+                        startBtn.classList.add('disabled');
+                        stopBtn.classList.remove('disabled');
+                        interimTranscriptEl.textContent = '';
+                    } catch (e) {
+                        console.error('Failed to start recognition:', e);
+                    }
+                }
+            });
+            
+            stopBtn.addEventListener('click', function() {
+                if (isRecording) {
+                    try {
+                        recognition.stop();
+                        isRecording = false;
+                        startBtn.classList.remove('disabled');
+                        stopBtn.classList.add('disabled');
+                    } catch (e) {
+                        console.error('Failed to stop recognition:', e);
+                    }
+                }
+            });
+            
+            // Initialize button states
+            stopBtn.classList.add('disabled');
+        } else {
+            // Web Speech API not supported
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+            finalTranscriptEl.innerHTML = '<p style="color: red;">Web Speech API is not supported in this browser.</p>';
+        }
+    </script>
+</body>
+</html>

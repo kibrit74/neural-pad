@@ -1,46 +1,34 @@
-const { contextBridge, ipcRenderer } = require('electron')
+import { contextBridge, ipcRenderer } from 'electron'
 
-contextBridge.exposeInMainWorld('electron', {
+const electronAPI = {
   isElectron: true,
   platform: process.platform,
-  speech: {
-    initialize: () => ipcRenderer.invoke('speech:initialize'),
-    transcribe: (audioData) => ipcRenderer.invoke('speech:transcribe', audioData),
-    isInitialized: () => ipcRenderer.invoke('speech:isInitialized'),
+  db: {
+    saveNote: (note) => ipcRenderer.invoke('db:save-note', note),
+    getAllNotes: () => ipcRenderer.invoke('db:get-all-notes'),
+    getNote: (id) => ipcRenderer.invoke('db:get-note', id),
+    getHistory: (noteId) => ipcRenderer.invoke('db:get-history', noteId),
+    deleteNote: (id) => ipcRenderer.invoke('db:delete-note', id),
   },
-})
+  settings: {
+    get: (key) => ipcRenderer.invoke('settings:get', key),
+    set: (key, value) => ipcRenderer.invoke('settings:set', key, value),
+  },
+  files: {
+    saveImage: (buffer) => ipcRenderer.invoke('files:save-image', buffer),
+  },
+  speech: {
+    // Send audio data to main process for transcription
+    sendAudioData: (audioBlob) => ipcRenderer.invoke('speech:transcribe-audio', audioBlob),
+    // Listen for transcription results
+    onTranscription: (callback) => {
+      const listener = (event, text) => callback(text);
+      ipcRenderer.on('speech:transcription-result', listener);
+      return () => ipcRenderer.removeListener('speech:transcription-result', listener);
+    }
+  },
+};
 
-// First-run cleanup for packaged app
-// This ensures users get a clean install without dev data
-window.addEventListener('DOMContentLoaded', () => {
-  const isFirstRun = !localStorage.getItem('appInstalled')
-  
-  if (isFirstRun) {
-    console.log('🎉 First run detected - initializing clean state...')
-    
-    // Clear any existing data
-    localStorage.clear()
-    
-    // Clear IndexedDB (your DB name from db.ts)
-    if (window.indexedDB) {
-      window.indexedDB.deleteDatabase('GeminiWriterDB')
-    }
-    
-    // Set default settings (NO API KEYS)
-    const defaultSettings = {
-      model: 'gemini-2.5-flash',
-      temperature: 0.7,
-      topK: 40,
-      topP: 0.95,
-      apiProvider: 'gemini',
-      autoSave: false,
-    }
-    localStorage.setItem('gemini-writer-settings', JSON.stringify(defaultSettings))
-    
-    // Mark as installed
-    localStorage.setItem('appInstalled', 'true')
-    localStorage.setItem('installDate', new Date().toISOString())
-    
-    console.log('✅ Clean state initialized - no notes, no API keys, default settings')
-  }
-})
+contextBridge.exposeInMainWorld('electron', electronAPI);
+
+

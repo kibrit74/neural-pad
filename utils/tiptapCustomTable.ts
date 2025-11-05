@@ -4,13 +4,13 @@ import { Table } from '@tiptap/extension-table';
 export const CustomTable = Table.extend({
   name: 'table',
 
-  addAttributes() {
+  addAttributes(this: { parent: () => Record<string, any> }) {
     return {
-      ...this.parent?.(),
+      ...this.parent(),
       class: {
         default: null,
-        parseHTML: element => element.getAttribute('class'),
-        renderHTML: attributes => {
+        parseHTML: (element: HTMLElement) => element.getAttribute('class'),
+        renderHTML: (attributes: { class: string }) => {
           if (!attributes.class) return {};
           return { class: attributes.class };
         },

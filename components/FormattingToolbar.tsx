@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Editor } from '@tiptap/react';
 import { useTranslations } from '../hooks/useTranslations';
 import TurndownService from 'turndown';
-import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
+import { useVoiceRecognitionUnified } from '../hooks/useVoiceRecognitionUnified';
+import { useLanguage } from '../contexts/LanguageContext';
 import VoiceInputModal from './VoiceInputModal';
+import { hasVoiceCommand, removeVoiceCommand } from '../utils/voiceCommandUtils';
 import {
     BoldIcon, ItalicIcon, UnderlineIcon, StrikeIcon, CodeIcon, ListIcon, ListOrderedIcon, BlockquoteIcon, UndoIcon, RedoIcon, ImageIcon, MicIcon, StopIcon, PaperclipIcon
 } from './icons/Icons';
@@ -21,6 +23,8 @@ const TableIcon = () => (
 interface FormattingToolbarProps {
     editor: Editor | null;
     onImageUpload: () => void;
+    addNotification?: (message: string, type: 'success' | 'error' | 'warning') => void;
+    onVoiceSave?: () => void | Promise<void>;
 }
 
 const FONT_FAMILY_LIST = [
@@ -68,8 +72,9 @@ const FONT_SIZE_LIST = [
     { name: '50pt', value: '50pt' },
 ];
 
-const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUpload }) => {
+const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUpload, addNotification, onVoiceSave }) => {
     const { t } = useTranslations();
+    const { language } = useLanguage();
     const [interimTranscript, setInterimTranscript] = useState('');
     const [finalTranscript, setFinalTranscript] = useState('');
     const [showModal, setShowModal] = useState(false);
@@ -78,24 +83,112 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
         return null;
     }
 
-    const { isRecording, start, stop } = useVoiceRecognition({
+    const handleTranscript = useCallback(async (finalText: string) => {
+        if (!editor) return;
+        
+        const lang = language as 'tr' | 'en';
+        const commandDetected = hasVoiceCommand(finalText, lang);
+
+        if (commandDetected) {
+            // Remove voice command from text
+            const noteText = removeVoiceCommand(finalText, lang);
+
+            if (noteText.trim()) {
+                editor.chain().focus().insertContent(noteText).run();
+            }
+
+            try {
+                await onVoiceSave?.();
+                if (addNotification) {
+                    addNotification(
+                        language === 'tr' 
+                            ? 'Not sesli komutla kaydedildi!' 
+                            : 'Note saved with voice command!', 
+                        'success'
+                    );
+                }
+            } catch (e: any) {
+                if (addNotification) {
+                    addNotification(
+                        language === 'tr' 
+                            ? 'Not kaydedilemedi.' 
+                            : 'Failed to save note.', 
+                        'error'
+                    );
+                }
+            }
+
+            // Clear transcripts after save
+            setFinalTranscript('');
+            setInterimTranscript('');
+            return;
+        }
+
+        // No command detected: insert the text normally
+        editor.chain().focus().insertContent(finalText).run();
+        setFinalTranscript(prev => (prev ? prev + ' ' : '') + finalText);
+        setInterimTranscript('');
+    }, [editor, addNotification, onVoiceSave, language]);
+
+    const { isRecording, isInitializing, start, stop, hasSupport } = useVoiceRecognitionUnified({
         onResult: (transcript, isFinal) => {
             if (isFinal) {
-                setFinalTranscript(prev => prev + transcript);
-                setInterimTranscript('');
+                handleTranscript(transcript);
             } else {
                 setInterimTranscript(transcript);
             }
         },
+        lang: language as 'tr' | 'en',
         onError: (error) => {
             console.error('Voice recognition error:', error);
+            // Show a notification to the user if available
+            if (typeof addNotification === 'function') {
+                // Provide more specific error messages with fallback suggestions
+                let errorMessage = t('voice.error') || 'Ses tanıma hatası';
+                let notificationType: 'success' | 'error' | 'warning' = 'error';
+                
+                if (error === 'network' || error === 'network_fallback') {
+                    errorMessage = t('voice.networkError') || 'İnternet bağlantısı gerekli. Offline ses tanıma aktif.';
+                    notificationType = 'warning';
+                } else if (error === 'not-allowed') {
+                    errorMessage = t('voice.permissionError') || 'Mikrofon izni gerekli. Tarayıcı ayarlarından mikrofon erişimini açın.';
+                } else if (error === 'service-not-allowed' || error === 'service_fallback') {
+                    errorMessage = t('voice.serviceNotAllowedError') || 'Ses tanıma servisi kullanılamıyor. Offline moda geçiliyor.';
+                    notificationType = 'warning';
+                } else if (error === 'bad-grammar') {
+                    errorMessage = t('voice.badGrammarError') || 'Ses tanıma dilbilgisi hatası. Lütfen tekrar deneyin.';
+                } else if (error === 'language-not-supported') {
+                    errorMessage = t('voice.languageNotSupportedError') || 'Desteklenmeyen dil. Lütfen farklı bir dil seçin.';
+                } else if (error.message === 'not_supported') {
+                    errorMessage = t('voice.error') || 'Ses tanıma desteklenmiyor. Lütfen farklı bir tarayıcı deneyin.';
+                } else if (error.message === 'secure_context_required') {
+                    errorMessage = t('voice.error') || 'Güvenli bağlantı gerekli. Lütfen HTTPS bağlantısı kullanın.';
+                }
+                addNotification(errorMessage, notificationType);
+            }
         },
     });
 
     const handleOpenModal = () => {
-        setShowModal(true);
-        setFinalTranscript('');
-        setInterimTranscript('');
+        // Geliştirme aşamasında uyarısı
+        if (addNotification) {
+            addNotification(
+                language === 'tr' 
+                    ? '🎤 Sesli metin girişi geliştirme aşamasındadır.' 
+                    : '🎤 Voice input is under development.', 
+                'warning'
+            );
+        } else {
+            alert(language === 'tr' 
+                ? '🎤 Sesli metin girişi geliştirme aşamasındadır.' 
+                : '🎤 Voice input is under development.');
+        }
+        return; // Modal açılmasını engelle
+        
+        // Always use modal with Web Speech API (works in both Electron and browser)
+        // setShowModal(true);
+        // setFinalTranscript('');
+        // setInterimTranscript('');
     };
 
     const handleToggleRecording = () => {
@@ -107,6 +200,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
     };
 
     const handleSubmitVoice = (text: string) => {
+        // Manual insert from modal submit
         editor.chain().focus().insertContent(text).run();
         setFinalTranscript('');
         setInterimTranscript('');
@@ -117,6 +211,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
         setShowModal(false);
         setFinalTranscript('');
         setInterimTranscript('');
+
     };
 
     const ToolbarButton: React.FC<{ onClick?: () => void; title: string; isActive?: boolean; children: React.ReactNode, disabled?: boolean }> = ({ onClick, title, isActive = false, children, disabled = false }) => (
@@ -154,7 +249,11 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
 
             // Dosya boyut kontrolü (max 10MB)
             if (file.size > 10 * 1024 * 1024) {
-                alert('Dosya boyutu 10MB\'dan küçük olmalıdır.');
+                if (typeof addNotification === 'function') {
+                    addNotification('Dosya boyutu 10MB\'dan küçük olmalıdır.', 'warning');
+                } else {
+                    alert('Dosya boyutu 10MB\'dan küçük olmalıdır.');
+                }
                 return;
             }
 
@@ -169,7 +268,11 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                 editor.chain().focus().insertContent(html).run();
             };
             reader.onerror = () => {
-                alert('Dosya okunamadı. Sadece metin dosyaları desteklenmektedir.');
+                if (typeof addNotification === 'function') {
+                    addNotification('Dosya okunamadı. Sadece metin dosyaları desteklenmektedir.', 'error');
+                } else {
+                    alert('Dosya okunamadı. Sadece metin dosyaları desteklenmektedir.');
+                }
             };
             reader.readAsText(file);
         };
@@ -216,9 +319,14 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                 <ToolbarButton onClick={onImageUpload} title={t('toolbar.insertImage')}><ImageIcon /></ToolbarButton>
                 <ToolbarButton onClick={attachFile} title={t('toolbar.attachFile')}><PaperclipIcon /></ToolbarButton>
                 <ToolbarButton onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title={t('toolbar.insertTable')} disabled={editor.isActive('table')}><TableIcon /></ToolbarButton>
-                <ToolbarButton onClick={handleOpenModal} title={t('voice.start')}>
-                    <MicIcon />
-                </ToolbarButton>
+                {hasSupport && (
+                    <ToolbarButton 
+                        onClick={handleOpenModal} 
+                        title={t('voice.start')}
+                    >
+                        <MicIcon />
+                    </ToolbarButton>
+                )}
                 <div className="mx-2 h-6 border-l border-border"></div>
                 <ToolbarButton onClick={() => editor.chain().focus().undo().run()} title={t('toolbar.undo')}><UndoIcon /></ToolbarButton>
                 <ToolbarButton onClick={() => editor.chain().focus().redo().run()} title={t('toolbar.redo')}><RedoIcon /></ToolbarButton>
@@ -228,6 +336,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                     interimTranscript={interimTranscript}
                     finalTranscript={finalTranscript}
                     isRecording={isRecording}
+                    isInitializing={isInitializing} // Pass this prop
                     onToggleRecording={handleToggleRecording}
                     onSubmit={handleSubmitVoice}
                     onClose={handleCloseModal}

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Speech Recognition Test</title>
+</head>
+<body>
+    <h1>Speech Recognition Test</h1>
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn">Stop Recording</button>
+    <div id="result"></div>
+
+    <script>
+        // Test Web Speech API
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resultDiv = document.getElementById('result');
+        
+        let recognition;
+        
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'tr-TR';
+            
+            recognition.onresult = function(event) {
+                let interim = '';
+                let final = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        final += transcript + ' ';
+                    } else {
+                        interim += transcript;
+                    }
+                }
+                resultDiv.innerHTML = '<p>Final: ' + final + '</p><p>Interim: ' + interim + '</p>';
+            };
+            
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error', event.error);
+                resultDiv.innerHTML = '<p>Error: ' + event.error + '</p>';
+            };
+            
+            startBtn.onclick = function() {
+                recognition.start();
+                resultDiv.innerHTML = '<p>Listening...</p>';
+            };
+            
+            stopBtn.onclick = function() {
+                recognition.stop();
+                resultDiv.innerHTML += '<p>Stopped.</p>';
+            };
+        } else {
+            resultDiv.innerHTML = '<p>Web Speech API not supported in this browser.</p>';
+        }
+    </script>
+</body>
+</html>

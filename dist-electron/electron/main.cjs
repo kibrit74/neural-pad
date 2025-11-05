@@ -1,0 +1,333 @@
+"use strict";
+const { app, BrowserWindow, ipcMain, screen, session, shell } = require('electron');
+// Determine if we're in development mode FIRST (before any logging setup)
+const isDev = !!process.env.VITE_DEV_SERVER_URL || process.env.NODE_ENV === 'development';
+// Suppress noisy Chromium network error lines and ONNX Runtime warnings
+try {
+    app.commandLine.appendSwitch('log-level', '3'); // Only show fatal errors
+    // Suppress ONNX Runtime warnings (both dev and production)
+    // These warnings about unused initializers are harmless but noisy
+    process.env.ORT_LOGGING_LEVEL = 'error'; // Only show errors, not warnings
+    process.env.ONNXRUNTIME_LOG_SEVERITY_LEVEL = '3'; // 0=Verbose, 1=Info, 2=Warning, 3=Error, 4=Fatal
+    if (!isDev) {
+        app.commandLine.appendSwitch('disable-logging');
+    }
+}
+catch (e) {
+    console.warn('[Startup] Failed to set log level:', e);
+}
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+// Speech recognition removed - using Web Speech API only
+// db and settings will be loaded after app is ready
+let db = null;
+let settings = null;
+// Database check will be done after app is ready
+// app:// protocol removed - using file:// for Web Speech API compatibility
+// Reduce Chromium-internal network noise and background requests in production
+try {
+    if (!isDev) {
+        app.commandLine.appendSwitch('disable-background-networking');
+        app.commandLine.appendSwitch('disable-client-side-phishing-detection');
+        app.commandLine.appendSwitch('no-proxy-server');
+        // Disable some Autofill-related features that can trigger background requests
+        app.commandLine.appendSwitch('disable-features', 'AutofillServerCommunication,AutofillAddressProfileSavePrompt');
+    }
+}
+catch (e) {
+    console.warn('[Startup] Failed to apply background networking switches:', e);
+}
+let mainWindow = null;
+function setupFileIPC() {
+    const imagesDir = path.join(app.getPath('userData'), 'images');
+    if (!fs.existsSync(imagesDir)) {
+        fs.mkdirSync(imagesDir, { recursive: true });
+        console.log(`[FileIPC] Created images directory at: ${imagesDir}`);
+    }
+    ipcMain.handle('files:save-image', async (event, data) => {
+        console.log(`[FileIPC] Received 'files:save-image' request with data size: ${data.length}`);
+        try {
+            // Convert Uint8Array from renderer to a Node.js Buffer
+            const buffer = Buffer.from(data);
+            const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+            const extension = '.png'; // Assuming png for simplicity
+            const filename = `${hash}${extension}`;
+            const filePath = path.join(imagesDir, filename);
+            if (!fs.existsSync(filePath)) {
+                await fs.promises.writeFile(filePath, buffer);
+                console.log(`[FileIPC] Image saved to: ${filePath}`);
+            }
+            else {
+                console.log(`[FileIPC] Image already exists, skipping write: ${filePath}`);
+            }
+            const fileUrl = `app://images/${filename}`;
+            console.log(`[FileIPC] Returning file URL: ${fileUrl}`);
+            return fileUrl;
+        }
+        catch (error) {
+            console.error('[FileIPC] Failed to save image:', error);
+            return null;
+        }
+    });
+}
+function setupDatabaseIPC() {
+    ipcMain.handle('db:save-note', async (event, note) => { try {
+        return await db.saveNote(note);
+    }
+    catch (error) {
+        console.error('db:save-note failed:', error);
+        throw error;
+    } });
+    ipcMain.handle('db:get-all-notes', async () => { try {
+        return await db.getAllNotes();
+    }
+    catch (error) {
+        console.error('db:get-all-notes failed:', error);
+        throw error;
+    } });
+    ipcMain.handle('db:get-note', async (event, id) => { try {
+        return await db.getNote(id);
+    }
+    catch (error) {
+        console.error('db:get-note failed:', error);
+        throw error;
+    } });
+    ipcMain.handle('db:get-history', async (event, noteId) => { try {
+        return await db.getHistory(noteId);
+    }
+    catch (error) {
+        console.error('db:get-history failed:', error);
+        throw error;
+    } });
+    ipcMain.handle('db:delete-note', async (event, id) => { try {
+        return await db.deleteNote(id);
+    }
+    catch (error) {
+        console.error('db:delete-note failed:', error);
+        throw error;
+    } });
+}
+function setupSettingsIPC() {
+    ipcMain.handle('settings:get', (event, key) => {
+        const settingsData = settings.getSettings();
+        return key ? settingsData[key] : settingsData;
+    });
+    ipcMain.handle('settings:set', (event, key, value) => {
+        settings.setSetting(key, value);
+    });
+}
+function setupSpeechIPC() {
+    ipcMain.handle('speech:transcribe-audio', async (event, audioBlob) => {
+        try {
+            console.log('[Speech IPC] Received audio data, size:', audioBlob.length);
+            // Convert audio blob to base64
+            const base64Audio = Buffer.from(audioBlob).toString('base64');
+            // Make request to Google Speech API (no CORS in Node.js!)
+            const response = await fetch('https://speech.googleapis.com/v1/speech:recognize?key=YOUR_API_KEY', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    config: {
+                        encoding: 'WEBM_OPUS',
+                        sampleRateHertz: 48000,
+                        languageCode: 'tr-TR',
+                    },
+                    audio: {
+                        content: base64Audio,
+                    },
+                }),
+            });
+            const data = await response.json();
+            const transcript = data.results?.[0]?.alternatives?.[0]?.transcript || '';
+            console.log('[Speech IPC] Transcription:', transcript);
+            // Send result back to renderer
+            event.sender.send('speech:transcription-result', transcript);
+            return { success: true, transcript };
+        }
+        catch (error) {
+            console.error('[Speech IPC] Error:', error);
+            return { success: false, error: error.message };
+        }
+    });
+}
+function createWindow() {
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+    // Icon path - check if exists to avoid errors
+    const iconPath = path.join(__dirname, '..', '..', 'build', 'icons', 'app.ico');
+    const mainWindow = new BrowserWindow({
+        width: width,
+        height: height,
+        show: false,
+        autoHideMenuBar: true,
+        ...(fs.existsSync(iconPath) ? { icon: iconPath } : {}),
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.cjs'),
+            contextIsolation: true,
+            nodeIntegration: false,
+            devTools: true,
+            sandbox: false, // Required for Web Speech API in Electron
+        }
+    });
+    mainWindow.once('ready-to-show', () => mainWindow && mainWindow.show());
+    if (isDev) {
+        mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL || 'http://localhost:5175');
+        mainWindow.webContents.openDevTools({ mode: 'detach' });
+    }
+    else {
+        // Use file:// protocol - resolve absolute path
+        // In production, __dirname is dist-electron/electron, so we go up two levels to project root
+        const projectRoot = path.resolve(__dirname, '..', '..');
+        const indexPath = path.join(projectRoot, 'dist', 'index.html');
+        console.log('[Main] __dirname:', __dirname);
+        console.log('[Main] Project root:', projectRoot);
+        console.log('[Main] Loading file:', indexPath);
+        console.log('[Main] File exists:', fs.existsSync(indexPath));
+        mainWindow.loadFile(indexPath);
+    }
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        shell.openExternal(url);
+        return { action: 'deny' };
+    });
+    // Automatically grant permissions for microphone and Web Speech API
+    mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+        const allowedPermissions = ['media', 'microphone', 'audioCapture', 'mediaDevices'];
+        if (allowedPermissions.includes(permission)) {
+            console.log('[Permissions] Granted:', permission);
+            callback(true);
+        }
+        else {
+            console.log('[Permissions] Denied:', permission);
+            callback(false);
+        }
+    });
+    // Set permission check handler for Web Speech API
+    mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+        const allowedPermissions = ['media', 'microphone', 'audioCapture', 'mediaDevices'];
+        const allowed = allowedPermissions.includes(permission);
+        console.log('[Permissions Check]', permission, '→', allowed);
+        return allowed;
+    });
+    // Register keyboard shortcuts for DevTools
+    // F12 - Toggle DevTools
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+        if (input.key === 'F12') {
+            if (mainWindow.webContents.isDevToolsOpened()) {
+                mainWindow.webContents.closeDevTools();
+            }
+            else {
+                mainWindow.webContents.openDevTools({ mode: 'detach' });
+            }
+        }
+        // Ctrl+Shift+I (Windows/Linux) or Cmd+Option+I (Mac) - Toggle DevTools
+        if ((input.control || input.meta) && input.shift && input.key.toLowerCase() === 'i') {
+            if (mainWindow.webContents.isDevToolsOpened()) {
+                mainWindow.webContents.closeDevTools();
+            }
+            else {
+                mainWindow.webContents.openDevTools({ mode: 'detach' });
+            }
+        }
+    });
+}
+app.whenReady().then(() => {
+    // Load database and settings after app is ready
+    db = require('../utils/db.cjs');
+    settings = require('./settings.cjs');
+    // --- Start Database File Check ---
+    const dbCheckPath = path.join(app.getPath('userData'), 'neural-pad.sqlite');
+    console.log(`[DB Check] Checking for database file at: ${dbCheckPath}`);
+    if (fs.existsSync(dbCheckPath)) {
+        console.log('[DB Check] ✅ SUCCESS: Database file found.');
+    }
+    else {
+        console.log('[DB Check] ❌ ERROR: Database file NOT found.');
+    }
+    // --- End Database File Check ---
+    // Configure CSP for Web Speech API
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        const scriptSrc = ["'self'", "'unsafe-inline'", "app:"];
+        if (isDev) {
+            scriptSrc.push("'unsafe-eval'");
+        }
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                'Content-Security-Policy': [
+                    "default-src 'self' 'unsafe-inline' 'unsafe-eval' app:",
+                    `script-src ${scriptSrc.join(' ')}`,
+                    "style-src 'self' 'unsafe-inline' app: https://fonts.googleapis.com",
+                    "font-src 'self' https://fonts.gstatic.com",
+                    "img-src 'self' data: app:",
+                    "media-src 'self' https://www.google.com https://*.google.com",
+                    "connect-src 'self' app: https://www.google.com https://*.google.com https://speech.googleapis.com https://*.googleapis.com"
+                ].join('; ')
+            }
+        });
+    });
+    // Lightweight network instrumentation to trace POST/upload errors
+    try {
+        session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+            if (details.method === 'POST' || (details.uploadData && details.uploadData.length > 0)) {
+                console.log('[NetLog] onBeforeRequest', {
+                    method: details.method,
+                    url: details.url,
+                    hasUploadData: !!details.uploadData,
+                });
+            }
+            callback({});
+        });
+        session.defaultSession.webRequest.onCompleted((details) => {
+            if (details.method === 'POST') {
+                console.log('[NetLog] onCompleted', {
+                    method: details.method,
+                    url: details.url,
+                    statusCode: details.statusCode,
+                    error: details.error,
+                });
+            }
+        });
+        session.defaultSession.webRequest.onSendHeaders((details) => {
+            if (details.method === 'POST') {
+                console.log('[NetLog] onSendHeaders', {
+                    url: details.url,
+                    requestHeaders: details.requestHeaders,
+                });
+            }
+        });
+        session.defaultSession.webRequest.onErrorOccurred((details) => {
+            console.warn('[NetLog] onErrorOccurred', {
+                method: details.method,
+                url: details.url,
+                error: details.error,
+                fromCache: details.fromCache,
+                resourceType: details.resourceType,
+            });
+        });
+    }
+    catch (e) {
+        console.warn('[NetLog] Instrumentation error:', e);
+    }
+    const distPath = path.join(__dirname, '../../dist');
+    const userDataPath = app.getPath('userData');
+    // app:// protocol removed - using file:// for Web Speech API compatibility
+    // Images will be loaded using file:// protocol directly
+    setupFileIPC();
+    setupDatabaseIPC();
+    setupSettingsIPC();
+    setupSpeechIPC();
+    if (process.platform === 'win32') {
+        app.setAppUserModelId('com.neural-pad.app');
+    }
+    createWindow();
+    app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0)
+            createWindow();
+    });
+});
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin')
+        app.quit();
+});

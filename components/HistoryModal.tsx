@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal';
-import * as db from '../utils/db';
+import * as db from '../services/database';
 import { diffWords } from 'diff';
 import { useTranslations } from '../hooks/useTranslations';
 import { useLanguage } from '../contexts/LanguageContext';

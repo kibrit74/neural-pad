@@ -14,7 +14,6 @@ export const translations = {
             backToLanding: "Back to Landing Page",
         },
         defaultNoteTitle: "Untitled Note",
-        addTag: "Add tag...",
         editor: {
             placeholder: "Start writing your next great idea...",
         },
@@ -46,6 +45,8 @@ export const translations = {
             sessionError: "Chat session not initialized. Please try again.",
             toggleWebSearch: "Toggle Web Search",
             sources: "Sources",
+            insertToEditor: "Insert to Editor",
+            insertedToEditor: "Inserted to editor",
         },
         contextMenu: {
             improve: "Improve writing",
@@ -133,8 +134,6 @@ export const translations = {
             cannotSaveLocked: "Cannot save locked note without password.",
             shareSuccess: "Shared successfully.",
             shareUnavailable: "Sharing not available here. Copied to clipboard instead.",
-            setupComplete: "Setup completed successfully! Welcome to Neural Pad.",
-            backupReminder: "⚠️ Backup your notes! It's been over 7 days. Click here to backup.",
         },
         common: {
             save: "Save",
@@ -255,53 +254,6 @@ export const translations = {
             troubleshootingApi: "Missing API key warning: open Settings and add your provider key.",
             troubleshootingImages: "Cannot paste images: ensure you're pasting an image from clipboard; drag & drop or use the toolbar to upload.",
         },
-        setup: {
-            step: "Step",
-            of: "of",
-            setup: "Setup",
-            back: "Back",
-            next: "Next",
-            startUsing: "Start Using Neural Pad",
-            welcome: {
-                title: "Welcome to Neural Pad",
-                description: "Let's set up your intelligent writing companion in just a few steps. This will only take a minute!",
-                features: {
-                    ai: "AI-Powered",
-                    aiDesc: "Smart writing assistance",
-                    themes: "Beautiful Themes",
-                    themesDesc: "Light and dark modes",
-                    secure: "Secure & Private",
-                    secureDesc: "Your data stays local"
-                }
-            },
-            theme: {
-                title: "Choose Your Theme",
-                description: "Select the appearance that works best for you. You can change this anytime in Settings.",
-                light: "Light Mode",
-                lightDesc: "Clean and bright interface",
-                dark: "Dark Mode",
-                darkDesc: "Easy on the eyes"
-            },
-            language: {
-                title: "Select Your Language",
-                description: "Choose your preferred language for the interface."
-            },
-            api: {
-                title: "AI Configuration",
-                description: "Choose your preferred AI provider. You can add API keys later in Settings to unlock AI features.",
-                recommended: "Recommended",
-                note: "Note",
-                noteDesc: "You can configure API keys later in Settings to enable AI features like writing assistance and chat."
-            },
-            complete: {
-                title: "Setup Complete!",
-                description: "You're all set! Neural Pad is ready to help you write, organize, and enhance your notes with AI.",
-                summary: "Your Configuration:",
-                theme: "Theme",
-                language: "Language",
-                apiProvider: "AI Provider"
-            }
-        },
         aiPrompts: {
             languageInstruction: "Please provide the response in the same language as the selected text.",
             responseTitle: "AI Response",
@@ -327,6 +279,16 @@ export const translations = {
         voice: {
             start: "Start Voice Input",
             stop: "Stop Voice Input",
+            error: "Voice recognition error",
+            networkError: "Network error. Please check your internet connection.",
+            permissionError: "Microphone permission denied. Please check browser settings.",
+            serviceNotAllowedError: "Voice recognition service not allowed. Please check browser settings.",
+            badGrammarError: "Voice recognition grammar error. Please try again.",
+            languageNotSupportedError: "Unsupported language. Please select a different language.",
+            listening: "Listening...",
+            processing: "Processing...",
+            readyToRecord: "Ready to record",
+            insert: "Insert",
         },
         toolbar: {
             bold: "Bold",
@@ -358,7 +320,6 @@ export const translations = {
             backToLanding: "Ana Sayfaya Dön",
         },
         defaultNoteTitle: "Başlıksız Not",
-        addTag: "Etiket ekle...",
         editor: {
             placeholder: "Bir sonraki harika fikrinizi yazmaya başlayın...",
         },
@@ -390,6 +351,8 @@ export const translations = {
             sessionError: "Sohbet oturumu başlatılamadı. Lütfen tekrar deneyin.",
             toggleWebSearch: "Web Aramasını Aç/Kapat",
             sources: "Kaynaklar",
+            insertToEditor: "Editöre Ekle",
+            insertedToEditor: "Editöre eklendi",
         },
         contextMenu: {
             improve: "Yazıyı iyileştir",
@@ -477,8 +440,6 @@ export const translations = {
             cannotSaveLocked: "Şifre olmadan kilitli not kaydedilemez.",
             shareSuccess: "Başarıyla paylaşıldı.",
             shareUnavailable: "Paylaşım burada desteklenmiyor. Panoya kopyalandı.",
-            setupComplete: "Kurulum başarıyla tamamlandı! Neural Pad'e hoş geldiniz.",
-            backupReminder: "⚠️ Notlarınızı yedekleyin! 7 günden fazla zaman geçti. Yedeklemek için tıklayın.",
         },
         common: {
             save: "Kaydet",
@@ -599,55 +560,8 @@ export const translations = {
             troubleshootingApi: "API anahtarı uyarısı: Ayarlar'ı açıp sağlayıcı anahtarınızı ekleyin.",
             troubleshootingImages: "Resim yapışmıyor: panoda resim olduğundan emin olun; sürükle-bırak yapın veya araç çubuğundan yükleyin.",
         },
-        setup: {
-            step: "Adım",
-            of: "/",
-            setup: "Kurulum",
-            back: "Geri",
-            next: "İleri",
-            startUsing: "Neural Pad'i Kullanmaya Başla",
-            welcome: {
-                title: "Neural Pad'e Hoş Geldiniz",
-                description: "Akıllı yazma yardımcınızı sadece birkaç adımda kuralım. Bu sadece bir dakika sürecek!",
-                features: {
-                    ai: "AI Destekli",
-                    aiDesc: "Akıllı yazma yardımı",
-                    themes: "Güzel Temalar",
-                    themesDesc: "Açık ve koyu modlar",
-                    secure: "Güvenli ve Özel",
-                    secureDesc: "Verileriniz yerel kalır"
-                }
-            },
-            theme: {
-                title: "Temanızı Seçin",
-                description: "Size en uygun görünümü seçin. Bunu istediğiniz zaman Ayarlar'dan değiştirebilirsiniz.",
-                light: "Açık Mod",
-                lightDesc: "Temiz ve parlak arayüz",
-                dark: "Koyu Mod",
-                darkDesc: "Gözlere daha rahat"
-            },
-            language: {
-                title: "Dilinizi Seçin",
-                description: "Arayüz için tercih ettiğiniz dili seçin."
-            },
-            api: {
-                title: "AI Yapılandırması",
-                description: "Tercih ettiğiniz AI sağlayıcısını seçin. AI özelliklerini açmak için API anahtarlarını daha sonra Ayarlar'dan ekleyebilirsiniz.",
-                recommended: "Önerilen",
-                note: "Not",
-                noteDesc: "Yazma yardımı ve sohbet gibi AI özelliklerini etkinleştirmek için API anahtarlarını daha sonra Ayarlar'dan yapılandırabilirsiniz."
-            },
-            complete: {
-                title: "Kurulum Tamamlandı!",
-                description: "Her şey hazır! Neural Pad notlarınızı yazmanıza, düzenlemenize ve AI ile geliştirmenize yardımcı olmaya hazır.",
-                summary: "Yapılandırmanız:",
-                theme: "Tema",
-                language: "Dil",
-                apiProvider: "AI Sağlayıcısı"
-            }
-        },
         aiPrompts: {
-             languageInstruction: "Lütfen yanıtı seçilen metinle aynı dilde verin.",
+            languageInstruction: "Lütfen yanıtı seçilen metinle aynı dilde sağlayın.",
             responseTitle: "Yapay Zeka Yanıtı",
             improveWriting: "Aşağıdaki metnin yazımını daha net, öz ve ilgi çekici hale getirerek iyileştirin",
             fixSpelling: "Aşağıdaki metindeki yazım ve dilbilgisi hatalarını düzeltin",
@@ -661,16 +575,26 @@ export const translations = {
             noNotes: "Henüz not yok. Bir tane oluşturun!",
         },
         password: {
-            setTitle: "Şifre Belirle",
-            unlockTitle: "Şifreyi Girin",
-            removeTitle: "Kilidi Kaldır",
-            passwordLabel: "Şifre",
-            placeholder: "Şifre girin",
-            confirm: "Onayla",
+            setTitle: "Set Password",
+            unlockTitle: "Enter Password",
+            removeTitle: "Remove Lock",
+            passwordLabel: "Password",
+            placeholder: "Enter password",
+            confirm: "Confirm",
         },
         voice: {
-            start: "Sesli Girişi Başlat",
-            stop: "Sesli Girişi Durdur",
+            start: "Start Voice Input",
+            stop: "Stop Voice Input",
+            error: "Voice recognition error",
+            networkError: "Network error. Please check your internet connection.",
+            permissionError: "Microphone permission denied. Please check browser settings.",
+            serviceNotAllowedError: "Voice recognition service not allowed. Please check browser settings.",
+            badGrammarError: "Voice recognition grammar error. Please try again.",
+            languageNotSupportedError: "Unsupported language. Please select a different language.",
+            listening: "Listening...",
+            processing: "Processing...",
+            readyToRecord: "Ready to record",
+            insert: "Insert",
         },
         toolbar: {
             bold: "Kalın",
@@ -689,3 +613,8 @@ export const translations = {
         },
     },
 };
+
+
+
+
+

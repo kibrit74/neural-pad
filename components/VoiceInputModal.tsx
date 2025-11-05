@@ -1,71 +1,135 @@
-import React, { useState } from 'react';
-import { MicIcon, StopIcon, SendIcon } from './icons/Icons';
+import React, { useState, useEffect } from 'react';
+import { useTranslations } from '../hooks/useTranslations';
+import { MicIcon, StopIcon, SendIcon, CloseIcon } from './icons/Icons';
 
 interface VoiceInputModalProps {
   interimTranscript: string;
   finalTranscript: string;
   isRecording: boolean;
+  isInitializing: boolean;
   onToggleRecording: () => void;
   onSubmit: (text: string) => void;
   onClose: () => void;
 }
 
-const VoiceInputModal: React.FC<VoiceInputModalProps> = ({ 
-  interimTranscript, 
+const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
+  interimTranscript,
   finalTranscript,
-  isRecording, 
-  onToggleRecording, 
+  isRecording,
+  isInitializing,
+  onToggleRecording,
   onSubmit,
-  onClose 
+  onClose,
 }) => {
+  const { t } = useTranslations();
+  const [status, setStatus] = useState<'idle' | 'listening' | 'processing'>('idle');
   const [editedText, setEditedText] = useState('');
+
+  useEffect(() => {
+    if (isInitializing) {
+      setStatus('processing');
+    } else if (isRecording) {
+      setStatus('listening');
+    } else if (status === 'listening' && !isRecording && !finalTranscript) {
+      // Recording was stopped before any final transcript was received
+      setStatus('idle');
+    } else if (status === 'listening' && !isRecording && finalTranscript) {
+      // Recording stopped, and we have a transcript to process/show
+      setStatus('idle');
+    }
+  }, [isRecording, isInitializing, finalTranscript, status]);
   
+  // When the modal opens, if not already recording, start listening.
+  useEffect(() => {
+    onToggleRecording();
+  }, []);
+
+
   const displayText = editedText || finalTranscript + (interimTranscript ? ' ' + interimTranscript : '');
-  
+
   const handleSubmit = () => {
     const textToSubmit = editedText || finalTranscript;
     if (textToSubmit.trim()) {
       onSubmit(textToSubmit);
-      onClose();
+    }
+    onClose();
+  };
+
+  const getStatusText = () => {
+    switch (status) {
+      case 'listening':
+        return t('voice.listening') || 'Dinleniyor...';
+      case 'processing':
+        return t('voice.processing') || 'İşleniyor...';
+      default:
+        return t('voice.readyToRecord') || 'Kayıt için hazır';
     }
   };
 
+  // Model durumu göstergesi
+  const ModelStatusIndicator = () => (
+    <div className="flex items-center gap-2 text-xs text-text-secondary mb-2">
+      <div className={`w-2 h-2 rounded-full ${
+        !isInitializing && !isRecording ? 'bg-green-500' : 
+        isInitializing ? 'bg-yellow-500 animate-pulse' : 
+        'bg-blue-500 animate-pulse'
+      }`} />
+      <span>
+        {isInitializing ? 'Model yükleniyor...' : 
+         isRecording ? 'Aktif' : 'Hazır'}
+      </span>
+    </div>
+  );
+  
+  const handleToggle = () => {
+    if (isRecording) {
+        setStatus('processing');
+    }
+    onToggleRecording();
+  }
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-      <div className="bg-background-secondary rounded-lg p-8 shadow-xl max-w-2xl w-full mx-4 flex flex-col items-center gap-4">
-        <h3 className="text-lg font-semibold text-text-primary">
-          Sesli Giriş
-        </h3>
-        <textarea
-          value={displayText}
-          onChange={(e) => setEditedText(e.target.value)}
-          className="w-full min-h-[180px] p-4 bg-background rounded border border-border-strong text-text-primary text-base resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-          placeholder="Metin burada görünecek..."
-        />
-        <div className="w-full flex gap-2">
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 animate-fade-in-fast">
+      <div className="bg-background-secondary rounded-2xl p-6 shadow-xl max-w-lg w-full mx-4 flex flex-col items-center gap-6 relative animate-scale-in">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 p-1 rounded-full text-text-secondary hover:bg-border"
+          aria-label={t('common.close')}
+        >
+          <CloseIcon width="20" height="20" />
+        </button>
+
+        <div className="w-full text-center">
+          <ModelStatusIndicator />
+          <p className="text-lg font-semibold text-text-primary mb-2">{getStatusText()}</p>
+          <div className="w-full h-28 min-h-[100px] p-4 bg-background rounded-lg border border-border text-text-primary text-lg overflow-y-auto">
+            {finalTranscript}
+            <span className="text-text-secondary">{interimTranscript}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-6 w-full">
+          <div className="flex-grow"></div>
           <button
-            onClick={onToggleRecording}
-            className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-              isRecording 
-                ? 'bg-red-500 hover:bg-red-600 text-white' 
-                : 'bg-primary hover:bg-primary-hover text-primary-text'
-            }`}
+            onClick={handleToggle}
+            disabled={isInitializing}
+            className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+              isRecording
+                ? 'bg-red-500 text-white shadow-lg animate-pulse-voice'
+                : 'bg-primary text-primary-text'
+            } disabled:opacity-50`}
+            aria-label={isRecording ? t('voice.stop') : t('voice.start')}
           >
-            {isRecording ? <StopIcon /> : <MicIcon />}
-            {isRecording ? 'Durdur' : 'Kaydet'}
+            {isRecording ? <StopIcon width="32" height="32" /> : <MicIcon width="32" height="32" />}
           </button>
+
           <button
             onClick={handleSubmit}
-            disabled={!displayText.trim()}
-            className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            disabled={!finalTranscript.trim() || isRecording || isInitializing}
+            className="w-14 h-14 bg-green-500 text-white rounded-full flex items-center justify-center transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label={t('voice.insert')}
           >
-            <SendIcon />
-          </button>
-          <button
-            onClick={onClose}
-            className="px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
-          >
-            X
+            <SendIcon width="24" height="24" />
           </button>
         </div>
       </div>

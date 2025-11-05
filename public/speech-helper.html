@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ses Tanıma Yardımcısı</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .status.idle {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .status.listening {
+            background: #fef3c7;
+            color: #92400e;
+            animation: pulse 2s infinite;
+        }
+        
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .transcript {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 150px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .transcript.empty {
+            color: #9ca3af;
+            font-style: italic;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-start {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-start:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-stop {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-stop:hover:not(:disabled) {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+        
+        .btn-copy {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-copy:hover:not(:disabled) {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .info {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #1e40af;
+        }
+        
+        .mic-icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="mic-icon">🎤</div>
+        <h1>Ses Tanıma Yardımcısı</h1>
+        <p class="subtitle">Electron uygulaması için ses tanıma desteği</p>
+        
+        <div id="status" class="status idle">
+            Hazır - Başlamak için butona tıklayın
+        </div>
+        
+        <div id="transcript" class="transcript empty">
+            Konuşmanız burada görünecek...
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn" class="btn-start">🎤 Başlat</button>
+            <button id="stopBtn" class="btn-stop" disabled>⏹️ Durdur</button>
+            <button id="copyBtn" class="btn-copy" disabled>📋 Kopyala</button>
+        </div>
+        
+        <div class="info">
+            💡 <strong>İpucu:</strong> Konuşmanızı bitirdiğinizde "Durdur" butonuna tıklayın ve "Kopyala" ile metni kopyalayın. Ardından Electron uygulamasına yapıştırabilirsiniz.
+        </div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const transcriptEl = document.getElementById('transcript');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        
+        let recognition = null;
+        let finalTranscript = '';
+        
+        // Check support
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            statusEl.className = 'status error';
+            statusEl.textContent = '❌ Tarayıcınız ses tanımayı desteklemiyor';
+            startBtn.disabled = true;
+        }
+        
+        startBtn.addEventListener('click', () => {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'tr-TR';
+            
+            recognition.onstart = () => {
+                statusEl.className = 'status listening';
+                statusEl.textContent = '🎤 Dinleniyor... Konuşun';
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                finalTranscript = '';
+            };
+            
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                const fullText = finalTranscript + interimTranscript;
+                transcriptEl.textContent = fullText || 'Konuşmanız burada görünecek...';
+                transcriptEl.className = fullText ? 'transcript' : 'transcript empty';
+                
+                copyBtn.disabled = !finalTranscript.trim();
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ Hata: ' + event.error;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            };
+            
+            recognition.onend = () => {
+                statusEl.className = 'status idle';
+                statusEl.textContent = finalTranscript.trim() 
+                    ? '✅ Tamamlandı - Metni kopyalayabilirsiniz' 
+                    : 'Hazır - Başlamak için butona tıklayın';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            };
+            
+            recognition.start();
+        });
+        
+        stopBtn.addEventListener('click', () => {
+            if (recognition) {
+                recognition.stop();
+            }
+        });
+        
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(finalTranscript.trim());
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅ Kopyalandı!';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            } catch (err) {
+                alert('Kopyalama başarısız: ' + err.message);
+            }
+        });
+    </script>
+</body>
+</html>

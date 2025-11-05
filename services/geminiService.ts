@@ -262,7 +262,8 @@ async function* streamGemini(
     history: ChatMessage[],
     settings: Settings,
     forceWebSearch: boolean,
-    editorContext?: EditorContext
+    editorContext?: EditorContext,
+    language?: 'tr' | 'en'
 ): AsyncGenerator<StreamChunk> {
     try {
         const apiKey = validateApiKey(settings.geminiApiKey, 'Gemini');
@@ -308,8 +309,14 @@ async function* streamGemini(
             }))
         );
 
+        const languageInstruction = language === 'tr' 
+            ? 'IMPORTANT: Always respond in Turkish (Türkçe). Kullanıcıya her zaman Türkçe cevap ver.'
+            : 'IMPORTANT: Always respond in English.';
+
         const systemInstruction = useWebSearch
-            ? `You are an AI assistant with access to Google Search. When answering questions:
+            ? `You are an AI assistant with access to Google Search. ${languageInstruction}
+
+When answering questions:
 
 1. ALWAYS use Google Search for:
    - Current events, news, or recent information
@@ -333,7 +340,7 @@ Example:
 Sources:
 [1] Weather.com - Today's Forecast
 [2] AccuWeather - Current Conditions"`
-            : "You are a helpful AI assistant. Provide clear, accurate, and comprehensive answers.";
+            : `You are a helpful AI assistant. ${languageInstruction} Provide clear, accurate, and comprehensive answers.`;
 
         const stream = await ai.models.generateContentStream({
             model,
@@ -372,7 +379,8 @@ Sources:
 async function* streamOpenAI(
     history: ChatMessage[],
     settings: Settings,
-    editorContext?: EditorContext
+    editorContext?: EditorContext,
+    language?: 'tr' | 'en'
 ): AsyncGenerator<StreamChunk> {
     try {
         // FIX: The API key was being accessed from a non-existent `apiKeys` object.
@@ -380,7 +388,18 @@ async function* streamOpenAI(
         const apiKey = validateApiKey(settings.openaiApiKey, 'OpenAI');
         const config = getGenerationConfig(settings);
 
+        const languageInstruction = language === 'tr' 
+            ? 'IMPORTANT: Always respond in Turkish (Türkçe). Kullanıcıya her zaman Türkçe cevap ver.'
+            : 'IMPORTANT: Always respond in English.';
+
         const messages = [] as { role: 'assistant'|'user'|'system'; content: string }[];
+        
+        // Add language instruction as system message
+        messages.push({
+            role: 'system',
+            content: languageInstruction
+        });
+        
         if (editorContext && (editorContext.text || (editorContext.images && editorContext.images.length))) {
             messages.push({
                 role: 'system',
@@ -454,7 +473,8 @@ async function* streamOpenAI(
 async function* streamClaude(
     history: ChatMessage[],
     settings: Settings,
-    editorContext?: EditorContext
+    editorContext?: EditorContext,
+    language?: 'tr' | 'en'
 ): AsyncGenerator<StreamChunk> {
     try {
         // FIX: The API key was being accessed from a non-existent `apiKeys` object.
@@ -462,7 +482,18 @@ async function* streamClaude(
         const apiKey = validateApiKey(settings.claudeApiKey, 'Claude');
         const config = getGenerationConfig(settings);
 
+        const languageInstruction = language === 'tr' 
+            ? 'IMPORTANT: Always respond in Turkish (Türkçe). Kullanıcıya her zaman Türkçe cevap ver.'
+            : 'IMPORTANT: Always respond in English.';
+
         const messages = [] as { role: 'assistant'|'user'|'system'; content: string }[];
+        
+        // Add language instruction as system message
+        messages.push({
+            role: 'system',
+            content: languageInstruction
+        });
+        
         if (editorContext && (editorContext.text || (editorContext.images && editorContext.images.length))) {
             messages.push({
                 role: 'system',
@@ -550,7 +581,8 @@ export async function* getChatStream(
     history: ChatMessage[],
     settings: Settings,
     forceWebSearch: boolean = false, // Varsayılan olarak otomatik tespit aktif
-    editorContext?: EditorContext
+    editorContext?: EditorContext,
+    language?: 'tr' | 'en'
 ): AsyncGenerator<StreamChunk> {
     const provider: ApiProvider = settings.apiProvider || 'gemini';
 
@@ -562,16 +594,16 @@ export async function* getChatStream(
     try {
         switch (provider) {
             case 'openai':
-                yield* streamOpenAI(history, settings, editorContext);
+                yield* streamOpenAI(history, settings, editorContext, language);
                 break;
             
             case 'claude':
-                yield* streamClaude(history, settings, editorContext);
+                yield* streamClaude(history, settings, editorContext, language);
                 break;
             
             case 'gemini':
             default:
-                yield* streamGemini(history, settings, forceWebSearch, editorContext);
+                yield* streamGemini(history, settings, forceWebSearch, editorContext, language);
                 break;
         }
     } catch (error: any) {

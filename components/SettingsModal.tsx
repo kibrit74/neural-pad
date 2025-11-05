@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useTheme, Theme } from '../contexts/ThemeContext';
+import React, { useState, useContext } from 'react';
+import { ThemeContext, Theme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslations } from '../hooks/useTranslations';
 import type { Settings, ApiProvider } from '../types';
@@ -14,7 +14,17 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave, onClose }) => {
     const { t } = useTranslations();
-    const { theme, setTheme } = useTheme();
+    // Access theme context safely; fall back to DOM/localStorage if provider is missing
+    const themeCtx = useContext(ThemeContext);
+    const theme: Theme = (themeCtx?.theme || (document.documentElement.getAttribute('data-theme') as Theme) || 'default');
+    const setThemeSafe = (th: Theme) => {
+        if (themeCtx?.setTheme) {
+            themeCtx.setTheme(th);
+        } else {
+            document.documentElement.setAttribute('data-theme', th);
+            localStorage.setItem('theme', th);
+        }
+    };
     const { language, setLanguage } = useLanguage();
     const [localSettings, setLocalSettings] = useState<Settings>(settings);
 
@@ -179,11 +189,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                         {themes.map(themeName => (
                             <button
                                 key={themeName}
-                                onClick={() => setTheme(themeName)}
-                                className={`p-4 rounded-md border-2 transition-colors capitalize text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary ${
+                                onClick={() => setThemeSafe(themeName)}
+                                aria-pressed={theme === themeName}
+                                className={`p-4 rounded-md border-2 transition-colors text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary capitalize ${
                                     theme === themeName
-                                    ? 'border-primary bg-primary text-primary-text'
-                                    : 'border-border-strong bg-background hover:bg-border text-text-primary'
+                                        ? 'border-primary bg-primary text-primary-text'
+                                        : 'border-border-strong bg-background hover:bg-border text-text-primary'
                                 }`}
                             >
                                 {t(`settings.themes.${themeName}`)}

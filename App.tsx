@@ -1,25 +1,27 @@
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Editor as TiptapEditor } from '@tiptap/react';
 
 import Header from './components/Header';
 import Editor from './components/Editor';
 import NotesSidebar from './components/NotesSidebar';
-import Chat from './components/Chat';
 import ContextMenu from './components/ContextMenu';
 import SettingsModal from './components/SettingsModal';
 import Notification from './components/Notification';
 import ResizableHandle from './components/ResizableHandle';
-import WelcomeModal from './components/WelcomeModal';
-import SetupWizard from './components/SetupWizard';
-import HelpModal from './components/HelpModal';
-import MarkdownModal from './components/MarkdownModal';
-import HistoryModal from './components/HistoryModal';
+import TagInput from './components/TagInput';
+// Lazy-loaded heavy components
+const Chat = React.lazy(() => import('./components/Chat'));
+const WelcomeModal = React.lazy(() => import('./components/WelcomeModal'));
+const HelpModal = React.lazy(() => import('./components/HelpModal'));
+const MarkdownModal = React.lazy(() => import('./components/MarkdownModal'));
+const HistoryModal = React.lazy(() => import('./components/HistoryModal'));
 import PasswordModal, { PasswordMode } from './components/PasswordModal';
+// TagInput is small, keep it eager
 
 import type { Settings, NotificationType, Note } from './types';
 import { useTranslations } from './hooks/useTranslations';
-import * as db from './utils/db';
+import * as db from './services/database';
 import { CloseIcon } from './components/icons/Icons';
 import { encryptString, decryptString } from './utils/crypto';
 
@@ -56,7 +58,6 @@ const App: React.FC = () => {
     const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
     const [isHelpModalOpen, setHelpModalOpen] = useState(false);
     const [showWelcome, setShowWelcome] = useState<boolean | null>(null);
-    const [showSetupWizard, setShowSetupWizard] = useState<boolean | null>(null);
     const [contextMenu, setContextMenu] = useState<{ 
         anchorEl: HTMLElement | null;
         type?: 'text' | 'image';
@@ -125,40 +126,6 @@ const App: React.FC = () => {
             return prev;
         });
     }, [settings, t]);
-
-    // Backup reminder system
-    useEffect(() => {
-        const BACKUP_REMINDER_ID = -2;
-        const isElectron = (window as any)?.electron?.isElectron === true;
-        
-        // Only show backup reminder for web version
-        if (!isElectron) {
-            const lastBackup = localStorage.getItem('lastBackupDate');
-            const daysSince = lastBackup ? 
-                Math.floor((Date.now() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24)) : 999;
-            
-            setNotifications(prev => {
-                const hasReminder = prev.some(n => n.id === BACKUP_REMINDER_ID);
-                
-                if (daysSince > 7 && notes.length > 0) {
-                    if (!hasReminder) {
-                        return [...prev, {
-                            id: BACKUP_REMINDER_ID,
-                            message: t('notifications.backupReminder'),
-                            type: 'warning',
-                            persistent: true,
-                            onClick: () => setSettingsModalOpen(true)
-                        }];
-                    }
-                } else {
-                    if (hasReminder) {
-                        return prev.filter(n => n.id !== BACKUP_REMINDER_ID);
-                    }
-                }
-                return prev;
-            });
-        }
-    }, [notes.length, t]);
 
 
     // Note Management
@@ -297,28 +264,17 @@ const App: React.FC = () => {
             });
             
             if (isElectron) {
-                // Electron: Show setup wizard on first run only
-                const hasCompletedSetup = localStorage.getItem('hasCompletedSetup');
-                console.log('Running in Electron - hasCompletedSetup:', hasCompletedSetup);
-                
-                if (!hasCompletedSetup) {
-                    setShowSetupWizard(true);
-                    setShowWelcome(false);
-                } else {
-                    setShowSetupWizard(false);
-                    setShowWelcome(false);
-                }
+                // Electron'da welcome ekranını asla gösterme
+                console.log('Running in Electron - skipping welcome screen');
+                setShowWelcome(false);
             } else {
-                // Web: Show landing page (WelcomeModal) on first visit
+                // Web versiyonunda localStorage kontrolü yap
                 const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeScreen');
                 console.log('Running in Web - hasSeenWelcome:', hasSeenWelcome);
-                
                 if (!hasSeenWelcome) {
                     setShowWelcome(true);
-                    setShowSetupWizard(false);
                 } else {
                     setShowWelcome(false);
-                    setShowSetupWizard(false);
                 }
             }
 
@@ -345,34 +301,6 @@ const App: React.FC = () => {
     const handleEnterApp = () => {
         setShowWelcome(false);
         localStorage.setItem('hasSeenWelcomeScreen', 'true');
-    };
-
-    const handleSetupComplete = (setupData: {
-        theme: 'light' | 'dark';
-        language: 'en' | 'tr';
-        apiProvider: 'openai' | 'claude' | 'gemini';
-    }) => {
-        // Apply the setup configuration
-        const newSettings = {
-            ...settings,
-            apiProvider: setupData.apiProvider,
-        };
-        
-        setSettings(newSettings);
-        localStorage.setItem('gemini-writer-settings', JSON.stringify(newSettings));
-        
-        // Save theme and language preferences
-        localStorage.setItem('theme', setupData.theme);
-        localStorage.setItem('language', setupData.language);
-        
-        // Mark setup as completed
-        localStorage.setItem('hasCompletedSetup', 'true');
-        
-        // Close setup wizard
-        setShowSetupWizard(false);
-        
-        // Show success notification
-        addNotification(t('notifications.setupComplete'), 'success');
     };
 
     const handleTitleChange = (newTitle: string) => {
@@ -514,6 +442,16 @@ const App: React.FC = () => {
             .filter(Boolean) as { mimeType: string; data: string }[];
         return { text, images };
     }, []);
+
+    const handleInsertToEditor = useCallback((content: string) => {
+        if (!editorRef.current) return;
+        
+        // Convert markdown to HTML if needed
+        const htmlContent = content.replace(/\n/g, '<br>');
+        
+        // Insert at the end of the document
+        editorRef.current.chain().focus().insertContent(`<p>${htmlContent}</p>`).run();
+    }, []);
     
     const allTags = useMemo(() => [...new Set(notes.flatMap(note => note.tags || []))].sort(), [notes]);
 
@@ -558,12 +496,25 @@ const App: React.FC = () => {
     }
 
     if (showWelcome) {
-        return <WelcomeModal isOpen={showWelcome} onClose={handleEnterApp} />;
+        return (
+            <Suspense fallback={
+                <div className="flex h-screen w-screen bg-background text-text-primary items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-text-secondary">{t('common.loading')}</p>
+                    </div>
+                </div>
+            }>
+                <WelcomeModal isOpen={showWelcome} onClose={handleEnterApp} />
+            </Suspense>
+        );
     }
 
     return (
         <div className="flex h-screen w-screen bg-background text-text-primary overflow-hidden font-sans">
-            <HelpModal isOpen={isHelpModalOpen} onClose={() => setHelpModalOpen(false)} />
+            <Suspense fallback={null}>
+                <HelpModal isOpen={isHelpModalOpen} onClose={() => setHelpModalOpen(false)} />
+            </Suspense>
 
             {!isMobile && isNotesSidebarOpen && (
                 <div className="w-72 flex-shrink-0">
@@ -625,37 +576,13 @@ const App: React.FC = () => {
                         className="w-full text-2xl font-bold bg-transparent focus:outline-none text-text-primary placeholder:text-text-secondary"
                         aria-label="Note Title"
                     />
-                    <div className="mt-3 flex flex-wrap gap-2 items-center">
-                        {activeNote?.tags && activeNote.tags.map(tag => (
-                            <span key={tag} className="flex items-center bg-border text-text-secondary text-xs font-semibold px-2 py-1 rounded-full">
-                                {tag}
-                                <button 
-                                    onClick={() => handleRemoveTag(tag)} 
-                                    className="ml-1.5 -mr-1 p-0.5 rounded-full hover:bg-background"
-                                    aria-label={`Remove tag ${tag}`}
-                                >
-                                    <CloseIcon width="12" height="12" />
-                                </button>
-                            </span>
-                        ))}
-                        <input
-                            type="text"
-                            placeholder={t('addTag') || 'Add tag...'}
-                            className="text-xs bg-transparent border border-border rounded-full px-3 py-1 focus:outline-none focus:border-primary text-text-primary placeholder:text-text-secondary min-w-[100px]"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    const input = e.currentTarget;
-                                    const newTag = input.value.trim();
-                                    if (newTag && activeNote && !activeNote.tags?.includes(newTag)) {
-                                        handleTagsChange([...(activeNote.tags || []), newTag]);
-                                        input.value = '';
-                                    }
-                                }
-                            }}
-                            aria-label="Add new tag"
+                    {activeNote && (
+                        <TagInput
+                            tags={activeNote.tags || []}
+                            allTags={allTags}
+                            onChange={handleTagsChange}
                         />
-                    </div>
+                    )}
                 </div>
                 <div className="flex-grow overflow-hidden relative" onContextMenu={handleContextMenu}>
                     <div className="absolute right-4 top-4 z-10 flex gap-2">
@@ -666,6 +593,8 @@ const App: React.FC = () => {
                         onChange={handleEditorChange}
                         editorRef={editorRef}
                         onAiImageMenu={handleAiImageMenu}
+                        addNotification={addNotification}
+                        onVoiceSave={async () => { await handleSaveNow(true); }}
                     />
                      {contextMenu.anchorEl && (
                         <ContextMenu
@@ -694,12 +623,15 @@ const App: React.FC = () => {
                 <>
                     <ResizableHandle direction="horizontal" onResize={handleChatResize} />
                     <aside style={{ width: `${chatWidth}px` }} className="flex-shrink-0 h-full">
-                         <Chat
-                            settings={settings}
-                            addNotification={addNotification}
-                            onClose={toggleChatSidebar}
-                            getEditorContext={getEditorContext}
-                        />
+                        <Suspense fallback={<div className="p-4 text-text-secondary">{t('common.loading')}</div>}>
+                            <Chat
+                                settings={settings}
+                                addNotification={addNotification}
+                                onClose={toggleChatSidebar}
+                                getEditorContext={getEditorContext}
+                                onInsertToEditor={handleInsertToEditor}
+                            />
+                        </Suspense>
                     </aside>
                 </>
             )}
@@ -738,12 +670,15 @@ const App: React.FC = () => {
                         />
                     </div>
                     <div className={`fixed top-0 right-0 h-full z-40 transition-transform duration-300 ease-in-out w-[85vw] max-w-sm ${isChatSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                        <Chat
-                            settings={settings}
-                            addNotification={addNotification}
-                            onClose={toggleChatSidebar}
-                            getEditorContext={getEditorContext}
-                        />
+                        <Suspense fallback={<div className="p-4 text-text-secondary">{t('common.loading')}</div>}>
+                            <Chat
+                                settings={settings}
+                                addNotification={addNotification}
+                                onClose={toggleChatSidebar}
+                                getEditorContext={getEditorContext}
+                                onInsertToEditor={handleInsertToEditor}
+                            />
+                        </Suspense>
                     </div>
                 </>
             )}
@@ -828,6 +763,7 @@ const App: React.FC = () => {
             />
 
 
+            <Suspense fallback={null}>
             <MarkdownModal
                 isOpen={isMarkdownModalOpen}
                 html={activeNote?.content || ''}
@@ -836,7 +772,9 @@ const App: React.FC = () => {
                     editorRef.current?.commands.setContent(html, { emitUpdate: true });
                 }}
             />
+            </Suspense>
 
+            <Suspense fallback={null}>
             <HistoryModal
                 isOpen={isHistoryModalOpen}
                 noteId={activeNote?.id || null}
@@ -847,12 +785,7 @@ const App: React.FC = () => {
                     setHistoryModalOpen(false);
                 }}
             />
-
-            {showSetupWizard && (
-                <SetupWizard
-                    onComplete={handleSetupComplete}
-                />
-            )}
+            </Suspense>
             
             <div className="absolute bottom-4 right-4 z-50 space-y-2 w-full max-w-sm" role="region" aria-live="polite" aria-relevant="additions" aria-atomic="false">
                 {notifications.map(n => (
