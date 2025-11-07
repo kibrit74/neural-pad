@@ -129,7 +129,11 @@ const createSchema = async () => {
 };
 // Schema will be created when database is first accessed
 const saveNote = async (note) => {
-    console.log('Attempting to save note:', { id: note.id, title: note.title, hasContent: !!note.content, contentLength: note.content?.length || 0 });
+    // Skip saving empty notes without ID (new notes with no content)
+    if (!note.id && !note.title && !note.content) {
+        console.log('⏭️ Skipping save for empty new note');
+        throw new Error('Cannot save empty note');
+    }
     const now = new Date();
     const isLocked = !!note.isLocked;
     const tagsAsJson = JSON.stringify(note.tags || []);
@@ -152,7 +156,6 @@ const saveNote = async (note) => {
                     isLocked,
                     encrypted: encryptedAsString ?? existingNote.encrypted,
                 };
-                console.log('Updating note in DB:', noteToSave.title);
                 await trx('notes').where('id', note.id).update(noteToSave);
                 noteIdToReturn = note.id;
             }
@@ -168,24 +171,25 @@ const saveNote = async (note) => {
                     isLocked,
                     encrypted: encryptedAsString,
                 };
-                console.log('Creating new note in DB:', noteToSave.title);
                 const returningResult = await trx('notes').insert(noteToSave).returning('id');
                 noteIdToReturn = (typeof returningResult[0] === 'object' ? returningResult[0].id : returningResult[0]);
             }
-            await trx('history').insert({
-                noteId: noteIdToReturn,
-                title: note.title,
-                content: isLocked ? '' : note.content,
-                timestamp: now,
-            });
+            // Only save to history if there's actual content
+            if (note.content || note.title) {
+                await trx('history').insert({
+                    noteId: noteIdToReturn,
+                    title: note.title,
+                    content: isLocked ? '' : note.content,
+                    timestamp: now,
+                });
+            }
             return noteIdToReturn;
         });
-        console.log(`✅ Note saved successfully. ID: ${noteId}`);
         return noteId;
     }
     catch (error) {
-        console.error('❌ Failed to save note to database:', error);
-        throw error; // Re-throw the error to be caught by the caller
+        console.error('❌ Failed to save note:', error);
+        throw error;
     }
 };
 exports.saveNote = saveNote;

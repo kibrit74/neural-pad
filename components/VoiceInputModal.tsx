@@ -7,6 +7,7 @@ interface VoiceInputModalProps {
   finalTranscript: string;
   isRecording: boolean;
   isInitializing: boolean;
+  isTranscribing?: boolean;
   onToggleRecording: () => void;
   onSubmit: (text: string) => void;
   onClose: () => void;
@@ -17,6 +18,7 @@ const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
   finalTranscript,
   isRecording,
   isInitializing,
+  isTranscribing = false,
   onToggleRecording,
   onSubmit,
   onClose,
@@ -38,11 +40,6 @@ const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
       setStatus('idle');
     }
   }, [isRecording, isInitializing, finalTranscript, status]);
-  
-  // When the modal opens, if not already recording, start listening.
-  useEffect(() => {
-    onToggleRecording();
-  }, []);
 
 
   const displayText = editedText || finalTranscript + (interimTranscript ? ' ' + interimTranscript : '');
@@ -56,6 +53,9 @@ const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
   };
 
   const getStatusText = () => {
+    if (isTranscribing) {
+      return t('voice.transcribing') || 'Transkripsiyon yapılıyor...';
+    }
     switch (status) {
       case 'listening':
         return t('voice.listening') || 'Dinleniyor...';
@@ -102,10 +102,12 @@ const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
         <div className="w-full text-center">
           <ModelStatusIndicator />
           <p className="text-lg font-semibold text-text-primary mb-2">{getStatusText()}</p>
-          <div className="w-full h-28 min-h-[100px] p-4 bg-background rounded-lg border border-border text-text-primary text-lg overflow-y-auto">
-            {finalTranscript}
-            <span className="text-text-secondary">{interimTranscript}</span>
-          </div>
+          <textarea
+            value={editedText || (finalTranscript + (interimTranscript ? ' ' + interimTranscript : ''))}
+            onChange={(e) => setEditedText(e.target.value)}
+            className="w-full h-28 min-h-[100px] p-4 bg-background rounded-lg border border-border text-text-primary text-lg overflow-y-auto resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Transkript burada görünecek..."
+          />
         </div>
 
         <div className="flex items-center justify-center gap-6 w-full">

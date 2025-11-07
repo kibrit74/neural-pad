@@ -131,48 +131,62 @@ const App: React.FC = () => {
     // Note Management
     const handleSaveNow = useCallback(async (quiet = false) => {
         const noteToSave = activeNoteRef.current;
-        if (noteToSave) {
-            try {
-                let payload = noteToSave as any;
+        if (!noteToSave) return null;
+
+        // Skip saving empty notes
+        if (!noteToSave.title && !noteToSave.content) {
+            if (!quiet) console.log('⏭️ Skipping save for empty note');
+            return null;
+        }
+
+        try {
+            let payload = noteToSave as any;
+            if (noteToSave.isLocked) {
+                const pwd = passwordCacheRef.current.get(noteToSave.id);
+                if (!pwd) {
+                    if (!quiet) addNotification(t('notifications.cannotSaveLocked'), 'error');
+                    return null;
+                }
+                const encrypted = await encryptString(noteToSave.content || '', pwd);
+                payload = { ...noteToSave, encrypted, content: '' };
+            }
+
+            // If note has temporary ID (from handleNewNote), remove it to create new
+            if (payload.id > 1000000000000) {
+                delete payload.id;
+            }
+
+            const savedId = await db.saveNote(payload);
+            const allNotes = await db.getAllNotes();
+            setNotes(allNotes);
+
+            const updatedNoteInList = allNotes.find(n => n.id === savedId);
+            
+            // Ensure the active note in state is also updated with the new `updatedAt` timestamp
+            if (activeNoteRef.current && updatedNoteInList) {
                 if (noteToSave.isLocked) {
-                    const pwd = passwordCacheRef.current.get(noteToSave.id);
-                    if (!pwd) {
-                        if (!quiet) addNotification(t('notifications.cannotSaveLocked'), 'error');
-                        return null;
-                    }
-                    const encrypted = await encryptString(noteToSave.content || '', pwd);
-                    payload = { ...noteToSave, encrypted, content: '' };
+                    // Preserve decrypted content in the editor/state
+                    setActiveNote(prev => prev ? { ...updatedNoteInList, content: prev.content } : updatedNoteInList);
+                } else {
+                    setActiveNote(updatedNoteInList);
                 }
-
-                const savedId = await db.saveNote(payload);
-                const allNotes = await db.getAllNotes();
-                setNotes(allNotes);
-
-                const updatedNoteInList = allNotes.find(n => n.id === savedId);
-                
-                // Ensure the active note in state is also updated with the new `updatedAt` timestamp
-                if (activeNoteRef.current && activeNoteRef.current.id === savedId && updatedNoteInList) {
-                    if (noteToSave.isLocked) {
-                        // Preserve decrypted content in the editor/state
-                        setActiveNote(prev => prev ? { ...updatedNoteInList, content: prev.content } : updatedNoteInList);
-                    } else {
-                        setActiveNote(updatedNoteInList);
-                    }
-                }
-                
-                if (!quiet) {
-                    addNotification(t('notifications.noteSaved'), 'success');
-                }
-                return savedId;
-            } catch (error: any) {
-                if (!quiet) {
-                    addNotification(t('notifications.saveError', { message: error.message }), 'error');
-                }
-                console.error('Save failed:', error.message);
+            }
+            
+            if (!quiet) {
+                addNotification(t('notifications.noteSaved'), 'success');
+            }
+            return savedId;
+        } catch (error: any) {
+            // Ignore "Cannot save empty note" errors in quiet mode
+            if (error.message === 'Cannot save empty note' && quiet) {
                 return null;
             }
+            if (!quiet) {
+                addNotification(t('notifications.saveError', { message: error.message }), 'error');
+            }
+            console.error('Save failed:', error.message);
+            return null;
         }
-        return null;
     }, [t]);
 
     // Ctrl+S shortcut
@@ -233,7 +247,9 @@ const App: React.FC = () => {
             await handleSaveNow(true);
         }
     
-        const newNoteData: Omit<Note, 'id'> = {
+        // Create note in memory first, save only when user adds content
+        const newNoteData: Note = {
+            id: Date.now(), // Temporary ID
             title: '',
             content: '',
             tags: [],
@@ -241,16 +257,10 @@ const App: React.FC = () => {
             updatedAt: new Date(),
         };
         
-        try {
-            const newId = await db.saveNote(newNoteData);
-            const allNotes = await db.getAllNotes();
-            setNotes(allNotes);
-            await handleSelectNote(newId, true); // Select the new note, skip saving the previous (already saved)
-            titleInputRef.current?.focus();
-        } catch (error: any) {
-            addNotification(t('notifications.saveError', { message: error.message }), 'error');
-        }
-    }, [handleSaveNow, handleSelectNote, t]);
+        setActiveNote(newNoteData);
+        editorRef.current?.commands.setContent('', { emitUpdate: false });
+        titleInputRef.current?.focus();
+    }, [handleSaveNow]);
 
 
     // Load initial data
@@ -595,6 +605,7 @@ const App: React.FC = () => {
                         onAiImageMenu={handleAiImageMenu}
                         addNotification={addNotification}
                         onVoiceSave={async () => { await handleSaveNow(true); }}
+                        settings={settings}
                     />
                      {contextMenu.anchorEl && (
                         <ContextMenu

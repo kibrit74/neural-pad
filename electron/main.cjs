@@ -18,6 +18,16 @@ try {
 } catch (e) {
   console.warn('[Startup] Failed to set log level:', e);
 }
+
+// Enable Web Speech API support
+// These switches are required for speech recognition to work in Electron
+try {
+  app.commandLine.appendSwitch('enable-speech-input'); // Enable speech input features
+  app.commandLine.appendSwitch('enable-speech-dispatcher'); // Enable speech dispatcher service
+  console.log('[Speech] Web Speech API switches enabled');
+} catch (e) {
+  console.warn('[Speech] Failed to enable speech switches:', e);
+}
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -31,13 +41,15 @@ let settings = null;
 // app:// protocol removed - using file:// for Web Speech API compatibility
 
 // Reduce Chromium-internal network noise and background requests in production
+// NOTE: disable-background-networking is NOT used because it blocks Web Speech API
 try {
   if (!isDev) {
-    app.commandLine.appendSwitch('disable-background-networking');
+    // app.commandLine.appendSwitch('disable-background-networking'); // REMOVED: Blocks Web Speech API
     app.commandLine.appendSwitch('disable-client-side-phishing-detection');
     app.commandLine.appendSwitch('no-proxy-server');
     // Disable some Autofill-related features that can trigger background requests
-    app.commandLine.appendSwitch('disable-features', 'AutofillServerCommunication,AutofillAddressProfileSavePrompt');
+    // OutOfBlinkCors is also disabled to allow Web Speech API to work
+    app.commandLine.appendSwitch('disable-features', 'AutofillServerCommunication,AutofillAddressProfileSavePrompt,OutOfBlinkCors');
   }
 } catch (e) {
   console.warn('[Startup] Failed to apply background networking switches:', e);
@@ -98,42 +110,53 @@ function setupSettingsIPC() {
 }
 
 function setupSpeechIPC() {
-  ipcMain.handle('speech:transcribe-audio', async (event, audioBlob) => {
+  const whisperService = require('./whisperService.cjs');
+  
+  // Start Whisper service
+  ipcMain.handle('whisper:start', async (event, modelSize = 'base') => {
     try {
-      console.log('[Speech IPC] Received audio data, size:', audioBlob.length);
+      await whisperService.start(modelSize);
+      return { success: true };
+    } catch (error) {
+      console.error('[Whisper IPC] Start error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+  
+  // Transcribe audio
+  ipcMain.handle('whisper:transcribe', async (event, audioBuffer, language = 'tr') => {
+    try {
+      console.log('[Whisper IPC] Transcribing audio, size:', audioBuffer.length);
+      const transcript = await whisperService.transcribe(Buffer.from(audioBuffer), language);
+      console.log('[Whisper IPC] Transcript:', transcript);
+      return { success: true, transcript };
+    } catch (error) {
+      console.error('[Whisper IPC] Transcribe error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+  
+  // Stop Whisper service
+  ipcMain.handle('whisper:stop', () => {
+    whisperService.stop();
+    return { success: true };
+  });
+  
+  // Speech API handlers for Electron IPC
+  ipcMain.handle('speech:transcribe-audio', async (event, audioData) => {
+    try {
+      console.log('[Speech IPC] Received audio data, size:', audioData.length);
       
-      // Convert audio blob to base64
-      const base64Audio = Buffer.from(audioBlob).toString('base64');
-      
-      // Make request to Google Speech API (no CORS in Node.js!)
-      const response = await fetch('https://speech.googleapis.com/v1/speech:recognize?key=YOUR_API_KEY', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          config: {
-            encoding: 'WEBM_OPUS',
-            sampleRateHertz: 48000,
-            languageCode: 'tr-TR',
-          },
-          audio: {
-            content: base64Audio,
-          },
-        }),
-      });
-      
-      const data = await response.json();
-      const transcript = data.results?.[0]?.alternatives?.[0]?.transcript || '';
-      
-      console.log('[Speech IPC] Transcription:', transcript);
+      // Use Whisper service to transcribe the audio
+      const transcript = await whisperService.transcribe(Buffer.from(audioData), 'tr');
+      console.log('[Speech IPC] Transcription result:', transcript);
       
       // Send result back to renderer
       event.sender.send('speech:transcription-result', transcript);
       
       return { success: true, transcript };
     } catch (error) {
-      console.error('[Speech IPC] Error:', error);
+      console.error('[Speech IPC] Transcription error:', error);
       return { success: false, error: error.message };
     }
   });
@@ -157,6 +180,8 @@ function createWindow() {
       nodeIntegration: false,
       devTools: true,
       sandbox: false, // Required for Web Speech API in Electron
+      webSecurity: false, // Required for Web Speech API to connect to Google servers
+      allowRunningInsecureContent: true, // Allow mixed content for Web Speech API
     }
   });
 
@@ -238,25 +263,13 @@ app.whenReady().then(() => {
   }
   // --- End Database File Check ---
   
-  // Configure CSP for Web Speech API
+  // Disable CSP completely for Web Speech API to work
+  // Web Speech API requires unrestricted access to Google servers
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    const scriptSrc = ["'self'", "'unsafe-inline'", "app:"];
-    if (isDev) {
-      scriptSrc.push("'unsafe-eval'");
-    }
-
     callback({
       responseHeaders: {
         ...details.responseHeaders,
-        'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' app:",
-          `script-src ${scriptSrc.join(' ')}`,
-          "style-src 'self' 'unsafe-inline' app: https://fonts.googleapis.com",
-          "font-src 'self' https://fonts.gstatic.com",
-          "img-src 'self' data: app:",
-          "media-src 'self' https://www.google.com https://*.google.com",
-          "connect-src 'self' app: https://www.google.com https://*.google.com https://speech.googleapis.com https://*.googleapis.com"
-        ].join('; ')
+        // Remove CSP header completely
       }
     });
   });

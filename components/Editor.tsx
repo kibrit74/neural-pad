@@ -39,9 +39,10 @@ interface EditorProps {
     onAiImageMenu: (target: HTMLElement, src: string) => void;
     addNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
     onVoiceSave?: () => void | Promise<void>;
+    settings?: any; // Settings for voice recognition
 }
 
-const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImageMenu, addNotification, onVoiceSave }) => {
+const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImageMenu, addNotification, onVoiceSave, settings }) => {
     const { t } = useTranslations();
     const editor = useEditor({
         extensions: [
@@ -128,7 +129,7 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
     
     return (
         <div className="flex flex-col h-full bg-background text-text-primary">
-            <FormattingToolbar editor={editor} onImageUpload={handleImageUpload} addNotification={addNotification} onVoiceSave={onVoiceSave} />
+            <FormattingToolbar editor={editor} onImageUpload={handleImageUpload} addNotification={addNotification} onVoiceSave={onVoiceSave} settings={settings} />
             <div className="relative flex-grow overflow-y-auto" onClick={() => editor?.commands.focus()}>
                  <EditorContent editor={editor} className="prose dark:prose-invert max-w-none px-6 pb-6 pt-2 focus:outline-none h-full" />
             </div>

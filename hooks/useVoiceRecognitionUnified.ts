@@ -23,9 +23,12 @@ export type VoiceRecognitionResult = {
 export const useVoiceRecognitionUnified = (options: VoiceRecognitionOptions): VoiceRecognitionResult => {
   const { isElectron } = speechRecognitionManager.checkSupport();
   
-  // Always use Web Speech API (works in both Electron and browser)
-  const webResult = useVoiceRecognition(options);
-  
-  console.log('[VoiceRecognitionUnified] Using Web Speech API');
-  return webResult;
+  // Use Electron IPC in Electron environment, Web Speech API in browser
+  if (isElectron) {
+    console.log('[VoiceRecognitionUnified] Using Electron IPC voice recognition');
+    return useElectronVoiceIPC(options);
+  } else {
+    console.log('[VoiceRecognitionUnified] Using Web Speech API');
+    return useVoiceRecognition(options);
+  }
 };

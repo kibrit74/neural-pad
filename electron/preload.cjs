@@ -27,6 +27,11 @@ const electronAPI = {
       return () => ipcRenderer.removeListener('speech:transcription-result', listener);
     }
   },
+  whisper: {
+    start: (modelSize) => ipcRenderer.invoke('whisper:start', modelSize),
+    transcribe: (audioBuffer, language) => ipcRenderer.invoke('whisper:transcribe', audioBuffer, language),
+    stop: () => ipcRenderer.invoke('whisper:stop'),
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronAPI);

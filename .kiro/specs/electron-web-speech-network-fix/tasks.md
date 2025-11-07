@@ -1,6 +1,8 @@
 # Implementation Plan
 
 - [ ] 1. Configure Electron command-line switches for speech recognition
+
+
   - Add `enable-speech-input` and `enable-speech-dispatcher` switches before app initialization
   - Remove or conditionally disable `disable-background-networking` switch that blocks Web Speech API
   - Maintain other security switches (phishing detection, proxy, autofill)

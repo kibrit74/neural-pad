@@ -138,7 +138,12 @@ const createSchema = async () => {
 // Schema will be created when database is first accessed
 
 export const saveNote = async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'> & { id?: number }): Promise<number> => {
-    console.log('Attempting to save note:', { id: note.id, title: note.title, hasContent: !!note.content, contentLength: note.content?.length || 0 });
+    // Skip saving empty notes without ID (new notes with no content)
+    if (!note.id && !note.title && !note.content) {
+        console.log('⏭️ Skipping save for empty new note');
+        throw new Error('Cannot save empty note');
+    }
+
     const now = new Date();
     const isLocked = !!(note as any).isLocked;
     const tagsAsJson = JSON.stringify(note.tags || []);
@@ -164,7 +169,6 @@ export const saveNote = async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'
                     encrypted: encryptedAsString ?? existingNote.encrypted,
                 };
                 
-                console.log('Updating note in DB:', noteToSave.title);
                 await trx('notes').where('id', note.id).update(noteToSave);
                 noteIdToReturn = note.id;
             } else { // Create
@@ -179,25 +183,26 @@ export const saveNote = async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'
                     isLocked,
                     encrypted: encryptedAsString,
                 };
-                console.log('Creating new note in DB:', noteToSave.title);
                 const returningResult = await trx('notes').insert(noteToSave).returning('id');
                 noteIdToReturn = (typeof returningResult[0] === 'object' ? returningResult[0].id : returningResult[0]) as number;
             }
 
-            await trx('history').insert({
-                noteId: noteIdToReturn,
-                title: note.title,
-                content: isLocked ? '' : note.content,
-                timestamp: now,
-            });
+            // Only save to history if there's actual content
+            if (note.content || note.title) {
+                await trx('history').insert({
+                    noteId: noteIdToReturn,
+                    title: note.title,
+                    content: isLocked ? '' : note.content,
+                    timestamp: now,
+                });
+            }
 
             return noteIdToReturn;
         });
-        console.log(`✅ Note saved successfully. ID: ${noteId}`);
         return noteId;
     } catch (error) {
-        console.error('❌ Failed to save note to database:', error);
-        throw error; // Re-throw the error to be caught by the caller
+        console.error('❌ Failed to save note:', error);
+        throw error;
     }
 };
 

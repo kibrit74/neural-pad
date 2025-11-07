@@ -1,14 +1,14 @@
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import { useTranslations } from '../hooks/useTranslations';
-import TurndownService from 'turndown';
 import { useVoiceRecognitionUnified } from '../hooks/useVoiceRecognitionUnified';
+import { useWhisperVoice } from '../hooks/useWhisperVoice';
 import { useLanguage } from '../contexts/LanguageContext';
 import VoiceInputModal from './VoiceInputModal';
 import { hasVoiceCommand, removeVoiceCommand } from '../utils/voiceCommandUtils';
 import {
-    BoldIcon, ItalicIcon, UnderlineIcon, StrikeIcon, CodeIcon, ListIcon, ListOrderedIcon, BlockquoteIcon, UndoIcon, RedoIcon, ImageIcon, MicIcon, StopIcon, PaperclipIcon
+    BoldIcon, ItalicIcon, UnderlineIcon, StrikeIcon, CodeIcon, ListIcon, ListOrderedIcon, BlockquoteIcon, UndoIcon, RedoIcon, ImageIcon, MicIcon, PaperclipIcon
 } from './icons/Icons';
 
 const TableIcon = () => (
@@ -25,6 +25,7 @@ interface FormattingToolbarProps {
     onImageUpload: () => void;
     addNotification?: (message: string, type: 'success' | 'error' | 'warning') => void;
     onVoiceSave?: () => void | Promise<void>;
+    settings?: any; // Settings for Gemini API
 }
 
 const FONT_FAMILY_LIST = [
@@ -72,31 +73,30 @@ const FONT_SIZE_LIST = [
     { name: '50pt', value: '50pt' },
 ];
 
-const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUpload, addNotification, onVoiceSave }) => {
+const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUpload, addNotification, onVoiceSave, settings }) => {
     const { t } = useTranslations();
     const { language } = useLanguage();
     const [interimTranscript, setInterimTranscript] = useState('');
     const [finalTranscript, setFinalTranscript] = useState('');
     const [showModal, setShowModal] = useState(false);
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     if (!editor) {
         return null;
     }
+    
+    // Check if Gemini is available
+    const hasGeminiKey = !!(settings?.geminiApiKey);
+    const isElectron = !!(window as any).electron;
 
-    const handleTranscript = useCallback(async (finalText: string) => {
-        if (!editor) return;
-        
-        const lang = language as 'tr' | 'en';
-        const commandDetected = hasVoiceCommand(finalText, lang);
+    const debouncedSave = useCallback(async () => {
+        // Clear any pending save
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
 
-        if (commandDetected) {
-            // Remove voice command from text
-            const noteText = removeVoiceCommand(finalText, lang);
-
-            if (noteText.trim()) {
-                editor.chain().focus().insertContent(noteText).run();
-            }
-
+        // Debounce save by 1 second
+        saveTimeoutRef.current = setTimeout(async () => {
             try {
                 await onVoiceSave?.();
                 if (addNotification) {
@@ -117,6 +117,25 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                     );
                 }
             }
+        }, 1000);
+    }, [onVoiceSave, addNotification, language]);
+
+    const handleTranscript = useCallback(async (finalText: string) => {
+        if (!editor || !finalText.trim()) return;
+        
+        const lang = language as 'tr' | 'en';
+        const commandDetected = hasVoiceCommand(finalText, lang);
+
+        if (commandDetected) {
+            // Remove voice command from text
+            const noteText = removeVoiceCommand(finalText, lang);
+
+            if (noteText.trim()) {
+                editor.chain().focus().insertContent(noteText).run();
+            }
+
+            // Use debounced save
+            await debouncedSave();
 
             // Clear transcripts after save
             setFinalTranscript('');
@@ -128,9 +147,29 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
         editor.chain().focus().insertContent(finalText).run();
         setFinalTranscript(prev => (prev ? prev + ' ' : '') + finalText);
         setInterimTranscript('');
-    }, [editor, addNotification, onVoiceSave, language]);
+    }, [editor, debouncedSave, language]);
 
-    const { isRecording, isInitializing, start, stop, hasSupport } = useVoiceRecognitionUnified({
+    const whisperVoice = useWhisperVoice({
+        onResult: (transcript) => {
+            handleTranscript(transcript);
+        },
+        onError: (error) => {
+            console.error('Audio transcription error:', error);
+            if (addNotification) {
+                const errorMsg = error.message || error;
+                addNotification(
+                    language === 'tr' 
+                        ? `Ses tanıma hatası: ${errorMsg}` 
+                        : `Voice recognition error: ${errorMsg}`, 
+                    'error'
+                );
+            }
+        },
+        settings: settings,
+        useGemini: hasGeminiKey // Use Gemini 2.0 Flash if API key available
+    });
+
+    const webSpeechVoice = useVoiceRecognitionUnified({
         onResult: (transcript, isFinal) => {
             if (isFinal) {
                 handleTranscript(transcript);
@@ -169,26 +208,38 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
         },
     });
 
-    const handleOpenModal = () => {
-        // Geliştirme aşamasında uyarısı
-        if (addNotification) {
-            addNotification(
-                language === 'tr' 
-                    ? '🎤 Sesli metin girişi geliştirme aşamasındadır.' 
-                    : '🎤 Voice input is under development.', 
-                'warning'
-            );
-        } else {
-            alert(language === 'tr' 
-                ? '🎤 Sesli metin girişi geliştirme aşamasındadır.' 
-                : '🎤 Voice input is under development.');
+    // Select voice recognition based on environment and API availability
+    // Priority: Whisper (Electron) > Gemini (if key available) > Web Speech API
+    // Whisper is more reliable for audio transcription
+    const voiceService = (isElectron || hasGeminiKey) ? whisperVoice : webSpeechVoice;
+    const { isRecording, start, stop, hasSupport } = voiceService;
+    const isInitializing = (isElectron || hasGeminiKey) ? (whisperVoice as any).isProcessing : (webSpeechVoice as any).isInitializing;
+
+    const handleOpenModal = async () => {
+        // Only start Whisper if Gemini is not available
+        if (!hasGeminiKey && isElectron && (window as any).electron?.whisper) {
+            try {
+                const modelSize = localStorage.getItem('whisper-model-size') || 'tiny';
+                console.log('[Voice] Starting Whisper service (Gemini not available), model:', modelSize);
+                await (window as any).electron.whisper.start(modelSize);
+            } catch (error) {
+                console.error('[Voice] Failed to start Whisper:', error);
+                if (addNotification) {
+                    addNotification(
+                        language === 'tr'
+                            ? 'Whisper servisi başlatılamadı. Python yüklü mü?'
+                            : 'Failed to start Whisper service. Is Python installed?',
+                        'error'
+                    );
+                }
+            }
+        } else if (hasGeminiKey) {
+            console.log('[Voice] Using Gemini 2.0 Flash for transcription');
         }
-        return; // Modal açılmasını engelle
         
-        // Always use modal with Web Speech API (works in both Electron and browser)
-        // setShowModal(true);
-        // setFinalTranscript('');
-        // setInterimTranscript('');
+        setShowModal(true);
+        setFinalTranscript('');
+        setInterimTranscript('');
     };
 
     const handleToggleRecording = () => {
@@ -336,7 +387,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                     interimTranscript={interimTranscript}
                     finalTranscript={finalTranscript}
                     isRecording={isRecording}
-                    isInitializing={isInitializing} // Pass this prop
+                    isInitializing={isInitializing}
                     onToggleRecording={handleToggleRecording}
                     onSubmit={handleSubmitVoice}
                     onClose={handleCloseModal}

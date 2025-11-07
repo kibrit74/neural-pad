@@ -175,6 +175,116 @@ export const generateContent = async (
 };
 
 /**
+ * Transcribes audio using Gemini 2.0 Flash's multimodal capabilities
+ * Using the new SDK structure similar to Python/Java examples
+ */
+export const transcribeAudio = async (
+    audioData: Uint8Array,
+    mimeType: string,
+    language: string,
+    settings: Settings
+): Promise<string> => {
+    try {
+        const apiKey = validateApiKey(settings.geminiApiKey, 'Gemini');
+        
+        // Use new Client structure
+        const client = new GoogleGenAI({ apiKey });
+        const model = 'gemini-2.0-flash';
+        
+        console.log('[Gemini Audio] Starting transcription, size:', audioData.length, 'bytes, model:', model);
+        
+        // Convert Uint8Array to base64
+        const base64Audio = btoa(String.fromCharCode(...audioData));
+        
+        const prompt = language === 'tr' 
+            ? 'Bu ses kaydındaki konuşmayı Türkçe olarak metne çevir. Sadece konuşulan sözleri yaz.'
+            : 'Transcribe the speech in this audio to text. Only write the spoken words.';
+        
+        const startTime = Date.now();
+        
+        // According to Gemini docs, audio should be in parts array with proper structure
+        // Use MP3 format as it's explicitly supported
+        const audioMimeType = 'audio/mp3';
+        
+        const contents: Content[] = [{
+            role: 'user',
+            parts: [
+                {
+                    text: prompt
+                },
+                {
+                    inlineData: {
+                        mimeType: audioMimeType,
+                        data: base64Audio
+                    }
+                }
+            ]
+        }];
+        
+        console.log('[Gemini Audio] Request - Model:', model);
+        console.log('[Gemini Audio] Request - Audio size:', audioData.length, 'bytes');
+        console.log('[Gemini Audio] Request - MIME type:', audioMimeType);
+        console.log('[Gemini Audio] Request - Prompt:', prompt.substring(0, 50));
+        
+        // Generate content
+        const response = await client.models.generateContent({
+            model,
+            contents,
+            config: {
+                temperature: 0.0,
+                topK: 1,
+                topP: 0.95,
+                maxOutputTokens: 2048
+            }
+        });
+
+        const elapsed = Date.now() - startTime;
+        const transcriptText = response.text.trim();
+        console.log(`[Gemini Audio] Transcription complete in ${elapsed}ms:`, transcriptText.substring(0, 50));
+
+        return transcriptText;
+    } catch (error: any) {
+        console.error('[Gemini Audio] ========== FULL ERROR ==========');
+        console.error('[Gemini Audio] Error object:', error);
+        console.error('[Gemini Audio] Error message:', error.message);
+        console.error('[Gemini Audio] Error stack:', error.stack);
+        
+        // Try to get response body
+        if (error.response) {
+            console.error('[Gemini Audio] Response status:', error.response.status);
+            console.error('[Gemini Audio] Response headers:', error.response.headers);
+            console.error('[Gemini Audio] Response data:', error.response.data);
+            console.error('[Gemini Audio] Response body:', JSON.stringify(error.response.data, null, 2));
+        }
+        
+        // Try to get request details
+        if (error.config) {
+            console.error('[Gemini Audio] Request URL:', error.config.url);
+            console.error('[Gemini Audio] Request method:', error.config.method);
+            console.error('[Gemini Audio] Request headers:', error.config.headers);
+            console.error('[Gemini Audio] Request data:', error.config.data ? error.config.data.substring(0, 500) : 'N/A');
+        }
+        
+        // Log the entire error as JSON
+        console.error('[Gemini Audio] Full error JSON:', JSON.stringify(error, null, 2));
+        console.error('[Gemini Audio] ========== END ERROR ==========');
+        
+        const errorMessage = error.message || '';
+        const errorString = JSON.stringify(error);
+        
+        if (errorMessage.includes('API_KEY_INVALID') || errorString.includes('API_KEY_INVALID')) {
+            throw new Error('Gemini API key geçersiz.');
+        } else if (errorMessage.includes('QUOTA_EXCEEDED') || errorString.includes('QUOTA')) {
+            throw new Error('Gemini API kotası doldu.');
+        } else if (errorMessage.includes('400') || errorString.includes('400')) {
+            throw new Error('Gemini API 400 hatası - Console\'da detayları kontrol edin.');
+        }
+        
+        throw new Error(`Gemini ses tanıma hatası: ${errorMessage || 'Bilinmeyen hata'}`);
+    }
+};
+
+/**
  * Generates tags for notes using AI with structured output
  */
 export const generateTagsForNote = async (
