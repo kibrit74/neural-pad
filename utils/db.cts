@@ -130,6 +130,22 @@ const createSchema = async () => {
     });
     console.log('✅ "history" table created');
   }
+
+  // Create images table for tracking uploaded images
+  const hasImagesTable = await knex.schema.hasTable('images');
+  if (!hasImagesTable) {
+    await knex.schema.createTable('images', (table) => {
+      table.increments('id').primary();
+      table.string('filename').notNullable().unique(); // hash.png
+      table.string('hash').notNullable().unique(); // SHA-256 hash
+      table.integer('size').notNullable(); // File size in bytes
+      table.dateTime('createdAt').notNullable();
+      table.dateTime('lastUsedAt').notNullable(); // For cleanup of unused images
+      table.index('hash');
+      table.index('lastUsedAt');
+    });
+    console.log('✅ "images" table created');
+  }
   
   // After ensuring tables exist, run migration logic
   await migrateSchema();
@@ -148,6 +164,20 @@ export const saveNote = async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'
     const isLocked = !!(note as any).isLocked;
     const tagsAsJson = JSON.stringify(note.tags || []);
     const encryptedAsString = (note as any).encrypted ? JSON.stringify((note as any).encrypted) : null;
+
+    // Extract image hashes from content and update their usage
+    if (note.content) {
+        const imageRegex = /app:\/\/images\/([a-f0-9]+)\.png/g;
+        const matches = note.content.matchAll(imageRegex);
+        for (const match of matches) {
+            const hash = match[1];
+            try {
+                await updateImageUsage(hash);
+            } catch (error) {
+                console.error('Failed to update image usage:', hash, error);
+            }
+        }
+    }
 
     try {
         const knex = getKnex();
@@ -254,4 +284,60 @@ export const getHistory = async (noteId: number): Promise<{ id: number; noteId: 
 export const deleteNote = async (id: number): Promise<void> => {
     const knex = getKnex();
     await knex('notes').where('id', id).del();
+};
+
+// Image tracking functions
+export const trackImage = async (filename: string, hash: string, size: number): Promise<void> => {
+    const knex = getKnex();
+    const now = new Date();
+    
+    try {
+        await knex('images').insert({
+            filename,
+            hash,
+            size,
+            createdAt: now,
+            lastUsedAt: now
+        }).onConflict('hash').merge({
+            lastUsedAt: now
+        });
+    } catch (error) {
+        console.error('Failed to track image:', error);
+    }
+};
+
+export const updateImageUsage = async (hash: string): Promise<void> => {
+    const knex = getKnex();
+    try {
+        await knex('images').where('hash', hash).update({
+            lastUsedAt: new Date()
+        });
+    } catch (error) {
+        console.error('Failed to update image usage:', error);
+    }
+};
+
+export const getUnusedImages = async (daysOld: number = 30): Promise<string[]> => {
+    const knex = getKnex();
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    
+    try {
+        const images = await knex('images')
+            .where('lastUsedAt', '<', cutoffDate)
+            .select('filename');
+        return images.map(img => img.filename);
+    } catch (error) {
+        console.error('Failed to get unused images:', error);
+        return [];
+    }
+};
+
+export const deleteImageRecord = async (hash: string): Promise<void> => {
+    const knex = getKnex();
+    try {
+        await knex('images').where('hash', hash).del();
+    } catch (error) {
+        console.error('Failed to delete image record:', error);
+    }
 };

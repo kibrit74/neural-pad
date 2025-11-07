@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteNote = exports.getHistory = exports.getNote = exports.getAllNotes = exports.saveNote = void 0;
+exports.deleteImageRecord = exports.getUnusedImages = exports.updateImageUsage = exports.trackImage = exports.deleteNote = exports.getHistory = exports.getNote = exports.getAllNotes = exports.saveNote = void 0;
 const path_1 = __importDefault(require("path"));
 const electron_1 = require("electron");
 const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
@@ -124,6 +124,21 @@ const createSchema = async () => {
         });
         console.log('✅ "history" table created');
     }
+    // Create images table for tracking uploaded images
+    const hasImagesTable = await knex.schema.hasTable('images');
+    if (!hasImagesTable) {
+        await knex.schema.createTable('images', (table) => {
+            table.increments('id').primary();
+            table.string('filename').notNullable().unique(); // hash.png
+            table.string('hash').notNullable().unique(); // SHA-256 hash
+            table.integer('size').notNullable(); // File size in bytes
+            table.dateTime('createdAt').notNullable();
+            table.dateTime('lastUsedAt').notNullable(); // For cleanup of unused images
+            table.index('hash');
+            table.index('lastUsedAt');
+        });
+        console.log('✅ "images" table created');
+    }
     // After ensuring tables exist, run migration logic
     await migrateSchema();
 };
@@ -138,6 +153,20 @@ const saveNote = async (note) => {
     const isLocked = !!note.isLocked;
     const tagsAsJson = JSON.stringify(note.tags || []);
     const encryptedAsString = note.encrypted ? JSON.stringify(note.encrypted) : null;
+    // Extract image hashes from content and update their usage
+    if (note.content) {
+        const imageRegex = /app:\/\/images\/([a-f0-9]+)\.png/g;
+        const matches = note.content.matchAll(imageRegex);
+        for (const match of matches) {
+            const hash = match[1];
+            try {
+                await (0, exports.updateImageUsage)(hash);
+            }
+            catch (error) {
+                console.error('Failed to update image usage:', hash, error);
+            }
+        }
+    }
     try {
         const knex = getKnex();
         const noteId = await knex.transaction(async (trx) => {
@@ -242,3 +271,61 @@ const deleteNote = async (id) => {
     await knex('notes').where('id', id).del();
 };
 exports.deleteNote = deleteNote;
+// Image tracking functions
+const trackImage = async (filename, hash, size) => {
+    const knex = getKnex();
+    const now = new Date();
+    try {
+        await knex('images').insert({
+            filename,
+            hash,
+            size,
+            createdAt: now,
+            lastUsedAt: now
+        }).onConflict('hash').merge({
+            lastUsedAt: now
+        });
+    }
+    catch (error) {
+        console.error('Failed to track image:', error);
+    }
+};
+exports.trackImage = trackImage;
+const updateImageUsage = async (hash) => {
+    const knex = getKnex();
+    try {
+        await knex('images').where('hash', hash).update({
+            lastUsedAt: new Date()
+        });
+    }
+    catch (error) {
+        console.error('Failed to update image usage:', error);
+    }
+};
+exports.updateImageUsage = updateImageUsage;
+const getUnusedImages = async (daysOld = 30) => {
+    const knex = getKnex();
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    try {
+        const images = await knex('images')
+            .where('lastUsedAt', '<', cutoffDate)
+            .select('filename');
+        return images.map(img => img.filename);
+    }
+    catch (error) {
+        console.error('Failed to get unused images:', error);
+        return [];
+    }
+};
+exports.getUnusedImages = getUnusedImages;
+const deleteImageRecord = async (hash) => {
+    const knex = getKnex();
+    try {
+        await knex('images').where('hash', hash).del();
+    }
+    catch (error) {
+        console.error('Failed to delete image record:', error);
+    }
+};
+exports.deleteImageRecord = deleteImageRecord;

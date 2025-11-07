@@ -81,7 +81,17 @@ function setupFileIPC() {
         console.log(`[FileIPC] Image already exists, skipping write: ${filePath}`);
       }
       
-      const fileUrl = `app://images/${filename}`;
+      // Track image in database
+      try {
+        await db.trackImage(filename, hash, buffer.length);
+        console.log(`[FileIPC] Image tracked in database: ${hash}`);
+      } catch (dbError) {
+        console.error('[FileIPC] Failed to track image in database:', dbError);
+        // Continue anyway, file is saved
+      }
+      
+      // Use file:// protocol since app:// was removed for Web Speech API compatibility
+      const fileUrl = `file:///${filePath.replace(/\\/g, '/')}`;
       console.log(`[FileIPC] Returning file URL: ${fileUrl}`);
       return fileUrl;
     } catch (error) {
