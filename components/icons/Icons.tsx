@@ -38,6 +38,16 @@ export const SaveIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </SVGIcon>
 );
 
+export const SaveAsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <SVGIcon {...props}>
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+        <line x1="12" y1="11" x2="12" y2="17"></line>
+        <line x1="9" y1="14" x2="15" y2="14"></line>
+    </SVGIcon>
+);
+
 export const WandIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <SVGIcon width="20" height="20" {...props}>
         <path d="M15 4V2m0 20v-2m5-13h2M2 11h2m12.56-5.56L18 4m-9.06 9.06L8 12M4 6l1.41 1.41M18 18l1.41 1.41M12 8a4 4 0 0 0-4 4h8a4 4 0 0 0-4-4z"></path>

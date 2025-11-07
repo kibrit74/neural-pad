@@ -5,7 +5,7 @@ const getDbApi = async (): Promise<any> => {
     const electronApi = (window as any)?.electron?.db;
     if (electronApi) return electronApi;
     // Fallback to browser IndexedDB implementation in web environment
-    const webDb = await import('../utils/db-indexeddb.js');
+    const webDb = await import('../utils/db-indexeddb');
     return webDb;
 };
 

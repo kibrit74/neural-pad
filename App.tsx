@@ -16,6 +16,7 @@ const WelcomeModal = React.lazy(() => import('./components/WelcomeModal'));
 const HelpModal = React.lazy(() => import('./components/HelpModal'));
 const MarkdownModal = React.lazy(() => import('./components/MarkdownModal'));
 const HistoryModal = React.lazy(() => import('./components/HistoryModal'));
+const SaveAsModal = React.lazy(() => import('./components/SaveAsModal'));
 import PasswordModal, { PasswordMode } from './components/PasswordModal';
 // TagInput is small, keep it eager
 
@@ -68,6 +69,7 @@ const App: React.FC = () => {
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [isMarkdownModalOpen, setMarkdownModalOpen] = useState(false);
+    const [isSaveAsModalOpen, setSaveAsModalOpen] = useState(false);
 
     // Password / lock state
     const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
@@ -238,7 +240,9 @@ const App: React.FC = () => {
     }, [handleSaveNow]);
 
     const handleNewNote = useCallback(async () => {
+        console.log('handleNewNote called');
         if (activeNoteRef.current) {
+            console.log('Saving current note before creating new one');
             await handleSaveNow(true);
         }
     
@@ -252,12 +256,18 @@ const App: React.FC = () => {
         };
         
         try {
+            console.log('Creating new note in DB...');
             const newId = await db.saveNote(newNoteData);
+            console.log('New note created with ID:', newId);
             const allNotes = await db.getAllNotes();
+            console.log('All notes after creation:', allNotes.length);
             setNotes(allNotes);
+            console.log('Selecting new note...');
             await handleSelectNote(newId, true);
+            console.log('New note selected, activeNote should be set');
             titleInputRef.current?.focus();
         } catch (error: any) {
+            console.error('handleNewNote error:', error);
             addNotification(t('notifications.saveError', { message: error.message }), 'error');
         }
     }, [handleSaveNow, handleSelectNote, t]);
@@ -293,20 +303,27 @@ const App: React.FC = () => {
                 setSettings(prev => ({ ...prev, ...JSON.parse(saved) }));
             }
             try {
+                console.log('Loading notes from database...');
                 const allNotes = await db.getAllNotes();
+                console.log('Loaded notes:', allNotes.length);
                 setNotes(allNotes);
                 if (allNotes.length > 0) {
+                    console.log('Selecting first note:', allNotes[0].id);
                     await handleSelectNote(allNotes[0].id, true);
+                    console.log('First note selected');
                 } else {
+                    console.log('No notes found, creating new note...');
                     await handleNewNote();
+                    console.log('New note created');
                 }
             } catch (error: any) {
+                console.error('Load initial data error:', error);
                 addNotification(t('notifications.loadError', { message: error.message }), 'error');
             }
         };
 
         loadInitialData();
-    }, [t, handleNewNote, handleSelectNote]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleEnterApp = () => {
         setShowWelcome(false);
@@ -571,7 +588,11 @@ const App: React.FC = () => {
                     onToggleNotesSidebar={toggleNotesSidebar}
                     onToggleChatSidebar={toggleChatSidebar}
                     isChatOpen={isChatSidebarOpen}
-                    onSave={() => handleSaveNow(false)}
+                    onSave={() => {
+                        console.log('Save clicked, activeNote:', activeNote);
+                        handleSaveNow(false);
+                    }}
+                    onSaveAs={() => setSaveAsModalOpen(true)}
                     onSettings={() => setSettingsModalOpen(true)}
                     onHelp={() => setHelpModalOpen(true)}
                     onToggleLock={() => {
@@ -587,8 +608,30 @@ const App: React.FC = () => {
                     onOpenHistory={() => setHistoryModalOpen(true)}
                     onDownload={() => {
                         if (!activeNote) return;
-                        const safeTitle = (activeNote.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
-                        import('./utils/fileUtils').then(m => m.downloadRtf(`${safeTitle}.rtf`, activeNote.content || ''));
+                        try {
+                            const safeTitle = (activeNote.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
+                            const html = activeNote.content || '';
+                            
+                            // Simple HTML to text conversion
+                            const div = document.createElement('div');
+                            div.innerHTML = html;
+                            const text = div.textContent || div.innerText || '';
+                            
+                            // Download as TXT
+                            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${safeTitle}.txt`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            
+                            addNotification('Downloaded as TXT', 'success');
+                        } catch (err: any) {
+                            addNotification('Download failed: ' + err.message, 'error');
+                        }
                     }}
                     onOpenLandingPage={() => {
                         localStorage.removeItem('hasSeenWelcome');
@@ -818,6 +861,15 @@ const App: React.FC = () => {
                     editorRef.current?.commands.setContent(html, { emitUpdate: true });
                     setHistoryModalOpen(false);
                 }}
+            />
+            </Suspense>
+
+            <Suspense fallback={null}>
+            <SaveAsModal
+                isOpen={isSaveAsModalOpen}
+                onClose={() => setSaveAsModalOpen(false)}
+                note={activeNote}
+                addNotification={addNotification}
             />
             </Suspense>
             

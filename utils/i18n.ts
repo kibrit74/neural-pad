@@ -6,6 +6,7 @@ export const translations = {
             lastSaved: "Last saved:",
             toggleNotes: "Toggle Notes Sidebar",
             save: "Save Note (Ctrl+S)",
+            saveAs: "Save As...",
             settings: "Settings",
             help: "Help",
             lock: "Lock Note",
@@ -134,6 +135,9 @@ export const translations = {
             cannotSaveLocked: "Cannot save locked note without password.",
             shareSuccess: "Shared successfully.",
             shareUnavailable: "Sharing not available here. Copied to clipboard instead.",
+            exportedAsJson: "Note exported as JSON successfully!",
+            exportSuccess: "Exported as {{format}} successfully!",
+            exportError: "Export failed: {{message}}",
         },
         common: {
             save: "Save",
@@ -145,6 +149,13 @@ export const translations = {
             markdown: "Markdown",
             loading: "Loading...",
             restore: "Restore",
+        },
+        saveAs: {
+            title: "Save As",
+            filename: "File Name",
+            format: "Save as Type",
+            selectFormat: "Select a format to export your note",
+            export: "Export",
         },
         history: {
             title: "History",
@@ -312,6 +323,7 @@ export const translations = {
             lastSaved: "Son kayıt:",
             toggleNotes: "Not Kenar Çubuğunu Aç/Kapat",
             save: "Notu Kaydet (Ctrl+S)",
+            saveAs: "Farklı Kaydet...",
             settings: "Ayarlar",
             help: "Yardım",
             lock: "Notu Kilitle",
@@ -440,6 +452,9 @@ export const translations = {
             cannotSaveLocked: "Şifre olmadan kilitli not kaydedilemez.",
             shareSuccess: "Başarıyla paylaşıldı.",
             shareUnavailable: "Paylaşım burada desteklenmiyor. Panoya kopyalandı.",
+            exportedAsJson: "Not başarıyla JSON olarak dışa aktarıldı!",
+            exportSuccess: "{{format}} olarak başarıyla dışa aktarıldı!",
+            exportError: "Dışa aktarma başarısız: {{message}}",
         },
         common: {
             save: "Kaydet",
@@ -451,6 +466,13 @@ export const translations = {
             markdown: "Markdown",
             loading: "Yükleniyor...",
             restore: "Geri Yükle",
+        },
+        saveAs: {
+            title: "Farklı Kaydet",
+            filename: "Dosya Adı",
+            format: "Kayıt Türü",
+            selectFormat: "Notunuzu dışa aktarmak için bir format seçin",
+            export: "Dışa Aktar",
         },
         history: {
             title: "Geçmiş",

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useTranslations } from '../hooks/useTranslations';
-import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SearchIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon, DownloadIcon, HomeIcon } from './icons/Icons';
+import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SaveAsIcon, SearchIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon, DownloadIcon, HomeIcon } from './icons/Icons';
 import type { Note } from '../types';
 
 interface HeaderProps {
@@ -9,6 +9,7 @@ interface HeaderProps {
     onToggleChatSidebar: () => void;
     isChatOpen: boolean;
     onSave: () => void;
+    onSaveAs?: () => void;
     onSettings: () => void;
     onHelp: () => void;
     onToggleLock: () => void;
@@ -22,12 +23,12 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, onOpenLandingPage, isLocked, activeNote, searchQuery, onSearchChange 
+    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSaveAs, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, onOpenLandingPage, isLocked, activeNote, searchQuery, onSearchChange 
 }) => {
     const { t } = useTranslations();
     
     // Check if running in Electron
-    const isElectron = typeof window !== 'undefined' && window.electron;
+    const isElectron = typeof window !== 'undefined' && (window as any).electron;
 
     const formatDate = (date: Date) => {
         return new Intl.DateTimeFormat(undefined, {
@@ -95,6 +96,11 @@ const Header: React.FC<HeaderProps> = ({
                 <IconButton onClick={onSave} title={t('header.save')}>
                     <SaveIcon />
                 </IconButton>
+                {onSaveAs && (
+                    <IconButton onClick={onSaveAs} title={t('header.saveAs')}>
+                        <SaveAsIcon />
+                    </IconButton>
+                )}
                 {onDownload && (
                     <IconButton onClick={onDownload} title={t('header.download')}>
                         <DownloadIcon />

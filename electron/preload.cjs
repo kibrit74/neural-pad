@@ -16,6 +16,7 @@ const electronAPI = {
   },
   files: {
     saveImage: (buffer) => ipcRenderer.invoke('files:save-image', buffer),
+    saveAs: (noteData) => ipcRenderer.invoke('files:save-as', noteData),
   },
   speech: {
     // Send audio data to main process for transcription

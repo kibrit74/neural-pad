@@ -20,12 +20,41 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
     }));
     const [current, setCurrent] = useState(0);
     const isHoveringRef = useRef(false);
+    const [parallaxOffset, setParallaxOffset] = useState(0);
+    
+    // Auto-play effect
     useEffect(() => {
         const id = window.setInterval(() => {
             if (!isHoveringRef.current) setCurrent((c) => (c + 1) % images.length);
         }, 4000);
         return () => window.clearInterval(id);
     }, []);
+    
+    // Parallax scroll effect
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrolled = window.scrollY;
+            setParallaxOffset(scrolled * 0.3); // Parallax speed multiplier
+        };
+        
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+    
+    // Keyboard navigation effect
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowLeft') {
+                prev();
+            } else if (e.key === 'ArrowRight') {
+                next();
+            }
+        };
+        
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+    
     const next = () => setCurrent((c) => (c + 1) % images.length);
     const prev = () => setCurrent((c) => (c - 1 + images.length) % images.length);
 
@@ -34,19 +63,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
     }
 
     const Feature: React.FC<{ icon: React.ReactElement; titleKey: string; descriptionKey: string }> = ({ icon, titleKey, descriptionKey }) => (
-        <div className="feature-card flex flex-col items-center text-center p-6 bg-background-secondary rounded-xl">
-            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
-                {icon}
+        <div className="feature-card-3d">
+            <div className="feature-card glassmorphism flex flex-col items-center text-center p-6 rounded-xl">
+                <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
+                    {icon}
+                </div>
+                <h3 className="text-xl font-semibold text-text-primary mb-2">{t(titleKey)}</h3>
+                <p className="text-sm text-text-secondary leading-relaxed">{t(descriptionKey)}</p>
             </div>
-            <h3 className="text-xl font-semibold text-text-primary mb-2">{t(titleKey)}</h3>
-            <p className="text-sm text-text-secondary leading-relaxed">{t(descriptionKey)}</p>
         </div>
     );
 
     const DownloadButton: React.FC<{ icon: React.ReactElement; osName: string; downloadUrl?: string }> = ({ icon, osName, downloadUrl }) => {
         const handleDownload = () => {
             if (downloadUrl) {
-                window.open(downloadUrl, '_blank');
+                try {
+                    const newWindow = window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+                    if (newWindow) {
+                        newWindow.opener = null;
+                    }
+                } catch (error) {
+                    console.error('Failed to open download link:', error);
+                }
             }
         };
 
@@ -54,7 +92,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
             <button 
                 onClick={handleDownload}
                 disabled={!downloadUrl}
-                className={`download-btn flex items-center justify-center gap-3 w-full px-6 py-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-300/30 rounded-lg font-semibold text-text-primary focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-background transition-all duration-300 ${!downloadUrl ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                aria-label={`Download for ${osName}`}
+                className={`download-btn glassmorphism flex items-center justify-center gap-3 w-full px-6 py-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-300/40 rounded-lg font-semibold text-text-primary transition-all duration-300 ${!downloadUrl ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >
                 {icon}
                 <span>{t('landingPage.downloadFor')} {osName}</span>
@@ -62,33 +101,92 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
         );
     };
 
+    const scrollToSection = (sectionId: string) => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-background z-[100] overflow-y-auto animate-modal-enter" data-theme="default">
-            <div className="fixed top-6 right-6 z-10 flex gap-2">
-                <button
-                    onClick={() => setLanguage('en')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        language === 'en'
-                            ? 'bg-primary text-primary-text shadow-lg'
-                            : 'bg-background-secondary text-text-secondary hover:bg-border'
-                    }`}
-                >
-                    EN
-                </button>
-                <button
-                    onClick={() => setLanguage('tr')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        language === 'tr'
-                            ? 'bg-primary text-primary-text shadow-lg'
-                            : 'bg-background-secondary text-text-secondary hover:bg-border'
-                    }`}
-                >
-                    TR
-                </button>
-            </div>
+            {/* Enhanced Navbar with Glassmorphism */}
+            <nav className="fixed top-0 left-0 right-0 z-50 glassmorphism bg-background/70 backdrop-blur-xl border-b border-border shadow-lg">
+                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                    {/* Logo with hover effect */}
+                    <div className="flex items-center gap-3 group cursor-pointer" onClick={() => scrollToSection('hero')}>
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-primary/20 rounded-full blur-md group-hover:bg-primary/30 transition-all"></div>
+                            <img src="./Logo.png" alt="Neural Pad" className="relative w-10 h-10 object-contain transform group-hover:scale-110 transition-transform" />
+                        </div>
+                        <span className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                            Neural Pad
+                        </span>
+                    </div>
+                    
+                    {/* Navigation Links with enhanced hover effects */}
+                    <div className="hidden md:flex items-center gap-8">
+                        <button 
+                            onClick={() => scrollToSection('hero')}
+                            className="relative text-text-secondary hover:text-primary transition-all duration-300 font-medium group"
+                        >
+                            <span className="relative z-10">{language === 'tr' ? 'Ana Sayfa' : 'Home'}</span>
+                            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-purple-600 group-hover:w-full transition-all duration-300"></span>
+                        </button>
+                        <button 
+                            onClick={() => scrollToSection('features')}
+                            className="relative text-text-secondary hover:text-primary transition-all duration-300 font-medium group"
+                        >
+                            <span className="relative z-10">{language === 'tr' ? 'Özellikler' : 'Features'}</span>
+                            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-purple-600 group-hover:w-full transition-all duration-300"></span>
+                        </button>
+                        <button 
+                            onClick={() => scrollToSection('mockups')}
+                            className="relative text-text-secondary hover:text-primary transition-all duration-300 font-medium group"
+                        >
+                            <span className="relative z-10">{language === 'tr' ? 'Ekran Görüntüleri' : 'Screenshots'}</span>
+                            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-purple-600 group-hover:w-full transition-all duration-300"></span>
+                        </button>
+                        <button 
+                            onClick={() => scrollToSection('download')}
+                            className="relative px-4 py-2 rounded-lg bg-gradient-to-r from-primary/10 to-purple-600/10 text-primary hover:from-primary/20 hover:to-purple-600/20 transition-all duration-300 font-semibold border border-primary/30 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/20"
+                        >
+                            {language === 'tr' ? 'İndir' : 'Download'}
+                        </button>
+                    </div>
+
+                    {/* Language Selector with enhanced styling */}
+                    <div className="flex gap-2" role="group" aria-label="Language selector">
+                        <button
+                            onClick={() => setLanguage('en')}
+                            aria-label="Switch to English"
+                            aria-pressed={language === 'en'}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                                language === 'en'
+                                    ? 'bg-gradient-to-r from-primary to-purple-600 text-white shadow-lg shadow-primary/30 scale-105'
+                                    : 'bg-background-secondary text-text-secondary hover:bg-border hover:scale-105'
+                            }`}
+                        >
+                            EN
+                        </button>
+                        <button
+                            onClick={() => setLanguage('tr')}
+                            aria-label="Türkçe'ye geç"
+                            aria-pressed={language === 'tr'}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                                language === 'tr'
+                                    ? 'bg-gradient-to-r from-primary to-purple-600 text-white shadow-lg shadow-primary/30 scale-105'
+                                    : 'bg-background-secondary text-text-secondary hover:bg-border hover:scale-105'
+                            }`}
+                        >
+                            TR
+                        </button>
+                    </div>
+                </div>
+            </nav>
             
-            <main className="max-w-5xl mx-auto px-6">
-                <section className="text-center flex flex-col items-center py-20 md:py-32">
+            <main className="max-w-5xl mx-auto px-6 pt-20">
+                <section id="hero" className="text-center flex flex-col items-center py-20 md:py-32">
                     <div className="w-24 h-24 mb-6 flex items-center justify-center animate-float">
                         <img src="./Logo.png" alt="Logo" className="w-full h-full object-contain" />
                     </div>
@@ -107,7 +205,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                     </button>
                 </section>
 
-                <section className="py-12 md:py-16">
+                <section id="mockups" className="py-12 md:py-16 scroll-mt-20">
                     <div className="text-center mb-8 animate-fade-in">
                         <h2 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
                             {t('landingPage.mockupsTitle')}
@@ -122,8 +220,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                         onMouseEnter={() => (isHoveringRef.current = true)}
                         onMouseLeave={() => (isHoveringRef.current = false)}
                     >
-                        <div className="rounded-2xl border border-border bg-background-secondary/80 backdrop-blur p-3 shadow-2xl animate-fade-in-up">
-<div className="relative h-80 md:h-[32rem] overflow-hidden rounded-xl bg-background">
+                        <div 
+                            className="glassmorphism rounded-2xl p-3 shadow-2xl animate-fade-in-up"
+                            style={{ transform: `translateY(${parallaxOffset * 0.5}px)` }}
+                        >
+                            <div className="relative h-80 md:h-[32rem] overflow-hidden rounded-xl bg-background">
                                 {/* Browser chrome */}
                                 <div className="absolute top-3 left-4 z-10 flex gap-2">
                                     <span className="w-3 h-3 rounded-full bg-red-400/70"></span>
@@ -138,10 +239,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                                 >
                                     {images.map((src, i) => (
                                         <div key={i} className="h-full w-full flex-shrink-0 relative">
-<img src={src} alt={`Mockup ${i + 1}`} className="absolute inset-0 w-full h-full object-contain bg-background landing-image" loading="lazy" />
+<img 
+                                                src={src} 
+                                                alt={`Neural Pad Screenshot ${i + 1}: ${captions[i]?.title || 'App feature'}`} 
+                                                className="absolute inset-0 w-full h-full object-contain bg-background landing-image" 
+                                                style={{
+                                                    transform: current === i ? 'scale(1.05) translateZ(20px)' : 'scale(1) translateZ(0)',
+                                                    transition: 'transform 0.7s ease-in-out'
+                                                }}
+                                                loading="lazy"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = '/Logo.png';
+                                                    e.currentTarget.style.objectFit = 'scale-down';
+                                                }}
+                                            />
 
                                             <div className="absolute bottom-0 left-0 right-0">
-<div className="px-5 py-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent backdrop-blur-sm border-t border-border landing-caption">
+<div className="glassmorphism px-5 py-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent border-t border-white/20 landing-caption">
 <h3 className="text-lg md:text-xl font-semibold landing-caption-title">
                                                         {captions[i]?.title}
                                                     </h3>
@@ -192,7 +306,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                     </div>
                 </section>
 
-                <section className="py-16 md:py-24">
+                <section id="features" className="py-16 md:py-24 scroll-mt-20">
                      <div className="text-center mb-16 animate-fade-in">
                         <h2 className="text-3xl md:text-4xl font-bold text-text-primary tracking-tight">
                             {t('landingPage.featuresTitle')}
@@ -245,7 +359,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                 </section>
 
 
-                 <section className="py-16 md:py-24 text-center">
+                 <section id="download" className="py-16 md:py-24 text-center scroll-mt-20">
                     <h2 className="text-3xl md:text-4xl font-bold text-text-primary tracking-tight mb-4 animate-fade-in">
                         {t('landingPage.downloadTitle')}
                     </h2>

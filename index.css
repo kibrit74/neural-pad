@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  /* Smooth scrolling for the entire page */
+  html {
+    scroll-behavior: smooth;
+  }
+
   :root, [data-theme="default"] {
     --color-primary: #3b82f6;
     --color-primary-hover: #2563eb;
@@ -225,13 +230,38 @@
     animation: pulse-glow 2s ease-in-out infinite;
   }
 
+  /* Glassmorphism effect */
+  .glassmorphism {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+
+  /* Responsive glassmorphism - reduce blur on mobile */
+  @media (max-width: 768px) {
+    .glassmorphism {
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+  }
+
+  /* 3D Transform for feature cards */
+  .feature-card-3d {
+    perspective: 1000px;
+    transform-style: preserve-3d;
+  }
+
   .feature-card {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateZ(0);
+    will-change: transform;
   }
 
   .feature-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(-10px) rotateX(5deg) rotateY(5deg) translateZ(10px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 15px 20px -10px rgba(0, 0, 0, 0.15);
   }
 
   .download-btn {
@@ -258,6 +288,34 @@
   .download-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+  }
+
+  .download-btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* 3D Transform for Feature Cards */
+  .feature-card-3d {
+    perspective: 1000px;
+    transform-style: preserve-3d;
+  }
+
+  .feature-card {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-12px) translateZ(20px) rotateX(2deg) rotateY(2deg);
+    box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.25), 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Navbar scroll effect */
+  .scroll-mt-20 {
+    scroll-margin-top: 5rem;
   }
 
   /* Landing slider caption styles */

@@ -1,5 +1,3 @@
-import { jsPDF } from "jspdf";
-
 const htmlToText = (html: string): string => {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
@@ -48,7 +46,8 @@ export const downloadTxt = (filename: string, htmlContent: string) => {
     document.body.removeChild(element);
 };
 
-export const downloadPdf = (filename: string, htmlContent: string) => {
+export const downloadPdf = async (filename: string, htmlContent: string) => {
+    const { jsPDF } = await import('jspdf');
     const text = htmlToText(htmlContent);
     const pdf = new jsPDF();
     
@@ -157,6 +156,33 @@ export const downloadRtf = (filename: string, htmlContent: string) => {
     const a = document.createElement('a');
     a.href = url;
     a.download = filename.endsWith('.rtf') ? filename : `${filename}.rtf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+// Save As - Export note as JSON
+export const saveAsJson = (note: { title: string; content: string; tags?: string[]; createdAt: Date; updatedAt: Date }) => {
+    const safeTitle = (note.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
+    const filename = `${safeTitle}.json`;
+    
+    const data = {
+        title: note.title,
+        content: note.content,
+        tags: note.tags || [],
+        createdAt: note.createdAt,
+        updatedAt: note.updatedAt,
+        exportedAt: new Date().toISOString(),
+        version: '1.0.0'
+    };
+    
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

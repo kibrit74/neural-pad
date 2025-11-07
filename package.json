@@ -17,6 +17,9 @@
     "prebuild:clean": "cross-env NODE_ENV=production node scripts/prebuild-clean.mjs",
     "preview": "vite preview",
     "dist:win": "npm run prebuild:clean && tsc -p tsconfig.electron.json && npm run icon:gen && electron-builder -w",
+    "dist:mac": "npm run prebuild:clean && tsc -p tsconfig.electron.json && npm run icon:gen && electron-builder -m",
+    "dist:linux": "npm run prebuild:clean && tsc -p tsconfig.electron.json && npm run icon:gen && electron-builder -l",
+    "dist:all": "npm run prebuild:clean && tsc -p tsconfig.electron.json && npm run icon:gen && electron-builder -mwl",
     "start:prod": "npm run build && npm run build:electron && electron ."
   },
   "dependencies": {
@@ -97,7 +100,39 @@
       "runAfterFinish": true
     },
     "mac": {
-      "icon": "build/icons/app.icns"
+      "icon": "build/icons/app.icns",
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
     },
     "linux": {
       "icon": "build/icons"

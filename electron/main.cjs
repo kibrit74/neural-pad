@@ -57,11 +57,69 @@ try {
 let mainWindow = null;
 
 function setupFileIPC() {
+  const { dialog } = require('electron');
+  
   const imagesDir = path.join(app.getPath('userData'), 'images');
   if (!fs.existsSync(imagesDir)) {
     fs.mkdirSync(imagesDir, { recursive: true });
     console.log(`[FileIPC] Created images directory at: ${imagesDir}`);
   }
+
+  // Save As Dialog
+  ipcMain.handle('files:save-as', async (event, noteData) => {
+    console.log(`[FileIPC] Received 'files:save-as' request for note: ${noteData.title}`);
+    try {
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save Note As',
+        defaultPath: `${noteData.title || 'note'}.json`,
+        filters: [
+          { name: 'JSON Files', extensions: ['json'] },
+          { name: 'Text Files', extensions: ['txt'] },
+          { name: 'HTML Files', extensions: ['html'] },
+          { name: 'RTF Files', extensions: ['rtf'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      });
+
+      if (result.canceled || !result.filePath) {
+        console.log('[FileIPC] Save As canceled by user');
+        return { success: false, canceled: true };
+      }
+
+      const filePath = result.filePath;
+      const ext = path.extname(filePath).toLowerCase();
+      
+      let content = '';
+      
+      // Prepare content based on file extension
+      if (ext === '.json') {
+        const data = {
+          title: noteData.title,
+          content: noteData.content,
+          tags: noteData.tags || [],
+          createdAt: noteData.createdAt,
+          updatedAt: noteData.updatedAt,
+          exportedAt: new Date().toISOString(),
+          version: '1.0.0'
+        };
+        content = JSON.stringify(data, null, 2);
+      } else if (ext === '.html') {
+        content = `<!doctype html><html><head><meta charset="utf-8"><title>${noteData.title}</title></head><body>${noteData.content}</body></html>`;
+      } else {
+        // Default to plain text
+        const tempDiv = { innerHTML: noteData.content };
+        content = noteData.content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+      }
+
+      await fs.promises.writeFile(filePath, content, 'utf8');
+      console.log(`[FileIPC] Note saved to: ${filePath}`);
+      
+      return { success: true, filePath };
+    } catch (error) {
+      console.error('[FileIPC] Failed to save note:', error);
+      return { success: false, error: error.message };
+    }
+  });
 
   ipcMain.handle('files:save-image', async (event, data) => {
     console.log(`[FileIPC] Received 'files:save-image' request with data size: ${data.length}`);
