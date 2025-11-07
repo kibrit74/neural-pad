@@ -7,14 +7,14 @@ import type { EditorContext } from '../services/geminiService';
 import { SendIcon, BotIcon, UserIcon, CloseIcon, SparkleIcon, SearchIcon, MicIcon } from './icons/Icons';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useVoiceRecognitionUnified } from '../hooks/useVoiceRecognitionUnified';
+import { useWhisperVoice } from '../hooks/useWhisperVoice';
 import VoiceInputModal from './VoiceInputModal';
 
 interface ChatProps {
     settings: Settings;
     addNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
     onClose: () => void;
-    getEditorContext?: () => EditorContext;
+    getEditorContext?: () => EditorContext | Promise<EditorContext>;
     onInsertToEditor?: (content: string) => void;
 }
 
@@ -34,6 +34,7 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
     const [showVoiceModal, setShowVoiceModal] = useState(false);
     const [interimTranscript, setInterimTranscript] = useState('');
     const [finalTranscript, setFinalTranscript] = useState('');
+    const [pastedImages, setPastedImages] = useState<{ mimeType: string; data: string }[]>([]);
 
     // Clear current session when provider changes to start a fresh chat
     useEffect(() => {
@@ -60,8 +61,30 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
         setIsLoading(true);
 
         try {
-            const ctx = getEditorContext ? getEditorContext() : undefined;
+            // Build context with pasted images
+            let ctx = getEditorContext ? await getEditorContext() : { text: '', images: [] };
+            
+            // Add pasted images from Chat
+            if (pastedImages.length > 0) {
+                console.log('[Chat] Adding pasted images to context:', pastedImages.length);
+                pastedImages.forEach((img, idx) => {
+                    console.log(`[Chat] Image ${idx}: MIME=${img.mimeType}, data length=${img.data?.length}`);
+                });
+                ctx = {
+                    ...ctx,
+                    images: [...(ctx.images || []), ...pastedImages]
+                };
+            }
+            
+            console.log('[Chat] Final context:', { 
+                textLength: ctx.text?.length || 0, 
+                imagesCount: ctx.images?.length || 0 
+            });
+            
             const stream = apiService.getChatStream(currentHistory, settings, useWebSearch, ctx, language);
+            
+            // Clear pasted images after sending
+            setPastedImages([]);
             
             let modelResponse: ChatMessage = { role: 'model', content: '', sources: [] };
             setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, modelResponse] } : s));
@@ -119,7 +142,7 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
         setIsLoading(true);
 
         try {
-            const ctx = getEditorContext ? getEditorContext() : undefined;
+            const ctx = getEditorContext ? await getEditorContext() : undefined;
             const stream = apiService.getChatStream(currentHistory, settings, useWebSearch, ctx, language);
 
             let modelResponse: ChatMessage = { role: 'model', content: '', sources: [] };
@@ -166,36 +189,46 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
         }
     }, [isLoading, addNotification, t, useWebSearch, settings, activeSessionId, sessions, getEditorContext, activeSession.messages, language]);
 
-    // Voice recognition hook
-    const { isRecording, isInitializing, start, stop } = useVoiceRecognitionUnified({
+    // Voice recognition hook - using Gemini/Whisper like notepad
+    const { isRecording, isProcessing, start, stop, hasSupport } = useWhisperVoice({
         onResult: (transcript, isFinal) => {
-            if (isFinal) {
+            if (isFinal && transcript.trim()) {
                 setFinalTranscript(prev => (prev ? prev + ' ' : '') + transcript);
-            } else {
-                setInterimTranscript(transcript);
             }
         },
         onError: (error) => {
             console.error('Voice recognition error:', error);
-            let errorMessage = t('voice.error') || 'Ses tanıma hatası';
-            if (error === 'network') {
-                errorMessage = t('voice.networkError') || 'Ağ hatası. Lütfen internet bağlantınızı kontrol edin.';
-            } else if (error === 'not-allowed') {
-                errorMessage = t('voice.permissionError') || 'Mikrofon izni verilmedi. Lütfen tarayıcı ayarlarını kontrol edin.';
-            } else if (error === 'service-not-allowed') {
-                errorMessage = t('voice.serviceNotAllowedError') || 'Ses tanıma hizmetine izin verilmedi. Lütfen tarayıcı ayarlarını kontrol edin.';
-            } else if (error === 'bad-grammar') {
-                errorMessage = t('voice.badGrammarError') || 'Ses tanıma dilbilgisi hatası. Lütfen tekrar deneyin.';
-            } else if ((error as any)?.message === 'not_supported') {
-                errorMessage = t('voice.error') || 'Ses tanıma desteklenmiyor. Lütfen farklı bir tarayıcı deneyin.';
-            } else if ((error as any)?.message === 'secure_context_required') {
-                errorMessage = t('voice.error') || 'Güvenli bağlantı gerekli. Lütfen HTTPS bağlantısı kullanın.';
-            }
-            addNotification(errorMessage, 'error');
+            const errorMsg = error.message || error;
+            addNotification(
+                language === 'tr' 
+                    ? `Ses tanıma hatası: ${errorMsg}` 
+                    : `Voice recognition error: ${errorMsg}`,
+                'error'
+            );
         },
+        settings: settings,
+        useGemini: !!(settings?.geminiApiKey) // Use Gemini if available
     });
 
-    const handleOpenVoiceModal = () => {
+    const isInitializing = isProcessing;
+
+    const handleOpenVoiceModal = async () => {
+        // Start Whisper if needed (only if Gemini not available)
+        const isElectron = !!(window as any).electron;
+        const hasGeminiKey = !!(settings?.geminiApiKey);
+        
+        if (!hasGeminiKey && isElectron && (window as any).electron?.whisper) {
+            try {
+                const modelSize = localStorage.getItem('whisper-model-size') || 'tiny';
+                console.log('[Chat Voice] Starting Whisper service, model:', modelSize);
+                await (window as any).electron.whisper.start(modelSize);
+            } catch (error) {
+                console.error('[Chat Voice] Failed to start Whisper:', error);
+            }
+        } else if (hasGeminiKey) {
+            console.log('[Chat Voice] Using Gemini 2.0 Flash for transcription');
+        }
+        
         setShowVoiceModal(true);
         setFinalTranscript('');
         setInterimTranscript('');
@@ -229,6 +262,39 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
             handleSend();
         }
     };
+
+    // Handle paste event for images
+    const handlePaste = useCallback(async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+                const file = item.getAsFile();
+                if (!file) continue;
+
+                // Use file.type for more reliable MIME type
+                const mimeType = file.type || item.type || 'image/png';
+                console.log('[Chat Paste] File MIME type:', mimeType, 'File size:', file.size);
+
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = (reader.result as string).split(',')[1];
+                    console.log('[Chat Paste] Base64 length:', base64?.length);
+                    setPastedImages(prev => [...prev, { mimeType, data: base64 }]);
+                    addNotification(
+                        language === 'tr' 
+                            ? 'Resim eklendi. Mesajınızı yazıp gönderin.' 
+                            : 'Image added. Write your message and send.',
+                        'success'
+                    );
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    }, [addNotification, language]);
     
     const MessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
         const isUser = message.role === 'user';
@@ -359,11 +425,32 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
             </div>
 
             <footer className="p-3 border-t border-border-strong flex-shrink-0">
+                 {/* Show pasted images */}
+                 {pastedImages.length > 0 && (
+                    <div className="mb-2 flex flex-wrap gap-2">
+                        {pastedImages.map((img, idx) => (
+                            <div key={idx} className="relative group">
+                                <img 
+                                    src={`data:${img.mimeType};base64,${img.data}`} 
+                                    alt="Pasted" 
+                                    className="w-20 h-20 object-cover rounded border border-border"
+                                />
+                                <button
+                                    onClick={() => setPastedImages(prev => prev.filter((_, i) => i !== idx))}
+                                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                 )}
                  <div className="relative">
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={handleKeyPress}
+                        onPaste={handlePaste}
                         placeholder={t('chat.placeholder')}
                         className="w-full p-2 pr-20 bg-background border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                         rows={1}

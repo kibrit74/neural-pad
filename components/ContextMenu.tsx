@@ -153,16 +153,47 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
         let selectedText = '';
 
         if (type === 'image' && data) {
-            const parts = data.split(',');
-            if (parts.length < 2) {
-                addNotification('Invalid image data', 'error');
+            // Handle both data: URLs and file:// URLs
+            if (data.startsWith('data:')) {
+                const parts = data.split(',');
+                if (parts.length < 2) {
+                    addNotification('Invalid image data', 'error');
+                    setIsLoading(false);
+                    onClose();
+                    return;
+                }
+                const [meta, base64Data] = parts;
+                const mimeType = meta.match(/:(.*?);/)?.[1] || 'image/png';
+                imagePayload = { mimeType, data: base64Data };
+            } else if (data.startsWith('file://')) {
+                // Convert file:// URL to base64
+                try {
+                    const response = await fetch(data);
+                    const blob = await response.blob();
+                    const base64 = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const result = reader.result as string;
+                            const base64Data = result.split(',')[1];
+                            resolve(base64Data);
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                    imagePayload = { mimeType: blob.type || 'image/png', data: base64 };
+                } catch (error) {
+                    console.error('[ContextMenu] Failed to load image:', error);
+                    addNotification('Failed to load image', 'error');
+                    setIsLoading(false);
+                    onClose();
+                    return;
+                }
+            } else {
+                addNotification('Unsupported image format', 'error');
                 setIsLoading(false);
                 onClose();
                 return;
             }
-            const [meta, base64Data] = parts;
-            const mimeType = meta.match(/:(.*?);/)?.[1] || 'image/png';
-            imagePayload = { mimeType, data: base64Data };
             fullPrompt = promptTemplate;
 
             const { state } = editor;

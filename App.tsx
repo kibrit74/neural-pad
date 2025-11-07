@@ -151,11 +151,6 @@ const App: React.FC = () => {
                 payload = { ...noteToSave, encrypted, content: '' };
             }
 
-            // If note has temporary ID (from handleNewNote), remove it to create new
-            if (payload.id > 1000000000000) {
-                delete payload.id;
-            }
-
             const savedId = await db.saveNote(payload);
             const allNotes = await db.getAllNotes();
             setNotes(allNotes);
@@ -247,20 +242,25 @@ const App: React.FC = () => {
             await handleSaveNow(true);
         }
     
-        // Create note in memory first, save only when user adds content
-        const newNoteData: Note = {
-            id: Date.now(), // Temporary ID
+        // Create empty note in DB immediately to get real ID
+        const newNoteData: Omit<Note, 'id'> = {
             title: '',
-            content: '',
+            content: '<p></p>', // Minimal content to pass validation
             tags: [],
             createdAt: new Date(),
             updatedAt: new Date(),
         };
         
-        setActiveNote(newNoteData);
-        editorRef.current?.commands.setContent('', { emitUpdate: false });
-        titleInputRef.current?.focus();
-    }, [handleSaveNow]);
+        try {
+            const newId = await db.saveNote(newNoteData);
+            const allNotes = await db.getAllNotes();
+            setNotes(allNotes);
+            await handleSelectNote(newId, true);
+            titleInputRef.current?.focus();
+        } catch (error: any) {
+            addNotification(t('notifications.saveError', { message: error.message }), 'error');
+        }
+    }, [handleSaveNow, handleSelectNote, t]);
 
 
     // Load initial data
@@ -435,21 +435,44 @@ const App: React.FC = () => {
         }
     };
 
-    const getEditorContext = useCallback(() => {
+    const getEditorContext = useCallback(async () => {
         const html = activeNoteRef.current?.content || '';
         const div = document.createElement('div');
         div.innerHTML = html;
         const text = (div.textContent || div.innerText || '').trim();
         const imgs = Array.from(div.querySelectorAll('img')) as HTMLImageElement[];
-        const images = imgs
-            .map(img => {
-                const src = img.src || '';
-                if (!src.startsWith('data:')) return null;
+        
+        const images: { mimeType: string; data: string }[] = [];
+        
+        for (const img of imgs) {
+            const src = img.src || '';
+            
+            if (src.startsWith('data:')) {
+                // Data URL - extract base64
                 const [meta, data] = src.split(',');
                 const mimeType = meta.match(/data:(.*?);/)?.[1] || 'image/png';
-                return { mimeType, data };
-            })
-            .filter(Boolean) as { mimeType: string; data: string }[];
+                images.push({ mimeType, data });
+            } else if (src.startsWith('file://')) {
+                // File URL - convert to base64
+                try {
+                    const response = await fetch(src);
+                    const blob = await response.blob();
+                    const base64 = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const result = reader.result as string;
+                            const data = result.split(',')[1];
+                            resolve(data);
+                        };
+                        reader.readAsDataURL(blob);
+                    });
+                    images.push({ mimeType: blob.type || 'image/png', data: base64 });
+                } catch (error) {
+                    console.error('[getEditorContext] Failed to load image:', src, error);
+                }
+            }
+        }
+        
         return { text, images };
     }, []);
 

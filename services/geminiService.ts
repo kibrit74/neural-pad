@@ -154,19 +154,25 @@ export const generateContent = async (
             ? [fileToGenerativePart(image.mimeType, image.data), { text: prompt }] 
             : [{ text: prompt }];
 
-            const response: GenerateContentResponse = await ai.models.generateContent({
-                model: model,
-                contents: { parts },
-                config: {
-                    temperature: config.temperature,
-                    topK: config.topK,
-                    topP: config.topP,
-                    tools: useWebSearch ? [{ googleSearch: {} }] : undefined,
-                    systemInstruction: useWebSearch 
-                        ? "Use Google Search when the question requires current information or real-time data. Always cite your sources with numbered references."
-                        : undefined
-                }
-            });
+        // Use proper contents format - array of Content objects
+        const contents: Content[] = [{
+            role: 'user',
+            parts
+        }];
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: model,
+            contents,
+            config: {
+                temperature: config.temperature,
+                topK: config.topK,
+                topP: config.topP,
+                tools: useWebSearch ? [{ googleSearch: {} }] : undefined,
+                systemInstruction: useWebSearch 
+                    ? "Use Google Search when the question requires current information or real-time data. Always cite your sources with numbered references."
+                    : undefined
+            }
+        });
 
         return response.text;
     } catch (error: any) {
@@ -403,7 +409,10 @@ async function* streamGemini(
             const ctxParts: any[] = [];
             if (editorContext.images && editorContext.images.length > 0) {
                 for (const img of editorContext.images) {
-                    ctxParts.push(fileToGenerativePart(img.mimeType, img.data));
+                    // Ensure MIME type is valid, default to image/png if missing
+                    const mimeType = img.mimeType || 'image/png';
+                    console.log('[Gemini] Adding image to context, MIME:', mimeType, 'data length:', img.data?.length);
+                    ctxParts.push(fileToGenerativePart(mimeType, img.data));
                 }
             }
             if (editorContext.text) {
@@ -717,6 +726,13 @@ export async function* getChatStream(
                 break;
         }
     } catch (error: any) {
+        console.error('[getChatStream] ========== FULL ERROR ==========');
+        console.error('[getChatStream] Error:', error);
+        console.error('[getChatStream] Error message:', error.message);
+        console.error('[getChatStream] Error response:', error.response);
+        console.error('[getChatStream] Error response data:', error.response?.data);
+        console.error('[getChatStream] Full error JSON:', JSON.stringify(error, null, 2));
+        console.error('[getChatStream] ========== END ERROR ==========');
         handleApiError(error, provider);
     }
 }
