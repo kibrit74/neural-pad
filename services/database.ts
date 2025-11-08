@@ -1,12 +1,12 @@
 import type { Note } from '../types';
 
-// Select the appropriate DB API based on environment (Electron vs Web)
-const getDbApi = async (): Promise<any> => {
+// Electron-only database API (Web version removed)
+const getDbApi = (): any => {
     const electronApi = (window as any)?.electron?.db;
-    if (electronApi) return electronApi;
-    // Fallback to browser IndexedDB implementation in web environment
-    const webDb = await import('../utils/db-indexeddb');
-    return webDb;
+    if (!electronApi) {
+        throw new Error('This application requires Electron. Please run as an Electron app.');
+    }
+    return electronApi;
 };
 
 const htmlToPlainText = (html: string): string => {

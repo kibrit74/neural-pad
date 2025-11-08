@@ -328,12 +328,22 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   }
 
-  /* Tiptap editor area should fill the available height for easier clicking */
+  /* Landing page image optimization - High quality rendering */
   .landing-image {
-    image-rendering: auto;
+    image-rendering: -webkit-optimize-contrast; /* Webkit optimization */
+    image-rendering: crisp-edges; /* Sharper edges */
+    image-rendering: high-quality; /* High quality */
     -ms-interpolation-mode: bicubic; /* IE/old Edge */
     backface-visibility: hidden;
     transform: translateZ(0);
+    will-change: transform;
+    /* Anti-aliasing improvements */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Image sharpness */
+    filter: contrast(1.02) brightness(1.01);
+    /* Hardware acceleration */
+    transform: translate3d(0, 0, 0);
   }
 
   /* Tiptap editor area should fill the available height for easier clicking */

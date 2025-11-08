@@ -11,6 +11,13 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
     const { t } = useTranslations();
     const { language, setLanguage } = useLanguage();
+    const [isElectron, setIsElectron] = useState(false);
+
+    // Check if running in Electron
+    useEffect(() => {
+        const electron = (window as any)?.electron?.isElectron === true;
+        setIsElectron(electron);
+    }, []);
 
     // Slider state for mockups
     const images = Array.from({ length: 8 }, (_, i) => `./${i + 1}.png`);
@@ -63,13 +70,27 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
     }
 
     const Feature: React.FC<{ icon: React.ReactElement; titleKey: string; descriptionKey: string }> = ({ icon, titleKey, descriptionKey }) => (
-        <div className="feature-card-3d">
-            <div className="feature-card glassmorphism flex flex-col items-center text-center p-6 rounded-xl">
-                <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
+        <div className="feature-card-3d group">
+            <div className="feature-card glassmorphism flex flex-col items-center text-center p-8 rounded-2xl border border-primary/20 hover:border-primary/40 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all"></div>
+                <div className="relative z-10 flex-shrink-0 w-16 h-16 flex items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-purple-600/20 text-primary mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all shadow-lg">
                     {icon}
                 </div>
-                <h3 className="text-xl font-semibold text-text-primary mb-2">{t(titleKey)}</h3>
-                <p className="text-sm text-text-secondary leading-relaxed">{t(descriptionKey)}</p>
+                <h3 className="relative z-10 text-xl font-bold text-text-primary mb-3">{t(titleKey)}</h3>
+                <p className="relative z-10 text-sm text-text-secondary leading-relaxed">{t(descriptionKey)}</p>
+            </div>
+        </div>
+    );
+
+    const ExportFeature: React.FC<{ icon: React.ReactElement; title: string; description: string }> = ({ icon, title, description }) => (
+        <div className="feature-card-3d group">
+            <div className="feature-card glassmorphism flex flex-col items-center text-center p-8 rounded-2xl border border-primary/20 hover:border-primary/40 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all"></div>
+                <div className="relative z-10 flex-shrink-0 w-16 h-16 flex items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-purple-600/20 text-primary mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all shadow-lg">
+                    {icon}
+                </div>
+                <h3 className="relative z-10 text-xl font-bold text-text-primary mb-3">{title}</h3>
+                <p className="relative z-10 text-sm text-text-secondary leading-relaxed">{description}</p>
             </div>
         </div>
     );
@@ -93,10 +114,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                 onClick={handleDownload}
                 disabled={!downloadUrl}
                 aria-label={`Download for ${osName}`}
-                className={`download-btn glassmorphism flex items-center justify-center gap-3 w-full px-6 py-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-300/40 rounded-lg font-semibold text-text-primary transition-all duration-300 ${!downloadUrl ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                className={`download-btn group relative glassmorphism flex items-center justify-center gap-3 w-full px-6 py-5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border-2 border-purple-300/40 hover:border-purple-400/60 rounded-2xl font-bold text-text-primary transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/30 ${!downloadUrl ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >
-                {icon}
-                <span>{t('landingPage.downloadFor')} {osName}</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
+                <span className="relative z-10 transform group-hover:scale-110 transition-transform">{icon}</span>
+                <span className="relative z-10">{t('landingPage.downloadFor')} {osName}</span>
+                <svg className="relative z-10 w-5 h-5 group-hover:translate-y-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
             </button>
         );
     };
@@ -109,9 +134,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-background z-[100] overflow-y-auto animate-modal-enter" data-theme="default">
+        <div className="fixed inset-0 bg-gradient-to-br from-background via-background to-primary/5 z-[100] overflow-y-auto animate-modal-enter" data-theme="default">
             {/* Enhanced Navbar with Glassmorphism */}
-            <nav className="fixed top-0 left-0 right-0 z-50 glassmorphism bg-background/70 backdrop-blur-xl border-b border-border shadow-lg">
+            <nav className="fixed top-0 left-0 right-0 z-50 glassmorphism bg-background/80 backdrop-blur-2xl border-b border-primary/20 shadow-2xl shadow-primary/10">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     {/* Logo with hover effect */}
                     <div className="flex items-center gap-3 group cursor-pointer" onClick={() => scrollToSection('hero')}>
@@ -186,44 +211,74 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
             </nav>
             
             <main className="max-w-5xl mx-auto px-6 pt-20">
-                <section id="hero" className="text-center flex flex-col items-center py-20 md:py-32">
-                    <div className="w-24 h-24 mb-6 flex items-center justify-center animate-float">
-                        <img src="./Logo.png" alt="Logo" className="w-full h-full object-contain" />
+                <section id="hero" className="text-center flex flex-col items-center py-20 md:py-32 relative">
+                    {/* Animated background elements */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+                        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
                     </div>
-                    <h1 className="text-4xl md:text-6xl font-bold text-text-primary tracking-tight mb-6 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
-                        {t('landingPage.heroTitle')}
-                    </h1>
-                    <p className="text-lg md:text-xl text-text-secondary max-w-3xl mb-10 animate-fade-in-up" style={{animationDelay: '0.3s'}}>
-                        {t('landingPage.heroSubtitle')}
-                    </p>
-                    <button 
-                        onClick={onClose} 
-                        className="bg-primary text-primary-text font-bold py-3 px-8 rounded-full text-lg hover:bg-primary-hover transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary/30 animate-fade-in-up animate-pulse-glow" 
-                        style={{animationDelay: '0.5s'}}
-                    >
-                        {t('landingPage.cta')}
-                    </button>
+                    
+                    <div className="relative z-10 w-full">
+                        <div className="relative w-32 h-32 mx-auto mb-8 animate-float">
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary to-purple-600 rounded-3xl blur-2xl opacity-50 animate-pulse"></div>
+                            <div className="relative w-full h-full bg-gradient-to-br from-primary/20 to-purple-600/20 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-primary/30">
+                                <img src="./Logo.png" alt="Logo" className="w-20 h-20 object-contain transform hover:scale-110 transition-transform" />
+                            </div>
+                        </div>
+                        
+                        <h1 className="text-4xl md:text-7xl font-black text-text-primary tracking-tight mb-6 animate-fade-in-up bg-gradient-to-r from-text-primary via-primary to-text-primary bg-clip-text" style={{animationDelay: '0.1s'}}>
+                            {t('landingPage.heroTitle')}
+                        </h1>
+                        <p className="text-lg md:text-2xl text-text-secondary max-w-3xl mx-auto mb-12 animate-fade-in-up leading-relaxed" style={{animationDelay: '0.3s'}}>
+                            {t('landingPage.heroSubtitle')}
+                        </p>
+                        
+                        {/* Sadece Electron'da giriş butonu göster */}
+                        {isElectron && (
+                            <button 
+                                onClick={onClose} 
+                                className="relative group bg-gradient-to-r from-primary to-purple-600 hover:from-primary-hover hover:to-purple-700 text-primary-text font-bold py-4 px-10 rounded-full text-xl transition-all transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-primary/30 animate-fade-in-up shadow-2xl shadow-primary/40 hover:shadow-primary/60" 
+                                style={{animationDelay: '0.5s'}}
+                            >
+                                <span className="relative z-10 flex items-center gap-2">
+                                    <SparkleIcon className="w-5 h-5" />
+                                    {t('landingPage.cta')}
+                                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    </svg>
+                                </span>
+                                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
+                            </button>
+                        )}
+                    </div>
                 </section>
 
-                <section id="mockups" className="py-12 md:py-16 scroll-mt-20">
-                    <div className="text-center mb-8 animate-fade-in">
-                        <h2 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
-                            {t('landingPage.mockupsTitle')}
-                        </h2>
-                        <p className="text-sm md:text-base text-text-secondary mt-2">
-                            {t('landingPage.mockupsSubtitle')}
-                        </p>
-                    </div>
+                <section id="mockups" className="py-12 md:py-16 scroll-mt-20 relative">
+                    {/* Background glow */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/5 pointer-events-none"></div>
+                    
+                    <div className="relative z-10">
+                        <div className="text-center mb-12 animate-fade-in">
+                            <h2 className="text-3xl md:text-5xl font-bold text-text-primary tracking-tight mb-4 bg-gradient-to-r from-text-primary via-primary to-text-primary bg-clip-text">
+                                {t('landingPage.mockupsTitle')}
+                            </h2>
+                            <p className="text-base md:text-lg text-text-secondary">
+                                {t('landingPage.mockupsSubtitle')}
+                            </p>
+                        </div>
 
-                    <div
-                        className="relative"
-                        onMouseEnter={() => (isHoveringRef.current = true)}
-                        onMouseLeave={() => (isHoveringRef.current = false)}
-                    >
-                        <div 
-                            className="glassmorphism rounded-2xl p-3 shadow-2xl animate-fade-in-up"
-                            style={{ transform: `translateY(${parallaxOffset * 0.5}px)` }}
+                        <div
+                            className="relative"
+                            onMouseEnter={() => (isHoveringRef.current = true)}
+                            onMouseLeave={() => (isHoveringRef.current = false)}
                         >
+                            {/* Glow effect around slider */}
+                            <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-purple-500/20 to-primary/20 rounded-3xl blur-3xl opacity-50 animate-pulse"></div>
+                            
+                            <div 
+                                className="relative glassmorphism rounded-3xl p-4 shadow-2xl border border-primary/20 hover:border-primary/30 transition-all animate-fade-in-up"
+                                style={{ transform: `translateY(${parallaxOffset * 0.5}px)` }}
+                            >
                             <div className="relative h-80 md:h-[32rem] overflow-hidden rounded-xl bg-background">
                                 {/* Browser chrome */}
                                 <div className="absolute top-3 left-4 z-10 flex gap-2">
@@ -245,9 +300,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                                                 className="absolute inset-0 w-full h-full object-contain bg-background landing-image" 
                                                 style={{
                                                     transform: current === i ? 'scale(1.05) translateZ(20px)' : 'scale(1) translateZ(0)',
-                                                    transition: 'transform 0.7s ease-in-out'
+                                                    transition: 'transform 0.7s ease-in-out',
+                                                    imageRendering: '-webkit-optimize-contrast',
+                                                    WebkitFontSmoothing: 'antialiased',
+                                                    backfaceVisibility: 'hidden'
                                                 }}
-                                                loading="lazy"
+                                                loading="eager"
+                                                decoding="sync"
+                                                fetchpriority="high"
                                                 onError={(e) => {
                                                     e.currentTarget.src = '/Logo.png';
                                                     e.currentTarget.style.objectFit = 'scale-down';
@@ -272,37 +332,44 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                                 <button
                                     aria-label="Previous"
                                     onClick={prev}
-                                    className="absolute inset-y-0 left-0 w-10 md:w-12 grid place-items-center"
+                                    className="absolute inset-y-0 left-2 md:left-4 w-12 md:w-14 grid place-items-center z-20 group"
                                 >
-                                    <span className="rounded-full bg-background/70 border border-border backdrop-blur p-1 hover:bg-background/90 transition">
-                                        <ChevronDownIcon className="w-5 h-5 -rotate-90" />
+                                    <span className="rounded-full bg-background/80 border-2 border-primary/30 backdrop-blur-xl p-2 md:p-3 hover:bg-background hover:border-primary hover:scale-110 transition-all shadow-lg hover:shadow-primary/30">
+                                        <ChevronDownIcon className="w-5 h-5 md:w-6 md:h-6 -rotate-90 text-primary group-hover:text-primary-hover transition-colors" />
                                     </span>
                                 </button>
                                 <button
                                     aria-label="Next"
                                     onClick={next}
-                                    className="absolute inset-y-0 right-0 w-10 md:w-12 grid place-items-center"
+                                    className="absolute inset-y-0 right-2 md:right-4 w-12 md:w-14 grid place-items-center z-20 group"
                                 >
-                                    <span className="rounded-full bg-background/70 border border-border backdrop-blur p-1 hover:bg-background/90 transition">
-                                        <ChevronDownIcon className="w-5 h-5 rotate-90" />
+                                    <span className="rounded-full bg-background/80 border-2 border-primary/30 backdrop-blur-xl p-2 md:p-3 hover:bg-background hover:border-primary hover:scale-110 transition-all shadow-lg hover:shadow-primary/30">
+                                        <ChevronDownIcon className="w-5 h-5 md:w-6 md:h-6 rotate-90 text-primary group-hover:text-primary-hover transition-colors" />
                                     </span>
                                 </button>
 
                                 {/* Dots */}
-                                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
-                                    {images.map((_, i) => (
-                                        <button
-                                            key={i}
-                                            aria-label={`Go to slide ${i + 1}`}
-                                            onClick={() => setCurrent(i)}
-                                            className={`h-2.5 w-2.5 rounded-full transition-all ${
-                                                current === i ? 'bg-primary w-5' : 'bg-border'
-                                            }`}
-                                        />
-                                    ))}
+                                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
+                                    <div className="bg-background/80 backdrop-blur-xl border border-primary/20 rounded-full px-4 py-2 shadow-lg">
+                                        <div className="flex gap-2">
+                                            {images.map((_, i) => (
+                                                <button
+                                                    key={i}
+                                                    aria-label={`Go to slide ${i + 1}`}
+                                                    onClick={() => setCurrent(i)}
+                                                    className={`h-2.5 rounded-full transition-all hover:scale-110 ${
+                                                        current === i 
+                                                            ? 'w-8 bg-gradient-to-r from-primary to-purple-600 shadow-lg shadow-primary/50' 
+                                                            : 'w-2.5 bg-border hover:bg-primary/50'
+                                                    }`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </section>
 
@@ -312,7 +379,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                             {t('landingPage.featuresTitle')}
                         </h2>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="animate-fade-in-up" style={{animationDelay: '0.1s'}}>
                             <Feature 
                                 icon={<SparkleIcon width="24" height="24" />} 
@@ -353,6 +420,157 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                                 icon={<LockIcon width="24" height="24" />} 
                                 titleKey="landingPage.newFeatures.secureTitle"
                                 descriptionKey="landingPage.newFeatures.secureDesc"
+                            />
+                        </div>
+                        
+                        {/* Voice Recognition */}
+                        <div className="animate-fade-in-up" style={{animationDelay: '0.7s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'Sesli Not Alma' : 'Voice Recognition'}
+                                description={language === 'tr' ? 'Konuşarak not yazın. Whisper AI ve Web Speech API desteği. Eller serbest çalışın.' : 'Write notes by speaking. Whisper AI and Web Speech API support. Hands-free workflow.'}
+                            />
+                        </div>
+                        
+                        {/* Version History */}
+                        <div className="animate-fade-in-up" style={{animationDelay: '0.8s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'Versiyon Geçmişi' : 'Version History'}
+                                description={language === 'tr' ? 'Not geçmişini görüntüleyin. Eski versiyonlara kolayca geri dönün. Hiçbir değişiklik kaybolmaz.' : 'View note history. Easily restore previous versions. Never lose any changes.'}
+                            />
+                        </div>
+                        
+                        {/* Keyboard Shortcuts */}
+                        <div className="animate-fade-in-up" style={{animationDelay: '0.9s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'Klavye Kısayolları' : 'Keyboard Shortcuts'}
+                                description={language === 'tr' ? 'Ctrl+S kaydet, Ctrl+N yeni not. Hızlı ve verimli çalışın. Profesyonel iş akışı.' : 'Ctrl+S save, Ctrl+N new note. Work fast and efficiently. Professional workflow.'}
+                            />
+                        </div>
+                        
+                        {/* Cross-Platform */}
+                        <div className="animate-fade-in-up" style={{animationDelay: '1.0s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'Çapraz Platform' : 'Cross-Platform'}
+                                description={language === 'tr' ? 'Windows, macOS ve Linux desteği. Aynı arayüz, aynı özellikler. Her platformda mükemmel.' : 'Windows, macOS and Linux support. Same interface, same features. Perfect on every platform.'}
+                            />
+                        </div>
+                        
+                        {/* Rich Text Editor */}
+                        <div className="animate-fade-in-up" style={{animationDelay: '1.1s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'Zengin Metin Editörü' : 'Rich Text Editor'}
+                                description={language === 'tr' ? 'TipTap editör. Tablo, resim, kod bloğu. Yazı tipi, renk, formatlar. WYSIWYG düzenleme.' : 'TipTap editor. Tables, images, code blocks. Fonts, colors, formats. WYSIWYG editing.'}
+                            />
+                        </div>
+                        
+                        {/* Dark Mode */}
+                        <div className="animate-fade-in-up" style={{animationDelay: '1.2s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'Karanlık Mod' : 'Dark Mode'}
+                                description={language === 'tr' ? 'Göz dostu karanlık tema. Gece çalışmaları için ideal. Otomatik tema değiştirme.' : 'Eye-friendly dark theme. Perfect for night work. Automatic theme switching.'}
+                            />
+                        </div>
+                        
+                        {/* Export Features */}
+                        <div className="animate-fade-in-up" style={{animationDelay: '1.3s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'PDF Export' : 'PDF Export'}
+                                description={language === 'tr' ? 'Notlarınızı profesyonel PDF formatında dışa aktarın. Formatlamalar ve resimler korunur.' : 'Export your notes as professional PDFs. Formatting and images preserved.'}
+                            />
+                        </div>
+                        
+                        <div className="animate-fade-in-up" style={{animationDelay: '1.4s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'HTML Export' : 'HTML Export'}
+                                description={language === 'tr' ? 'Web sayfası olarak kaydedin. Tüm stil ve formatlar korunur.' : 'Save as web page. All styles and formats preserved.'}
+                            />
+                        </div>
+                        
+                        <div className="animate-fade-in-up" style={{animationDelay: '1.5s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'Markdown Export' : 'Markdown Export'}
+                                description={language === 'tr' ? 'Markdown formatında dışa aktarın. GitHub, GitLab ve diğer platformlar için ideal.' : 'Export as Markdown. Perfect for GitHub, GitLab and other platforms.'}
+                            />
+                        </div>
+                        
+                        <div className="animate-fade-in-up" style={{animationDelay: '1.6s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'TXT Export' : 'TXT Export'}
+                                description={language === 'tr' ? 'Düz metin formatında kaydedin. Her yerde açılabilir, sade ve basit.' : 'Save as plain text. Opens anywhere, simple and clean.'}
+                            />
+                        </div>
+                        
+                        <div className="animate-fade-in-up" style={{animationDelay: '1.7s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'JSON Yedekleme' : 'JSON Backup'}
+                                description={language === 'tr' ? 'Tam yedekleme için JSON formatında kaydedin. Tüm metadata dahil.' : 'Save as JSON for full backup. All metadata included.'}
+                            />
+                        </div>
+                        
+                        <div className="animate-fade-in-up" style={{animationDelay: '1.8s'}}>
+                            <ExportFeature 
+                                icon={
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                } 
+                                title={language === 'tr' ? 'Çoklu Format' : 'Multi Format'}
+                                description={language === 'tr' ? 'PDF, HTML, Markdown, TXT ve JSON. İhtiyacınıza göre seçin.' : 'PDF, HTML, Markdown, TXT and JSON. Choose what fits your needs.'}
                             />
                         </div>
                     </div>

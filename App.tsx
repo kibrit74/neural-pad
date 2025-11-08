@@ -288,14 +288,10 @@ const App: React.FC = () => {
                 console.log('Running in Electron - skipping welcome screen');
                 setShowWelcome(false);
             } else {
-                // Web versiyonunda localStorage kontrolü yap
-                const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeScreen');
-                console.log('Running in Web - hasSeenWelcome:', hasSeenWelcome);
-                if (!hasSeenWelcome) {
-                    setShowWelcome(true);
-                } else {
-                    setShowWelcome(false);
-                }
+                // Web versiyonunda HER ZAMAN welcome göster (uygulama kullanılamaz)
+                console.log('Running in Web - showing welcome screen only');
+                setShowWelcome(true);
+                return; // Web'de devam etme, sadece welcome göster
             }
 
             const saved = localStorage.getItem('gemini-writer-settings');
@@ -326,6 +322,14 @@ const App: React.FC = () => {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleEnterApp = () => {
+        const isElectron = (window as any)?.electron?.isElectron === true;
+        
+        // Web'de welcome kapatılamaz, sadece Electron'da kapatılabilir
+        if (!isElectron) {
+            console.log('Web mode: Welcome screen cannot be closed');
+            return;
+        }
+        
         setShowWelcome(false);
         localStorage.setItem('hasSeenWelcomeScreen', 'true');
     };
