@@ -18,6 +18,9 @@ const MarkdownModal = React.lazy(() => import('./components/MarkdownModal'));
 const HistoryModal = React.lazy(() => import('./components/HistoryModal'));
 const SaveAsModal = React.lazy(() => import('./components/SaveAsModal'));
 import PasswordModal, { PasswordMode } from './components/PasswordModal';
+import ShareModal from './components/ShareModal';
+import ReminderModal from './components/ReminderModal';
+import ReminderAlertModal from './components/ReminderAlertModal';
 // TagInput is small, keep it eager
 
 import type { Settings, NotificationType, Note } from './types';
@@ -39,7 +42,7 @@ const API_KEY_NOTIFICATION_ID = -1; // Special ID for the persistent API key not
 
 const App: React.FC = () => {
     const { t } = useTranslations();
-    
+
     // State
     const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
     const [notifications, setNotifications] = useState<NotificationType[]>([]);
@@ -59,7 +62,7 @@ const App: React.FC = () => {
     const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
     const [isHelpModalOpen, setHelpModalOpen] = useState(false);
     const [showWelcome, setShowWelcome] = useState<boolean | null>(null);
-    const [contextMenu, setContextMenu] = useState<{ 
+    const [contextMenu, setContextMenu] = useState<{
         anchorEl: HTMLElement | null;
         type?: 'text' | 'image';
         data?: string;
@@ -78,6 +81,12 @@ const App: React.FC = () => {
     const passwordCacheRef = useRef<Map<number, string>>(new Map());
 
     const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
+    const [isShareModalOpen, setShareModalOpen] = useState(false);
+    const [isReminderModalOpen, setReminderModalOpen] = useState(false);
+    const [shareContent, setShareContent] = useState(''); // For context menu selection share
+    const [reminderAlert, setReminderAlert] = useState<{ noteId: number; noteTitle: string } | null>(null);
+    const triggeredRemindersRef = useRef<Set<number>>(new Set()); // Track already triggered reminders
+    const [reminderSelectionText, setReminderSelectionText] = useState('');
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -85,13 +94,49 @@ const App: React.FC = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // Reminder check interval (every 30 seconds)
+    useEffect(() => {
+        const checkReminders = () => {
+            console.log('[Reminder Check] Running check, notes count:', notes.length);
+            const now = new Date();
+            for (const note of notes) {
+                if (note.reminder) {
+                    const reminderTime = new Date(note.reminder);
+                    const isTriggered = triggeredRemindersRef.current.has(note.id);
+                    console.log('[Reminder Check] Note:', note.title, 'Reminder:', reminderTime, 'Now:', now, 'Is due:', reminderTime <= now, 'Already triggered:', isTriggered);
+
+                    if (!isTriggered && reminderTime <= now) {
+                        // Trigger reminder
+                        console.log('[Reminder Check] TRIGGERING REMINDER for:', note.title);
+                        triggeredRemindersRef.current.add(note.id);
+                        setReminderAlert({ noteId: note.id, noteTitle: note.title || 'Başlıksız Not' });
+
+                        // Also show Electron notification if available
+                        if ((window as any).electron?.showNotification) {
+                            (window as any).electron.showNotification({
+                                title: '⏰ Hatırlatıcı',
+                                body: note.title || 'Başlıksız Not',
+                            });
+                        }
+                        break; // Show one at a time
+                    }
+                }
+            }
+        };
+
+        // Check immediately and then every 30 seconds
+        checkReminders();
+        const intervalId = setInterval(checkReminders, 30000);
+        return () => clearInterval(intervalId);
+    }, [notes]);
+
     const notificationIdRef = useRef(0);
-    
+
     const addNotification = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
         const id = ++notificationIdRef.current;
         setNotifications(prev => [...prev, { id, message, type }]);
     };
-    
+
     const removeNotification = (id: number) => {
         setNotifications(prev => prev.filter(n => n.id !== id));
     };
@@ -158,7 +203,7 @@ const App: React.FC = () => {
             setNotes(allNotes);
 
             const updatedNoteInList = allNotes.find(n => n.id === savedId);
-            
+
             // Ensure the active note in state is also updated with the new `updatedAt` timestamp
             if (activeNoteRef.current && updatedNoteInList) {
                 if (noteToSave.isLocked) {
@@ -168,7 +213,7 @@ const App: React.FC = () => {
                     setActiveNote(updatedNoteInList);
                 }
             }
-            
+
             if (!quiet) {
                 addNotification(t('notifications.noteSaved'), 'success');
             }
@@ -201,7 +246,7 @@ const App: React.FC = () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [handleSaveNow]);
-    
+
     // Auto-Save Effect
     useEffect(() => {
         if (!settings.autoSave) return;
@@ -245,7 +290,7 @@ const App: React.FC = () => {
             console.log('Saving current note before creating new one');
             await handleSaveNow(true);
         }
-    
+
         // Create empty note in DB immediately to get real ID
         const newNoteData: Omit<Note, 'id'> = {
             title: '',
@@ -254,7 +299,7 @@ const App: React.FC = () => {
             createdAt: new Date(),
             updatedAt: new Date(),
         };
-        
+
         try {
             console.log('Creating new note in DB...');
             const newId = await db.saveNote(newNoteData);
@@ -282,7 +327,7 @@ const App: React.FC = () => {
                 windowElectron: (window as any)?.electron,
                 platform: (window as any)?.electron?.platform
             });
-            
+
             if (isElectron) {
                 // Electron'da welcome ekranını asla gösterme
                 console.log('Running in Electron - skipping welcome screen');
@@ -323,13 +368,13 @@ const App: React.FC = () => {
 
     const handleEnterApp = () => {
         const isElectron = (window as any)?.electron?.isElectron === true;
-        
+
         // Web'de welcome kapatılamaz, sadece Electron'da kapatılabilir
         if (!isElectron) {
             console.log('Web mode: Welcome screen cannot be closed');
             return;
         }
-        
+
         setShowWelcome(false);
         localStorage.setItem('hasSeenWelcomeScreen', 'true');
     };
@@ -347,7 +392,7 @@ const App: React.FC = () => {
     const handleTagsChange = (newTags: string[]) => {
         setActiveNote(prev => prev ? { ...prev, tags: newTags } : null);
     };
-    
+
     const handleRemoveTag = (tagToRemove: string) => {
         if (activeNote) {
             const newTags = activeNote.tags?.filter(tag => tag !== tagToRemove) || [];
@@ -378,12 +423,12 @@ const App: React.FC = () => {
         if (!noteToToggle) return;
 
         const updatedNote = { ...noteToToggle, isPinned: !noteToToggle.isPinned };
-        
+
         try {
             await db.saveNote(updatedNote);
             const allNotes = await db.getAllNotes();
             setNotes(allNotes);
-            
+
             // Update active note if it's the one being pinned
             if (activeNote?.id === id) {
                 setActiveNote(updatedNote);
@@ -392,14 +437,14 @@ const App: React.FC = () => {
             addNotification(t('notifications.saveError', { message: error.message }), 'error');
         }
     };
-    
+
     // Settings Management
     const handleSaveSettings = (newSettings: Settings) => {
         setSettings(newSettings);
         localStorage.setItem('gemini-writer-settings', JSON.stringify(newSettings));
         setSettingsModalOpen(false);
     };
-    
+
     // Context Menu
     const handleContextMenu = (event: React.MouseEvent) => {
         event.preventDefault();
@@ -427,10 +472,10 @@ const App: React.FC = () => {
         anchor.style.position = 'fixed';
         anchor.style.left = `${event.clientX}px`;
         anchor.style.top = `${event.clientY}px`;
-        
+
         setContextMenu({ anchorEl: anchor, type: menuType, data: menuData });
     };
-    
+
     const closeContextMenu = () => {
         setContextMenu({ anchorEl: null });
     };
@@ -439,7 +484,7 @@ const App: React.FC = () => {
         setContextMenu({ anchorEl: target, type: 'image', data: src });
     };
 
-    
+
     // UI Toggles
     const toggleNotesSidebar = () => setNotesSidebarOpen(!isNotesSidebarOpen);
     const toggleChatSidebar = () => setChatSidebarOpen(!isChatSidebarOpen);
@@ -448,7 +493,7 @@ const App: React.FC = () => {
     const handleChatResize = (deltaX: number) => {
         setChatWidth(prev => Math.max(256, Math.min(window.innerWidth - 300, prev - deltaX)));
     };
-    
+
     const handleSearchChange = (query: string) => {
         setSearchQuery(query);
         if (query.trim() && !isNotesSidebarOpen) {
@@ -462,12 +507,12 @@ const App: React.FC = () => {
         div.innerHTML = html;
         const text = (div.textContent || div.innerText || '').trim();
         const imgs = Array.from(div.querySelectorAll('img')) as HTMLImageElement[];
-        
+
         const images: { mimeType: string; data: string }[] = [];
-        
+
         for (const img of imgs) {
             const src = img.src || '';
-            
+
             if (src.startsWith('data:')) {
                 // Data URL - extract base64
                 const [meta, data] = src.split(',');
@@ -493,20 +538,20 @@ const App: React.FC = () => {
                 }
             }
         }
-        
+
         return { text, images };
     }, []);
 
     const handleInsertToEditor = useCallback((content: string) => {
         if (!editorRef.current) return;
-        
+
         // Convert markdown to HTML if needed
         const htmlContent = content.replace(/\n/g, '<br>');
-        
+
         // Insert at the end of the document
         editorRef.current.chain().focus().insertContent(`<p>${htmlContent}</p>`).run();
     }, []);
-    
+
     const allTags = useMemo(() => [...new Set(notes.flatMap(note => note.tags || []))].sort(), [notes]);
 
     const filteredNotes = useMemo(() => {
@@ -533,7 +578,7 @@ const App: React.FC = () => {
                 return textContent.toLowerCase().includes(lowerCaseQuery);
             });
         }
-        
+
         return notesToFilter;
     }, [notes, selectedTag, searchQuery]);
 
@@ -543,7 +588,7 @@ const App: React.FC = () => {
             <div className="flex h-screen w-screen bg-background text-text-primary items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                        <p className="text-text-secondary">{t('common.loading')}</p>
+                    <p className="text-text-secondary">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -563,6 +608,31 @@ const App: React.FC = () => {
             </Suspense>
         );
     }
+
+    const handlePasswordUnlock = async () => {
+        setPasswordModalOpen(false);
+    };
+
+    const handleDismissReminder = async (noteId: number) => {
+        try {
+            const note = notes.find(n => n.id === noteId);
+            if (note) {
+                const updatedNote = { ...note, reminder: null };
+                const newNotes = notes.map(n => n.id === noteId ? updatedNote : n);
+                setNotes(newNotes);
+
+                if (activeNote && activeNote.id === noteId) {
+                    setActiveNote(updatedNote);
+                    activeNoteRef.current = updatedNote;
+                }
+
+                await db.saveNote(updatedNote);
+            }
+        } catch (error) {
+            console.error('Failed to dismiss reminder:', error);
+            addNotification('Hatırlatıcı temizlenemedi', 'error');
+        }
+    };
 
     return (
         <div className="flex h-screen w-screen bg-background text-text-primary overflow-hidden font-sans">
@@ -615,12 +685,12 @@ const App: React.FC = () => {
                         try {
                             const safeTitle = (activeNote.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
                             const html = activeNote.content || '';
-                            
+
                             // Simple HTML to text conversion
                             const div = document.createElement('div');
                             div.innerHTML = html;
                             const text = div.textContent || div.innerText || '';
-                            
+
                             // Download as TXT
                             const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
                             const url = URL.createObjectURL(blob);
@@ -631,7 +701,7 @@ const App: React.FC = () => {
                             a.click();
                             document.body.removeChild(a);
                             URL.revokeObjectURL(url);
-                            
+
                             addNotification('Downloaded as TXT', 'success');
                         } catch (err: any) {
                             addNotification('Download failed: ' + err.message, 'error');
@@ -641,6 +711,11 @@ const App: React.FC = () => {
                         localStorage.removeItem('hasSeenWelcome');
                         setShowWelcome(true);
                     }}
+                    onShare={() => {
+                        setShareContent(''); // Reset to use full note content
+                        setShareModalOpen(true);
+                    }}
+                    onReminder={() => setReminderModalOpen(true)}
                     isLocked={!!activeNote?.isLocked}
                     activeNote={activeNote}
                     searchQuery={searchQuery}
@@ -677,7 +752,7 @@ const App: React.FC = () => {
                         onVoiceSave={async () => { await handleSaveNow(true); }}
                         settings={settings}
                     />
-                     {contextMenu.anchorEl && (
+                    {contextMenu.anchorEl && (
                         <ContextMenu
                             editor={editorRef.current!}
                             onClose={closeContextMenu}
@@ -694,6 +769,14 @@ const App: React.FC = () => {
                                     const currentContent = editorRef.current.getHTML();
                                     setActiveNote(prev => prev ? { ...prev, content: currentContent } : null);
                                 }
+                            }}
+                            onShareSelection={(text) => {
+                                setShareContent(text || activeNote?.content || '');
+                                setShareModalOpen(true);
+                            }}
+                            onReminderSelection={(text) => {
+                                setReminderSelectionText(text);
+                                setReminderModalOpen(true);
                             }}
                         />
                     )}
@@ -845,38 +928,89 @@ const App: React.FC = () => {
 
 
             <Suspense fallback={null}>
-            <MarkdownModal
-                isOpen={isMarkdownModalOpen}
-                html={activeNote?.content || ''}
-                onClose={() => setMarkdownModalOpen(false)}
-                onApply={(html) => {
-                    editorRef.current?.commands.setContent(html, { emitUpdate: true });
-                }}
-            />
+                <MarkdownModal
+                    isOpen={isMarkdownModalOpen}
+                    html={activeNote?.content || ''}
+                    onClose={() => setMarkdownModalOpen(false)}
+                    onApply={(html) => {
+                        editorRef.current?.commands.setContent(html, { emitUpdate: true });
+                    }}
+                />
             </Suspense>
 
             <Suspense fallback={null}>
-            <HistoryModal
-                isOpen={isHistoryModalOpen}
-                noteId={activeNote?.id || null}
-                currentHtml={activeNote?.content || ''}
-                onClose={() => setHistoryModalOpen(false)}
-                onRestore={(html) => {
-                    editorRef.current?.commands.setContent(html, { emitUpdate: true });
-                    setHistoryModalOpen(false);
-                }}
-            />
+                <HistoryModal
+                    isOpen={isHistoryModalOpen}
+                    noteId={activeNote?.id || null}
+                    currentHtml={activeNote?.content || ''}
+                    onClose={() => setHistoryModalOpen(false)}
+                    onRestore={(html) => {
+                        editorRef.current?.commands.setContent(html, { emitUpdate: true });
+                        setHistoryModalOpen(false);
+                    }}
+                />
             </Suspense>
 
             <Suspense fallback={null}>
-            <SaveAsModal
-                isOpen={isSaveAsModalOpen}
-                onClose={() => setSaveAsModalOpen(false)}
-                note={activeNote}
+                <SaveAsModal
+                    isOpen={isSaveAsModalOpen}
+                    onClose={() => setSaveAsModalOpen(false)}
+                    note={activeNote}
+                    addNotification={addNotification}
+                />
+            </Suspense>
+
+            <ShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => {
+                    setShareModalOpen(false);
+                    setShareContent(''); // Clear selection share content
+                }}
+                title={activeNote?.title || ''}
+                content={shareContent}
+                fullContent={activeNote?.content || ''}
                 addNotification={addNotification}
             />
-            </Suspense>
-            
+
+            <ReminderModal
+                isOpen={isReminderModalOpen}
+                onClose={() => {
+                    setReminderModalOpen(false);
+                    setReminderSelectionText('');
+                }}
+                noteTitle={reminderSelectionText || activeNote?.title || ''}
+                eventTitle={activeNote?.title || ''}
+                eventDetails={reminderSelectionText || activeNote?.title || ''}
+                currentReminder={activeNote?.reminder}
+                onSave={async (reminder) => {
+                    if (!activeNote) return;
+                    console.log('[App] Saving reminder to note:', activeNote.title, 'Reminder:', reminder);
+                    const updatedNote = { ...activeNote, reminder };
+                    setActiveNote(updatedNote);
+                    await db.saveNote(updatedNote);
+                    console.log('[App] Reminder saved to DB, reloading notes...');
+                    const allNotes = await db.getAllNotes();
+                    setNotes(allNotes);
+                    console.log('[App] Notes reloaded, first note with reminder:', allNotes.find(n => n.reminder));
+                }}
+                addNotification={addNotification}
+            />
+
+            <ReminderAlertModal
+                isOpen={!!reminderAlert}
+                onClose={() => setReminderAlert(null)}
+                noteTitle={reminderAlert?.noteTitle || ''}
+                noteId={reminderAlert?.noteId || 0}
+                onGoToNote={(noteId) => {
+                    const note = notes.find(n => n.id === noteId);
+                    if (note) {
+                        handleSelectNote(note.id);
+                    }
+                    setReminderAlert(null);
+                }}
+                onDismiss={handleDismissReminder}
+            />
+
             <div className="absolute bottom-4 right-4 z-50 space-y-2 w-full max-w-sm" role="region" aria-live="polite" aria-relevant="additions" aria-atomic="false">
                 {notifications.map(n => (
                     <Notification key={n.id} {...n} onDismiss={() => removeNotification(n.id)} />

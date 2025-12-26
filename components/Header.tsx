@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useTranslations } from '../hooks/useTranslations';
-import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SaveAsIcon, SearchIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon, DownloadIcon, HomeIcon } from './icons/Icons';
+import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SaveAsIcon, SearchIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon, DownloadIcon, HomeIcon, ShareIcon, BellIcon, BellOffIcon } from './icons/Icons';
 import type { Note } from '../types';
 
 interface HeaderProps {
@@ -16,17 +16,19 @@ interface HeaderProps {
     onOpenHistory?: () => void;
     onDownload?: () => void;
     onOpenLandingPage?: () => void;
+    onShare?: () => void;
+    onReminder?: () => void;
     isLocked: boolean;
     activeNote: Note | null;
     searchQuery: string;
     onSearchChange: (query: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ 
-    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSaveAs, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, onOpenLandingPage, isLocked, activeNote, searchQuery, onSearchChange 
+const Header: React.FC<HeaderProps> = ({
+    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSaveAs, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, onOpenLandingPage, onShare, onReminder, isLocked, activeNote, searchQuery, onSearchChange
 }) => {
     const { t } = useTranslations();
-    
+
     // Check if running in Electron
     const isElectron = typeof window !== 'undefined' && (window as any).electron;
 
@@ -39,19 +41,18 @@ const Header: React.FC<HeaderProps> = ({
         }).format(new Date(date));
     };
 
-    const IconButton: React.FC<{ onClick: () => void; title: string; isActive?: boolean; children: React.ReactNode, className?: string }> = 
-    ({ onClick, title, isActive = false, children, className = '' }) => (
-        <button
-            onClick={onClick}
-            title={title}
-            aria-label={title}
-            className={`p-2 rounded-full transition-colors ${
-                isActive ? 'bg-primary text-primary-text' : 'hover:bg-border'
-            } ${className}`}
-        >
-            {children}
-        </button>
-    );
+    const IconButton: React.FC<{ onClick: () => void; title: string; isActive?: boolean; children: React.ReactNode, className?: string }> =
+        ({ onClick, title, isActive = false, children, className = '' }) => (
+            <button
+                onClick={onClick}
+                title={title}
+                aria-label={title}
+                className={`p-2 rounded-full transition-colors ${isActive ? 'bg-primary text-primary-text' : 'hover:bg-border'
+                    } ${className}`}
+            >
+                {children}
+            </button>
+        );
 
     return (
         <header className="relative z-50 flex items-center justify-between p-2 border-b border-border-strong bg-background-secondary text-text-primary flex-shrink-0 gap-4">
@@ -69,11 +70,11 @@ const Header: React.FC<HeaderProps> = ({
                     )}
                 </div>
             </div>
-            
+
             {/* Center section - Search */}
             <div className="flex-1 flex justify-center px-4">
                 <div className="w-full max-w-md relative">
-                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <SearchIcon className="h-4 w-4 text-text-secondary" />
                     </div>
                     <input
@@ -106,6 +107,16 @@ const Header: React.FC<HeaderProps> = ({
                         <DownloadIcon />
                     </IconButton>
                 )}
+                {onShare && (
+                    <IconButton onClick={onShare} title={t('share.title')}>
+                        <ShareIcon />
+                    </IconButton>
+                )}
+                {onReminder && (
+                    <IconButton onClick={onReminder} title={t('reminder.title')} className={activeNote?.reminder ? 'text-yellow-500' : ''}>
+                        {activeNote?.reminder ? <BellIcon /> : <BellOffIcon />}
+                    </IconButton>
+                )}
                 <IconButton onClick={onToggleLock} title={isLocked ? t('header.unlock') : t('header.lock')}>
                     {isLocked ? <UnlockIcon /> : <LockIcon />}
                 </IconButton>
@@ -117,7 +128,7 @@ const Header: React.FC<HeaderProps> = ({
                         <HistoryIcon />
                     </IconButton>
                 )}
-                 <IconButton onClick={onSettings} title={t('header.settings')}>
+                <IconButton onClick={onSettings} title={t('header.settings')}>
                     <SettingsIcon />
                 </IconButton>
                 <IconButton onClick={onToggleChatSidebar} title={isChatOpen ? t('chat.close') : t('chat.open')} isActive={isChatOpen}>

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
-import { useEditor, EditorContent, Editor as TiptapEditor } from '@tiptap/react';
+import { useEditor, EditorContent, Editor as TiptapEditor, BubbleMenu } from '@tiptap/react';
+import BubbleMenuExtension from '@tiptap/extension-bubble-menu';
 import Document from '@tiptap/extension-document';
 import Paragraph from '@tiptap/extension-paragraph';
 import Text from '@tiptap/extension-text';
@@ -67,6 +68,9 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
             History,
             Dropcursor,
             Gapcursor,
+            BubbleMenuExtension.configure({
+                pluginKey: 'bubbleMenu',
+            }),
             // --- End of StarterKit replacements ---
 
             Placeholder.configure({
@@ -94,13 +98,13 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
     if (editor) {
         editorRef.current = editor;
     }
-    
+
     useEffect(() => {
         if (editor && content !== undefined && content !== null) {
             const currentContent = editor.getHTML();
             const normalizeContent = (html: string) => html.replace(/\s+/g, ' ').trim();
             if (normalizeContent(content) !== normalizeContent(currentContent)) {
-                editor.commands.setContent(content, { emitUpdate: false });
+                editor.commands.setContent(content, false);
             }
         }
     }, [editor, content]);
@@ -126,12 +130,37 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
         };
         input.click();
     }, [editor]);
-    
+
+    const handleCopySelection = useCallback((e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent focus loss
+        if (!editor) return;
+        const selection = editor.state.selection;
+        const text = editor.state.doc.textBetween(selection.from, selection.to, '\n');
+        navigator.clipboard.writeText(text).then(() => {
+            addNotification(t('notifications.copiedToClipboard') || 'Panoya kopyalandı', 'success');
+        });
+    }, [editor, addNotification, t]);
+
     return (
         <div className="flex flex-col h-full bg-background text-text-primary">
             <FormattingToolbar editor={editor} onImageUpload={handleImageUpload} addNotification={addNotification} onVoiceSave={onVoiceSave} settings={settings} />
             <div className="relative flex-grow overflow-y-auto" onClick={() => editor?.commands.focus()}>
-                 <EditorContent editor={editor} className="prose dark:prose-invert max-w-none px-6 pb-6 pt-2 focus:outline-none h-full" />
+                {editor && (
+                    <BubbleMenu
+                        editor={editor}
+                        tippyOptions={{ duration: 100 }}
+                        className="bg-background-secondary border border-border shadow-lg rounded-lg p-1 flex gap-1 animate-in fade-in zoom-in duration-200"
+                    >
+                        <button
+                            onMouseDown={handleCopySelection}
+                            className="flex items-center justify-center p-2 text-text-primary hover:bg-background rounded-md transition-colors"
+                            title={t('share.copy') || 'Kopyala'}
+                        >
+                            <span className="w-5 h-5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
+                        </button>
+                    </BubbleMenu>
+                )}
+                <EditorContent editor={editor} className="prose dark:prose-invert max-w-none px-6 pb-6 pt-2 focus:outline-none h-full" />
             </div>
         </div>
     );

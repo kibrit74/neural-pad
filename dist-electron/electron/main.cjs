@@ -145,6 +145,21 @@ function setupFileIPC() {
             return null;
         }
     });
+    // Save Temp File (now using Downloads for visibility)
+    ipcMain.handle('files:save-temp', async (event, { content, filename }) => {
+        try {
+            const downloadPath = app.getPath('downloads');
+            const filePath = path.join(downloadPath, filename);
+            console.log(`[FileIPC] Saving share file to: ${filePath}`);
+            // content is string (HTML/JSON/TXT)
+            fs.writeFileSync(filePath, content, 'utf8');
+            return filePath;
+        }
+        catch (error) {
+            console.error('[FileIPC] Failed to save share file:', error);
+            return null;
+        }
+    });
 }
 function setupDatabaseIPC() {
     ipcMain.handle('db:save-note', async (event, note) => { try {
@@ -190,6 +205,19 @@ function setupSettingsIPC() {
     });
     ipcMain.handle('settings:set', (event, key, value) => {
         settings.setSetting(key, value);
+    });
+}
+function setupAppIPC() {
+    const { Notification } = require('electron');
+    // Show Notification
+    ipcMain.on('app:show-notification', (event, { title, body }) => {
+        new Notification({ title, body }).show();
+    });
+    // Show Item In Folder
+    ipcMain.on('app:show-item-in-folder', (event, filePath) => {
+        if (filePath && typeof filePath === 'string') {
+            shell.showItemInFolder(filePath);
+        }
     });
 }
 function setupSpeechIPC() {
@@ -280,9 +308,9 @@ function createWindow() {
         shell.openExternal(url);
         return { action: 'deny' };
     });
-    // Automatically grant permissions for microphone and Web Speech API
+    // Automatically grant permissions for microphone, Web Speech API, and clipboard
     mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-        const allowedPermissions = ['media', 'microphone', 'audioCapture', 'mediaDevices'];
+        const allowedPermissions = ['media', 'microphone', 'audioCapture', 'mediaDevices', 'clipboard-sanitized-write', 'clipboard-read'];
         if (allowedPermissions.includes(permission)) {
             console.log('[Permissions] Granted:', permission);
             callback(true);
@@ -292,9 +320,9 @@ function createWindow() {
             callback(false);
         }
     });
-    // Set permission check handler for Web Speech API
+    // Set permission check handler for Web Speech API and clipboard
     mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
-        const allowedPermissions = ['media', 'microphone', 'audioCapture', 'mediaDevices'];
+        const allowedPermissions = ['media', 'microphone', 'audioCapture', 'mediaDevices', 'clipboard-sanitized-write', 'clipboard-read'];
         const allowed = allowedPermissions.includes(permission);
         console.log('[Permissions Check]', permission, '→', allowed);
         return allowed;
@@ -396,6 +424,22 @@ app.whenReady().then(() => {
     setupDatabaseIPC();
     setupSettingsIPC();
     setupSpeechIPC();
+    setupAppIPC();
+    // Grant clipboard permissions for copy functionality
+    session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+        if (permission === 'clipboard-sanitized-write' || permission === 'clipboard-read') {
+            return true;
+        }
+        return false;
+    });
+    session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+        if (permission === 'clipboard-sanitized-write' || permission === 'clipboard-read') {
+            callback(true);
+        }
+        else {
+            callback(false);
+        }
+    });
     if (process.platform === 'win32') {
         app.setAppUserModelId('com.neural-pad.app');
     }

@@ -48,6 +48,8 @@ export interface Note {
     // Password protection
     isLocked?: boolean;
     encrypted?: EncryptedPayload | null;
+    // Reminder
+    reminder?: Date | null;
 }
 
 export interface WebSource {

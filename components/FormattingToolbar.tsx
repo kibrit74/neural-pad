@@ -84,7 +84,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
     if (!editor) {
         return null;
     }
-    
+
     // Check if Gemini is available
     const hasGeminiKey = !!(settings?.geminiApiKey);
     const isElectron = !!(window as any).electron;
@@ -101,18 +101,18 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                 await onVoiceSave?.();
                 if (addNotification) {
                     addNotification(
-                        language === 'tr' 
-                            ? 'Not sesli komutla kaydedildi!' 
-                            : 'Note saved with voice command!', 
+                        language === 'tr'
+                            ? 'Not sesli komutla kaydedildi!'
+                            : 'Note saved with voice command!',
                         'success'
                     );
                 }
             } catch (e: any) {
                 if (addNotification) {
                     addNotification(
-                        language === 'tr' 
-                            ? 'Not kaydedilemedi.' 
-                            : 'Failed to save note.', 
+                        language === 'tr'
+                            ? 'Not kaydedilemedi.'
+                            : 'Failed to save note.',
                         'error'
                     );
                 }
@@ -122,7 +122,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
 
     const handleTranscript = useCallback(async (finalText: string) => {
         if (!editor || !finalText.trim()) return;
-        
+
         const lang = language as 'tr' | 'en';
         const commandDetected = hasVoiceCommand(finalText, lang);
 
@@ -158,9 +158,9 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
             if (addNotification) {
                 const errorMsg = error.message || error;
                 addNotification(
-                    language === 'tr' 
-                        ? `Ses tanıma hatası: ${errorMsg}` 
-                        : `Voice recognition error: ${errorMsg}`, 
+                    language === 'tr'
+                        ? `Ses tanıma hatası: ${errorMsg}`
+                        : `Voice recognition error: ${errorMsg}`,
                     'error'
                 );
             }
@@ -185,7 +185,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                 // Provide more specific error messages with fallback suggestions
                 let errorMessage = t('voice.error') || 'Ses tanıma hatası';
                 let notificationType: 'success' | 'error' | 'warning' = 'error';
-                
+
                 if (error === 'network' || error === 'network_fallback') {
                     errorMessage = t('voice.networkError') || 'İnternet bağlantısı gerekli. Offline ses tanıma aktif.';
                     notificationType = 'warning';
@@ -236,7 +236,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
         } else if (hasGeminiKey) {
             console.log('[Voice] Using Gemini 2.0 Flash for transcription');
         }
-        
+
         setShowModal(true);
         setFinalTranscript('');
         setInterimTranscript('');
@@ -271,7 +271,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
             title={title}
             aria-label={title}
             disabled={disabled}
-            className={`p-2 rounded transition-colors ${isActive ? 'bg-primary text-primary-text' : 'hover:bg-border'} disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`p-1.5 rounded transition-colors ${isActive ? 'bg-primary text-primary-text' : 'hover:bg-border'} disabled:opacity-50 disabled:cursor-not-allowed`}
         >
             {children}
         </button>
@@ -332,7 +332,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
 
     return (
         <>
-            <div className="flex items-center gap-1 p-2 border-b border-border-strong bg-background-secondary flex-wrap">
+            <div className="flex items-center gap-1 p-1.5 border-b border-border-strong bg-background-secondary flex-wrap">
                 <select
                     value={currentFont}
                     onChange={(e) => {
@@ -343,7 +343,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                             (editor.chain().focus() as any).unsetFontFamily().run();
                         }
                     }}
-                    className="p-1.5 rounded bg-transparent hover:bg-border"
+                    className="p-1 text-sm rounded bg-transparent hover:bg-border"
                 >
                     {FONT_FAMILY_LIST.map(font => (
                         <option key={font.name} value={font.value}>{font.name}</option>
@@ -352,7 +352,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                 <select
                     value={currentFontSize}
                     onChange={handleFontSizeChange}
-                    className="p-1.5 rounded bg-transparent hover:bg-border"
+                    className="p-1 text-sm rounded bg-transparent hover:bg-border"
                 >
                     {FONT_SIZE_LIST.map(size => (
                         <option key={size.name} value={size.value}>{size.name}</option>
@@ -371,8 +371,8 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                 <ToolbarButton onClick={attachFile} title={t('toolbar.attachFile')}><PaperclipIcon /></ToolbarButton>
                 <ToolbarButton onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title={t('toolbar.insertTable')} disabled={editor.isActive('table')}><TableIcon /></ToolbarButton>
                 {hasSupport && (
-                    <ToolbarButton 
-                        onClick={handleOpenModal} 
+                    <ToolbarButton
+                        onClick={handleOpenModal}
                         title={t('voice.start')}
                     >
                         <MicIcon />
@@ -383,7 +383,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                 <ToolbarButton onClick={() => editor.chain().focus().redo().run()} title={t('toolbar.redo')}><RedoIcon /></ToolbarButton>
             </div>
             {showModal && (
-                <VoiceInputModal 
+                <VoiceInputModal
                     interimTranscript={interimTranscript}
                     finalTranscript={finalTranscript}
                     isRecording={isRecording}

@@ -55,9 +55,15 @@ const migrateSchema = async () => {
                 table.boolean('isPinned').defaultTo(false);
                 table.boolean('isLocked').defaultTo(false);
                 table.text('encrypted');
+                table.dateTime('reminder'); // Reminder date/time
                 // Index will be added after dropping the old table
             });
-            await knex.raw('INSERT INTO notes SELECT * FROM notes_old');
+            // Copy data with explicit column list, setting reminder to NULL for old records
+            await knex.raw(`
+                INSERT INTO notes (id, title, content, tags, createdAt, updatedAt, plainTextContent, isPinned, isLocked, encrypted, reminder)
+                SELECT id, title, content, tags, createdAt, updatedAt, plainTextContent, isPinned, isLocked, encrypted, NULL
+                FROM notes_old
+            `);
             await knex.schema.dropTable('notes_old');
             await knex.schema.table('notes', (table) => {
                 table.index('updatedAt');
@@ -108,6 +114,7 @@ const createSchema = async () => {
             table.boolean('isPinned').defaultTo(false);
             table.boolean('isLocked').defaultTo(false);
             table.text('encrypted');
+            table.dateTime('reminder'); // Reminder date/time
             table.index('updatedAt');
         });
         console.log('✅ "notes" table created');
@@ -184,6 +191,7 @@ const saveNote = async (note) => {
                     isPinned: note.isPinned ?? existingNote.isPinned,
                     isLocked,
                     encrypted: encryptedAsString ?? existingNote.encrypted,
+                    reminder: note.reminder || null,
                 };
                 await trx('notes').where('id', note.id).update(noteToSave);
                 noteIdToReturn = note.id;
@@ -199,6 +207,7 @@ const saveNote = async (note) => {
                     isPinned: note.isPinned ?? false,
                     isLocked,
                     encrypted: encryptedAsString,
+                    reminder: note.reminder || null,
                 };
                 const returningResult = await trx('notes').insert(noteToSave).returning('id');
                 noteIdToReturn = (typeof returningResult[0] === 'object' ? returningResult[0].id : returningResult[0]);

@@ -61,10 +61,12 @@ interface ContextMenuProps {
     activeNote: Note | null;
     onTagsChange: (tags: string[]) => void;
     onForceContentUpdate?: () => void; // Force content update callback
+    onShareSelection?: (text: string) => void; // Share selection callback
+    onReminderSelection?: (text: string) => void; // Reminder selection callback
 }
 
-const ContextMenu: React.FC<ContextMenuProps> = ({ 
-    editor, onClose, settings, addNotification, anchorEl, type, data, activeNote, onTagsChange, onForceContentUpdate 
+const ContextMenu: React.FC<ContextMenuProps> = ({
+    editor, onClose, settings, addNotification, anchorEl, type, data, activeNote, onTagsChange, onForceContentUpdate, onShareSelection, onReminderSelection
 }) => {
     const { t } = useTranslations();
     const menuRef = useRef<HTMLDivElement>(null);
@@ -85,7 +87,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                 onClose();
             }
         };
-        
+
         const timerId = setTimeout(() => {
             document.addEventListener('mousedown', handleClickOutside);
         }, 0);
@@ -95,7 +97,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [onClose, anchorEl]);
-    
+
     useLayoutEffect(() => {
         if (anchorEl && menuRef.current) {
             const anchorRect = anchorEl.getBoundingClientRect();
@@ -103,7 +105,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             const viewWidth = window.innerWidth;
             const viewHeight = window.innerHeight;
             const isMobile = viewWidth < 768;
-    
+
             // Vertical position: Prefer below, but go above if needed.
             let top = anchorRect.bottom + 5;
             if (top + menuRect.height > viewHeight - 10) { // 10px buffer from bottom
@@ -112,7 +114,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             if (top < 10) { // 10px buffer from top
                 top = 10;
             }
-    
+
             // Horizontal position
             let left;
             // For the mobile AI image button, align right edges
@@ -122,7 +124,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                 // For desktop or text selection, align left edges
                 left = anchorRect.left;
             }
-    
+
             // Keep it on screen horizontally
             if (left < 10) { // 10px buffer from left
                 left = 10;
@@ -130,7 +132,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             if (left + menuRect.width > viewWidth - 10) { // 10px buffer from right
                 left = viewWidth - menuRect.width - 10;
             }
-    
+
             setPosition({
                 top: top + window.scrollY,
                 left: left + window.scrollX,
@@ -146,7 +148,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 
         setIsLoading(true);
         addNotification(t('notifications.aiThinking'), 'warning');
-        
+
         let fullPrompt = '';
         let imagePayload: { mimeType: string; data: string } | undefined = undefined;
         let insertionPos = editor.state.selection.to;
@@ -207,19 +209,19 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
         } else if (type === 'text') {
             const { from, to, empty } = editor.state.selection;
             if (empty) {
-                 setIsLoading(false);
-                 onClose();
-                 return;
+                setIsLoading(false);
+                onClose();
+                return;
             }
             selectedText = editor.state.doc.textBetween(from, to);
             fullPrompt = `${promptTemplate}:\n\n"${selectedText}"\n\n${t('aiPrompts.languageInstruction')}`;
             insertionPos = to;
         } else {
-             setIsLoading(false);
-             onClose();
-             return;
+            setIsLoading(false);
+            onClose();
+            return;
         }
-        
+
         try {
             if (actionId === 'generateTags') {
                 const newTags = await generateTagsForNote(selectedText, settings);
@@ -267,7 +269,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
         { id: 'generateTags', label: t('contextMenu.generateTags'), prompt: t('aiPrompts.generateTags') },
         { id: 'makeTable', label: t('contextMenu.makeTable'), prompt: t('aiPrompts.makeTable') },
     ];
-    
+
     const imageMenuItems = [
         { id: 'describe', label: t('contextMenu.describeImage'), prompt: t('aiPrompts.describeImage') },
         { id: 'caption', label: t('contextMenu.suggestCaption'), prompt: t('aiPrompts.suggestCaption') },
@@ -278,7 +280,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
     // Editor içeriğini ProseMirror DOM'dan senkronize et
     const syncEditorContent = () => {
         if (!editor) return;
-        
+
         // Force editor to update its internal state based on DOM changes
         // This ensures table modifications are properly saved to editor state
         try {
@@ -373,7 +375,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 
     const exportCSV = async () => {
         const table = getSelectedTable(); if (!table) return;
-        const rows = Array.from(table.rows).map(r => Array.from(r.cells).map(c => '"'+(c.textContent||'').replace(/"/g,'""')+'"').join(','));
+        const rows = Array.from(table.rows).map(r => Array.from(r.cells).map(c => '"' + (c.textContent || '').replace(/"/g, '""') + '"').join(','));
         const csv = rows.join('\n');
         await navigator.clipboard.writeText(csv);
         onClose();
@@ -387,7 +389,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             }
         }, 10);
     };
-    
+
     const isInTable = () => !!getSelectedTable();
 
     const shareSelection = async () => {
@@ -406,7 +408,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                 container.appendChild(range.cloneContents());
                 html = container.innerHTML || text;
             }
-        } catch {}
+        } catch { }
 
         const title = activeNote?.title || 'Neural Pad Selection';
         const htmlBlob = new Blob([`<!doctype html><meta charset=\"utf-8\"><title>${title}</title>${html}`], { type: 'text/html' });
@@ -421,7 +423,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                 onClose();
                 return;
             }
-        } catch {}
+        } catch { }
 
         try {
             const n = navigator as any;
@@ -436,7 +438,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                 onClose();
                 return;
             }
-        } catch {}
+        } catch { }
 
         // Fallback: download HTML snippet
         try {
@@ -447,7 +449,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             a.click();
             document.body.removeChild(a);
             addNotification(t('notifications.shareUnavailable'), 'warning');
-        } catch {}
+        } catch { }
         onClose();
     };
 
@@ -470,18 +472,18 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                 a.click();
                 addNotification(t('notifications.shareUnavailable'), 'warning');
             }
-        } catch {}
+        } catch { }
         onClose();
     };
-    
+
     const btnPrimary = "w-full mt-1.5 bg-primary hover:bg-primary-hover text-primary-text text-sm flex items-center justify-center gap-1 px-4 py-2 rounded-md font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
     return (
         <div
             ref={menuRef}
             className="absolute bg-background-secondary shadow-lg rounded-md p-2 z-20 border border-border-strong text-text-primary transition-opacity duration-100"
-            style={{ 
-                top: `${position.top}px`, 
+            style={{
+                top: `${position.top}px`,
                 left: `${position.left}px`,
                 opacity: position.opacity
             }}
@@ -498,8 +500,25 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                     {type === 'text' && (
                         <>
                             <hr className="my-1 border-border" />
-                            <button onClick={shareSelection} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border flex items-center gap-2">
-                                {t('contextMenu.shareSelection')}
+                            <button onClick={() => {
+                                if (onShareSelection) {
+                                    const { from, to, empty } = editor.state.selection;
+                                    const text = empty ? "" : editor.state.doc.textBetween(from, to);
+                                    onShareSelection(text);
+                                }
+                                onClose();
+                            }} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border flex items-center gap-2">
+                                Seçimi paylaş
+                            </button>
+                            <button onClick={() => {
+                                if (onReminderSelection) {
+                                    const { from, to, empty } = editor.state.selection;
+                                    const text = empty ? "" : editor.state.doc.textBetween(from, to);
+                                    onReminderSelection(text);
+                                }
+                                onClose();
+                            }} className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-border flex items-center gap-2">
+                                Hatırlatıcı ayarla
                             </button>
                         </>
                     )}

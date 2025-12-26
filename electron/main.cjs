@@ -6,12 +6,12 @@ const isDev = !!process.env.VITE_DEV_SERVER_URL || process.env.NODE_ENV === 'dev
 // Suppress noisy Chromium network error lines and ONNX Runtime warnings
 try {
   app.commandLine.appendSwitch('log-level', '3'); // Only show fatal errors
-  
+
   // Suppress ONNX Runtime warnings (both dev and production)
   // These warnings about unused initializers are harmless but noisy
   process.env.ORT_LOGGING_LEVEL = 'error'; // Only show errors, not warnings
   process.env.ONNXRUNTIME_LOG_SEVERITY_LEVEL = '3'; // 0=Verbose, 1=Info, 2=Warning, 3=Error, 4=Fatal
-  
+
   if (!isDev) {
     app.commandLine.appendSwitch('disable-logging');
   }
@@ -58,7 +58,7 @@ let mainWindow = null;
 
 function setupFileIPC() {
   const { dialog } = require('electron');
-  
+
   const imagesDir = path.join(app.getPath('userData'), 'images');
   if (!fs.existsSync(imagesDir)) {
     fs.mkdirSync(imagesDir, { recursive: true });
@@ -88,9 +88,9 @@ function setupFileIPC() {
 
       const filePath = result.filePath;
       const ext = path.extname(filePath).toLowerCase();
-      
+
       let content = '';
-      
+
       // Prepare content based on file extension
       if (ext === '.json') {
         const data = {
@@ -113,7 +113,7 @@ function setupFileIPC() {
 
       await fs.promises.writeFile(filePath, content, 'utf8');
       console.log(`[FileIPC] Note saved to: ${filePath}`);
-      
+
       return { success: true, filePath };
     } catch (error) {
       console.error('[FileIPC] Failed to save note:', error);
@@ -126,19 +126,19 @@ function setupFileIPC() {
     try {
       // Convert Uint8Array from renderer to a Node.js Buffer
       const buffer = Buffer.from(data);
-      
+
       const hash = crypto.createHash('sha256').update(buffer).digest('hex');
       const extension = '.png'; // Assuming png for simplicity
       const filename = `${hash}${extension}`;
       const filePath = path.join(imagesDir, filename);
-      
+
       if (!fs.existsSync(filePath)) {
         await fs.promises.writeFile(filePath, buffer);
         console.log(`[FileIPC] Image saved to: ${filePath}`);
       } else {
         console.log(`[FileIPC] Image already exists, skipping write: ${filePath}`);
       }
-      
+
       // Track image in database
       try {
         await db.trackImage(filename, hash, buffer.length);
@@ -147,13 +147,29 @@ function setupFileIPC() {
         console.error('[FileIPC] Failed to track image in database:', dbError);
         // Continue anyway, file is saved
       }
-      
+
       // Use file:// protocol since app:// was removed for Web Speech API compatibility
       const fileUrl = `file:///${filePath.replace(/\\/g, '/')}`;
       console.log(`[FileIPC] Returning file URL: ${fileUrl}`);
       return fileUrl;
     } catch (error) {
       console.error('[FileIPC] Failed to save image:', error);
+      return null;
+    }
+  });
+
+  // Save Temp File (now using Downloads for visibility)
+  ipcMain.handle('files:save-temp', async (event, { content, filename }) => {
+    try {
+      const downloadPath = app.getPath('downloads');
+      const filePath = path.join(downloadPath, filename);
+      console.log(`[FileIPC] Saving share file to: ${filePath}`);
+
+      // content is string (HTML/JSON/TXT)
+      fs.writeFileSync(filePath, content, 'utf8');
+      return filePath;
+    } catch (error) {
+      console.error('[FileIPC] Failed to save share file:', error);
       return null;
     }
   });
@@ -177,9 +193,25 @@ function setupSettingsIPC() {
   });
 }
 
+function setupAppIPC() {
+  const { Notification } = require('electron');
+
+  // Show Notification
+  ipcMain.on('app:show-notification', (event, { title, body }) => {
+    new Notification({ title, body }).show();
+  });
+
+  // Show Item In Folder
+  ipcMain.on('app:show-item-in-folder', (event, filePath) => {
+    if (filePath && typeof filePath === 'string') {
+      shell.showItemInFolder(filePath);
+    }
+  });
+}
+
 function setupSpeechIPC() {
   const whisperService = require('./whisperService.cjs');
-  
+
   // Start Whisper service
   ipcMain.handle('whisper:start', async (event, modelSize = 'base') => {
     try {
@@ -190,7 +222,7 @@ function setupSpeechIPC() {
       return { success: false, error: error.message };
     }
   });
-  
+
   // Transcribe audio
   ipcMain.handle('whisper:transcribe', async (event, audioBuffer, language = 'tr') => {
     try {
@@ -203,25 +235,25 @@ function setupSpeechIPC() {
       return { success: false, error: error.message };
     }
   });
-  
+
   // Stop Whisper service
   ipcMain.handle('whisper:stop', () => {
     whisperService.stop();
     return { success: true };
   });
-  
+
   // Speech API handlers for Electron IPC
   ipcMain.handle('speech:transcribe-audio', async (event, audioData) => {
     try {
       console.log('[Speech IPC] Received audio data, size:', audioData.length);
-      
+
       // Use Whisper service to transcribe the audio
       const transcript = await whisperService.transcribe(Buffer.from(audioData), 'tr');
       console.log('[Speech IPC] Transcription result:', transcript);
-      
+
       // Send result back to renderer
       event.sender.send('speech:transcription-result', transcript);
-      
+
       return { success: true, transcript };
     } catch (error) {
       console.error('[Speech IPC] Transcription error:', error);
@@ -232,10 +264,10 @@ function setupSpeechIPC() {
 
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-  
+
   // Icon path - check if exists to avoid errors
   const iconPath = path.join(__dirname, '..', '..', 'build', 'icons', 'app.ico');
-  
+
   const mainWindow = new BrowserWindow({
     width: width,
     height: height,
@@ -275,9 +307,9 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // Automatically grant permissions for microphone and Web Speech API
+  // Automatically grant permissions for microphone, Web Speech API, and clipboard
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-    const allowedPermissions = ['media', 'microphone', 'audioCapture', 'mediaDevices'];
+    const allowedPermissions = ['media', 'microphone', 'audioCapture', 'mediaDevices', 'clipboard-sanitized-write', 'clipboard-read'];
     if (allowedPermissions.includes(permission)) {
       console.log('[Permissions] Granted:', permission);
       callback(true);
@@ -286,10 +318,10 @@ function createWindow() {
       callback(false);
     }
   });
-  
-  // Set permission check handler for Web Speech API
+
+  // Set permission check handler for Web Speech API and clipboard
   mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
-    const allowedPermissions = ['media', 'microphone', 'audioCapture', 'mediaDevices'];
+    const allowedPermissions = ['media', 'microphone', 'audioCapture', 'mediaDevices', 'clipboard-sanitized-write', 'clipboard-read'];
     const allowed = allowedPermissions.includes(permission);
     console.log('[Permissions Check]', permission, '→', allowed);
     return allowed;
@@ -320,7 +352,7 @@ app.whenReady().then(() => {
   // Load database and settings after app is ready
   db = require('../utils/db.cjs');
   settings = require('./settings.cjs');
-  
+
   // --- Start Database File Check ---
   const dbCheckPath = path.join(app.getPath('userData'), 'neural-pad.sqlite');
   console.log(`[DB Check] Checking for database file at: ${dbCheckPath}`);
@@ -330,7 +362,7 @@ app.whenReady().then(() => {
     console.log('[DB Check] ❌ ERROR: Database file NOT found.');
   }
   // --- End Database File Check ---
-  
+
   // Disable CSP completely for Web Speech API to work
   // Web Speech API requires unrestricted access to Google servers
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -398,7 +430,24 @@ app.whenReady().then(() => {
   setupDatabaseIPC();
   setupSettingsIPC();
   setupSpeechIPC();
-  
+  setupAppIPC();
+
+  // Grant clipboard permissions for copy functionality
+  session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    if (permission === 'clipboard-sanitized-write' || permission === 'clipboard-read') {
+      return true;
+    }
+    return false;
+  });
+
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'clipboard-sanitized-write' || permission === 'clipboard-read') {
+      callback(true);
+    } else {
+      callback(false);
+    }
+  });
+
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.neural-pad.app');
   }

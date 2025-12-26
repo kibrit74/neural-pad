@@ -57,7 +57,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
             window.dispatchEvent(event);
         }
     };
-    
+
     const themes: Theme[] = ['default', 'twilight', 'ocean', 'forest', 'blossom', 'dusk'];
     const providers: ApiProvider[] = ['gemini', 'openai', 'claude'];
     const defaultModels: Record<ApiProvider, string> = {
@@ -75,12 +75,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
         </div>
     );
 
-    const ApiKeyInput: React.FC<{ 
-        provider: ApiProvider; 
-        keyName: keyof Settings; 
-        value: string; 
-        linkUrl: string; 
-        linkText: string 
+    const ApiKeyInput: React.FC<{
+        provider: ApiProvider;
+        keyName: keyof Settings;
+        value: string;
+        linkUrl: string;
+        linkText: string
     }> = ({ provider, keyName, value, linkUrl, linkText }) => (
         <div className="space-y-2">
             <label htmlFor={keyName as string} className="text-text-secondary">{t('settings.apiKey')}</label>
@@ -93,8 +93,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                     onChange={handleInputChange}
                     placeholder={t('settings.apiKeyPlaceholder')}
                     className="w-full p-2 pr-12 rounded bg-background border border-border-strong focus:outline-none focus:ring-2 focus:ring-primary text-text-primary select-none"
-                    style={{ 
-                        userSelect: 'none', 
+                    style={{
+                        userSelect: 'none',
                         WebkitUserSelect: 'none',
                         fontFamily: 'monospace',
                         letterSpacing: '2px'
@@ -130,11 +130,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
     const ProviderButton: React.FC<{ provider: ApiProvider }> = ({ provider }) => (
         <button
             onClick={() => handleProviderChange(provider)}
-            className={`p-3 rounded-md border-2 transition-colors capitalize text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary w-full ${
-                localSettings.apiProvider === provider
+            className={`p-3 rounded-md border-2 transition-colors capitalize text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary w-full ${localSettings.apiProvider === provider
                 ? 'border-primary bg-primary text-primary-text'
                 : 'border-border-strong bg-background hover:bg-border text-text-primary'
-            }`}
+                }`}
         >
             {provider}
         </button>
@@ -191,11 +190,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                                 key={themeName}
                                 onClick={() => setThemeSafe(themeName)}
                                 aria-pressed={theme === themeName}
-                                className={`p-4 rounded-md border-2 transition-colors text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary capitalize ${
-                                    theme === themeName
-                                        ? 'border-primary bg-primary text-primary-text'
-                                        : 'border-border-strong bg-background hover:bg-border text-text-primary'
-                                }`}
+                                className={`p-4 rounded-md border-2 transition-colors text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary capitalize ${theme === themeName
+                                    ? 'border-primary bg-primary text-primary-text'
+                                    : 'border-border-strong bg-background hover:bg-border text-text-primary'
+                                    }`}
                             >
                                 {t(`settings.themes.${themeName}`)}
                             </button>
@@ -209,15 +207,45 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                             <h4 className="font-semibold text-text-primary mb-2">💾 {t('settings.export.backupTitle')}</h4>
                             <p className="text-sm text-text-secondary mb-3">{t('settings.export.backupDescription')}</p>
                             <div className="space-y-2">
-                                <button
-                                    onClick={async () => {
-                                        const { exportBackup } = await import('../utils/exportAll');
-                                        await exportBackup();
-                                    }}
-                                    className="w-full px-4 py-2 rounded-md font-semibold bg-primary text-primary-text hover:bg-primary-hover transition-colors"
-                                >
-                                    📦 {t('settings.export.downloadBackup')}
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                const { exportBackup } = await import('../utils/exportAll');
+                                                const result = await exportBackup();
+                                                if (result.success) {
+                                                    alert(`✅ ${t('settings.export.backupSuccess') || 'JSON yedek indirildi!'}`);
+                                                } else {
+                                                    alert(`❌ ${t('settings.export.backupError') || 'Yedek indirilemedi'}: ${result.error}`);
+                                                }
+                                            } catch (error) {
+                                                alert(`❌ ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+                                            }
+                                        }}
+                                        className="flex-1 px-3 py-2 rounded-md font-semibold bg-primary text-primary-text hover:bg-primary-hover transition-colors text-sm"
+                                        title="Metin + Ayarlar (resimler hariç)"
+                                    >
+                                        📄 JSON
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                const { exportAll } = await import('../utils/exportAll');
+                                                await exportAll('html');
+                                                alert(`✅ ${t('settings.export.backupSuccess') || 'HTML yedek indirildi!'}`);
+                                            } catch (error) {
+                                                alert(`❌ ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+                                            }
+                                        }}
+                                        className="flex-1 px-3 py-2 rounded-md font-semibold bg-primary text-primary-text hover:bg-primary-hover transition-colors text-sm"
+                                        title="Resimler dahil (ZIP dosyası)"
+                                    >
+                                        🖼️ HTML+Resim
+                                    </button>
+                                </div>
+                                <p className="text-xs text-text-secondary">
+                                    💡 JSON: Metin ve ayarlar • HTML: Resimlerle birlikte
+                                </p>
                                 <label className="block">
                                     <input
                                         type="file"
@@ -238,7 +266,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                                         }}
                                     />
                                     <span className="w-full px-4 py-2 rounded-md font-semibold bg-background border-2 border-border-strong hover:bg-border text-text-primary transition-colors cursor-pointer block text-center">
-                                        📥 {t('settings.export.restoreBackup')}
+                                        📥 {t('settings.export.restoreBackup')} (JSON)
                                     </span>
                                 </label>
                             </div>
@@ -265,26 +293,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                         </div>
                     </div>
                 </Section>
-                
+
                 <Section title={t('settings.language')}>
                     <div className="grid grid-cols-2 gap-4">
-                         <button
+                        <button
                             onClick={() => setLanguage('en')}
-                            className={`p-4 rounded-md border-2 transition-colors text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary ${
-                                language === 'en'
+                            className={`p-4 rounded-md border-2 transition-colors text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary ${language === 'en'
                                 ? 'border-primary bg-primary text-primary-text'
                                 : 'border-border-strong bg-background hover:bg-border text-text-primary'
-                            }`}
+                                }`}
                         >
                             English
                         </button>
                         <button
                             onClick={() => setLanguage('tr')}
-                            className={`p-4 rounded-md border-2 transition-colors text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary ${
-                                language === 'tr'
+                            className={`p-4 rounded-md border-2 transition-colors text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary ${language === 'tr'
                                 ? 'border-primary bg-primary text-primary-text'
                                 : 'border-border-strong bg-background hover:bg-border text-text-primary'
-                            }`}
+                                }`}
                         >
                             Türkçe
                         </button>
@@ -292,15 +318,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                 </Section>
 
                 <Section title={t('settings.autoSave')}>
-                     <div className="flex items-center justify-between p-3 rounded-md bg-background border border-border-strong">
+                    <div className="flex items-center justify-between p-3 rounded-md bg-background border border-border-strong">
                         <p className="text-text-secondary pr-4">{t('settings.autoSaveDescription')}</p>
                         <label htmlFor="autoSaveToggle" className="relative inline-flex items-center cursor-pointer">
-                            <input 
-                                type="checkbox" 
-                                id="autoSaveToggle" 
+                            <input
+                                type="checkbox"
+                                id="autoSaveToggle"
                                 className="sr-only peer"
                                 name="autoSave"
-                                checked={!!localSettings.autoSave} 
+                                checked={!!localSettings.autoSave}
                                 onChange={handleInputChange}
                             />
                             <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -357,7 +383,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                         </div>
                     </Section>
                 )}
-                
+
                 {localSettings.apiProvider === 'gemini' && (
                     <>
                         <Section title="Google Gemini">
@@ -369,7 +395,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                                 linkText={t('settings.getApiKeyHere', { provider: 'Google AI Studio' })}
                             />
                         </Section>
-                        
+
                         <Section title={t('settings.modelConfig')}>
                             <div className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">

@@ -9,32 +9,32 @@ let knexInstance: knex.Knex | null = null;
 let isInitialized = false;
 
 const initializeDatabase = () => {
-  if (isInitialized) return;
-  
-  const dbPath = path.join(app.getPath('userData'), 'neural-pad.sqlite');
-  db = new Database(dbPath);
-  
-  knexInstance = knex({
-    client: 'better-sqlite3',
-    connection: {
-      filename: dbPath,
-    },
-    useNullAsDefault: true,
-  });
-  
-  isInitialized = true;
-  
-  // Initialize schema after database is ready
-  createSchema().catch(err => {
-    console.error('Failed to initialize database schema:', err);
-  });
+    if (isInitialized) return;
+
+    const dbPath = path.join(app.getPath('userData'), 'neural-pad.sqlite');
+    db = new Database(dbPath);
+
+    knexInstance = knex({
+        client: 'better-sqlite3',
+        connection: {
+            filename: dbPath,
+        },
+        useNullAsDefault: true,
+    });
+
+    isInitialized = true;
+
+    // Initialize schema after database is ready
+    createSchema().catch(err => {
+        console.error('Failed to initialize database schema:', err);
+    });
 };
 
 const getKnex = (): knex.Knex => {
-  if (!knexInstance) {
-    initializeDatabase();
-  }
-  return knexInstance!;
+    if (!knexInstance) {
+        initializeDatabase();
+    }
+    return knexInstance!;
 };
 
 const migrateSchema = async () => {
@@ -58,9 +58,15 @@ const migrateSchema = async () => {
                 table.boolean('isPinned').defaultTo(false);
                 table.boolean('isLocked').defaultTo(false);
                 table.text('encrypted');
+                table.dateTime('reminder'); // Reminder date/time
                 // Index will be added after dropping the old table
             });
-            await knex.raw('INSERT INTO notes SELECT * FROM notes_old');
+            // Copy data with explicit column list, setting reminder to NULL for old records
+            await knex.raw(`
+                INSERT INTO notes (id, title, content, tags, createdAt, updatedAt, plainTextContent, isPinned, isLocked, encrypted, reminder)
+                SELECT id, title, content, tags, createdAt, updatedAt, plainTextContent, isPinned, isLocked, encrypted, NULL
+                FROM notes_old
+            `);
             await knex.schema.dropTable('notes_old');
             await knex.schema.table('notes', (table) => {
                 table.index('updatedAt');
@@ -97,58 +103,59 @@ const migrateSchema = async () => {
 
 
 const createSchema = async () => {
-  const knex = getKnex();
-  await knex.raw('PRAGMA foreign_keys = ON');
+    const knex = getKnex();
+    await knex.raw('PRAGMA foreign_keys = ON');
 
-  const hasNotesTable = await knex.schema.hasTable('notes');
-  if (!hasNotesTable) {
-    await knex.schema.createTable('notes', (table) => {
-      table.increments('id').primary();
-      table.string('title').notNullable();
-      table.binary('content').notNullable(); // Use BLOB for new tables
-      table.text('tags');
-      table.dateTime('createdAt').notNullable();
-      table.dateTime('updatedAt').notNullable();
-      table.text('plainTextContent');
-      table.boolean('isPinned').defaultTo(false);
-      table.boolean('isLocked').defaultTo(false);
-      table.text('encrypted');
-      table.index('updatedAt');
-    });
-    console.log('✅ "notes" table created');
-  }
+    const hasNotesTable = await knex.schema.hasTable('notes');
+    if (!hasNotesTable) {
+        await knex.schema.createTable('notes', (table) => {
+            table.increments('id').primary();
+            table.string('title').notNullable();
+            table.binary('content').notNullable(); // Use BLOB for new tables
+            table.text('tags');
+            table.dateTime('createdAt').notNullable();
+            table.dateTime('updatedAt').notNullable();
+            table.text('plainTextContent');
+            table.boolean('isPinned').defaultTo(false);
+            table.boolean('isLocked').defaultTo(false);
+            table.text('encrypted');
+            table.dateTime('reminder'); // Reminder date/time
+            table.index('updatedAt');
+        });
+        console.log('✅ "notes" table created');
+    }
 
-  const hasHistoryTable = await knex.schema.hasTable('history');
-  if (!hasHistoryTable) {
-    await knex.schema.createTable('history', (table) => {
-      table.increments('id').primary();
-      table.integer('noteId').unsigned().notNullable().references('id').inTable('notes').onDelete('CASCADE');
-      table.string('title').notNullable();
-      table.binary('content').notNullable(); // Use BLOB for new tables
-      table.dateTime('timestamp').notNullable();
-      table.index('noteId');
-    });
-    console.log('✅ "history" table created');
-  }
+    const hasHistoryTable = await knex.schema.hasTable('history');
+    if (!hasHistoryTable) {
+        await knex.schema.createTable('history', (table) => {
+            table.increments('id').primary();
+            table.integer('noteId').unsigned().notNullable().references('id').inTable('notes').onDelete('CASCADE');
+            table.string('title').notNullable();
+            table.binary('content').notNullable(); // Use BLOB for new tables
+            table.dateTime('timestamp').notNullable();
+            table.index('noteId');
+        });
+        console.log('✅ "history" table created');
+    }
 
-  // Create images table for tracking uploaded images
-  const hasImagesTable = await knex.schema.hasTable('images');
-  if (!hasImagesTable) {
-    await knex.schema.createTable('images', (table) => {
-      table.increments('id').primary();
-      table.string('filename').notNullable().unique(); // hash.png
-      table.string('hash').notNullable().unique(); // SHA-256 hash
-      table.integer('size').notNullable(); // File size in bytes
-      table.dateTime('createdAt').notNullable();
-      table.dateTime('lastUsedAt').notNullable(); // For cleanup of unused images
-      table.index('hash');
-      table.index('lastUsedAt');
-    });
-    console.log('✅ "images" table created');
-  }
-  
-  // After ensuring tables exist, run migration logic
-  await migrateSchema();
+    // Create images table for tracking uploaded images
+    const hasImagesTable = await knex.schema.hasTable('images');
+    if (!hasImagesTable) {
+        await knex.schema.createTable('images', (table) => {
+            table.increments('id').primary();
+            table.string('filename').notNullable().unique(); // hash.png
+            table.string('hash').notNullable().unique(); // SHA-256 hash
+            table.integer('size').notNullable(); // File size in bytes
+            table.dateTime('createdAt').notNullable();
+            table.dateTime('lastUsedAt').notNullable(); // For cleanup of unused images
+            table.index('hash');
+            table.index('lastUsedAt');
+        });
+        console.log('✅ "images" table created');
+    }
+
+    // After ensuring tables exist, run migration logic
+    await migrateSchema();
 };
 
 // Schema will be created when database is first accessed
@@ -197,8 +204,9 @@ export const saveNote = async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'
                     isPinned: (note as any).isPinned ?? existingNote.isPinned,
                     isLocked,
                     encrypted: encryptedAsString ?? existingNote.encrypted,
+                    reminder: (note as any).reminder || null,
                 };
-                
+
                 await trx('notes').where('id', note.id).update(noteToSave);
                 noteIdToReturn = note.id;
             } else { // Create
@@ -212,6 +220,7 @@ export const saveNote = async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'
                     isPinned: (note as any).isPinned ?? false,
                     isLocked,
                     encrypted: encryptedAsString,
+                    reminder: (note as any).reminder || null,
                 };
                 const returningResult = await trx('notes').insert(noteToSave).returning('id');
                 noteIdToReturn = (typeof returningResult[0] === 'object' ? returningResult[0].id : returningResult[0]) as number;
@@ -237,14 +246,14 @@ export const saveNote = async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'
 };
 
 const parseJsonField = (field: any) => {
-  if (typeof field === 'string') {
-    try {
-      return JSON.parse(field);
-    } catch (e) {
-      return field;
+    if (typeof field === 'string') {
+        try {
+            return JSON.parse(field);
+        } catch (e) {
+            return field;
+        }
     }
-  }
-  return field;
+    return field;
 };
 
 // When retrieving content, it might be a Buffer. Convert it to a string.
@@ -290,7 +299,7 @@ export const deleteNote = async (id: number): Promise<void> => {
 export const trackImage = async (filename: string, hash: string, size: number): Promise<void> => {
     const knex = getKnex();
     const now = new Date();
-    
+
     try {
         await knex('images').insert({
             filename,
@@ -321,7 +330,7 @@ export const getUnusedImages = async (daysOld: number = 30): Promise<string[]> =
     const knex = getKnex();
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-    
+
     try {
         const images = await knex('images')
             .where('lastUsedAt', '<', cutoffDate)
