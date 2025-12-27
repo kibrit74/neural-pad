@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Pad - v5 Turkuaz</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #14b8a6;
+            --primary-light: #2dd4bf;
+            --bg-dark: #0a1717;
+            --bg-card: rgba(15, 31, 31, 0.8);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a1717 0%, #0f1f1f 50%, #071515 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar-left {
+            width: 280px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(20, 184, 166, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-box {
+            margin-top: 16px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #e2e8f0;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .notes-section {
+            padding: 16px;
+            flex: 1;
+        }
+
+        .note-item {
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .note-item:hover {
+            background: rgba(20, 184, 166, 0.1);
+            border-color: rgba(20, 184, 166, 0.2);
+        }
+
+        .note-item.active {
+            background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(45, 212, 191, 0.1));
+            border-color: rgba(20, 184, 166, 0.3);
+        }
+
+        .note-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .note-preview {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .tag {
+            padding: 2px 8px;
+            background: rgba(20, 184, 166, 0.2);
+            border-radius: 6px;
+            color: var(--primary);
+            font-size: 0.75rem;
+        }
+
+        .editor-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(7, 21, 21, 0.4);
+        }
+
+        .editor-header {
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .breadcrumb {
+            color: #64748b;
+        }
+
+        .breadcrumb span {
+            color: var(--primary);
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            cursor: pointer;
+        }
+
+        .icon-btn:hover {
+            background: rgba(20, 184, 166, 0.2);
+            color: var(--primary);
+        }
+
+        .editor-content {
+            flex: 1;
+            padding: 40px 80px;
+        }
+
+        .document-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #e2e8f0;
+        }
+
+        .editor-body {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #cbd5e1;
+        }
+
+        .highlight {
+            background: rgba(20, 184, 166, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .floating-toolbar {
+            position: absolute;
+            top: 280px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-card);
+            border: 1px solid rgba(20, 184, 166, 0.3);
+            border-radius: 14px;
+            padding: 8px;
+            display: flex;
+            gap: 4px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .toolbar-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+
+        .toolbar-btn:hover {
+            background: rgba(20, 184, 166, 0.2);
+            color: var(--primary);
+        }
+
+        .toolbar-btn.active {
+            background: rgba(20, 184, 166, 0.3);
+            color: var(--primary);
+        }
+
+        .sidebar-right {
+            width: 320px;
+            background: var(--bg-card);
+            border-left: 1px solid rgba(20, 184, 166, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ai-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            gap: 12px;
+        }
+
+        .ai-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-chat {
+            flex: 1;
+            padding: 16px;
+        }
+
+        .ai-message {
+            margin-bottom: 16px;
+            padding: 14px;
+            border-radius: 14px;
+        }
+
+        .ai-message.assistant {
+            background: rgba(20, 184, 166, 0.1);
+        }
+
+        .ai-message.user {
+            background: rgba(255, 255, 255, 0.05);
+            margin-left: 20px;
+        }
+
+        .ai-action-btn {
+            padding: 6px 12px;
+            background: rgba(20, 184, 166, 0.2);
+            border: 1px solid rgba(20, 184, 166, 0.3);
+            border-radius: 8px;
+            color: var(--primary);
+            cursor: pointer;
+            margin-right: 8px;
+            margin-top: 12px;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .ai-send-btn {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .quick-actions {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-card);
+            border: 1px solid rgba(20, 184, 166, 0.2);
+            border-radius: 16px;
+            padding: 12px 20px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .quick-action {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+
+        .quick-action:hover {
+            background: rgba(20, 184, 166, 0.2);
+            color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="sidebar-left">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">💎</div> Neural Pad
+                </div>
+                <div class="search-box"><input placeholder="Notlarda ara..."></div>
+            </div>
+            <div class="notes-section">
+                <div class="note-item active">
+                    <div class="note-title">📋 Proje Planı 2025</div>
+                    <div class="note-preview">Neural Pad geliştirme...</div>
+                    <span class="tag">İş</span>
+                </div>
+                <div class="note-item">
+                    <div class="note-title">⚖️ Dava Notları</div>
+                    <div class="note-preview">2024/12345 esas...</div>
+                </div>
+            </div>
+        </div>
+        <div class="editor-main">
+            <div class="editor-header">
+                <div class="breadcrumb">📁 Notlarım / <span>Proje Planı</span></div>
+                <div><button class="icon-btn">🔔</button> <button class="icon-btn">📤</button></div>
+            </div>
+            <div class="editor-content">
+                <h1 class="document-title">📋 Proje Planı 2025</h1>
+                <div class="editor-body">
+                    <p>Neural Pad'in 2025 yılı için planlanan geliştirme yol haritası.</p>
+                    <p>• <span class="highlight">Yeni editör arayüzü</span> - Modern tasarım</p>
+                </div>
+            </div>
+            <div class="floating-toolbar">
+                <button class="toolbar-btn active">B</button>
+                <button class="toolbar-btn">I</button>
+                <button class="toolbar-btn">U</button>
+                <button class="toolbar-btn" style="color:var(--primary)">✨AI</button>
+            </div>
+        </div>
+        <div class="sidebar-right">
+            <div class="ai-header">
+                <div class="ai-avatar">🤖</div>
+                <div><strong>AI Asistan</strong><br><small style="color:#64748b">Yazma yardımcınız</small></div>
+            </div>
+            <div class="ai-chat">
+                <div class="ai-message user">Metni iyileştir</div>
+                <div class="ai-message assistant">İşte geliştirilmiş versiyon<button class="ai-action-btn">✓
+                        Uygula</button></div>
+            </div>
+        </div>
+    </div>
+    <div class="quick-actions">
+        <div class="quick-action">💎 AI İyileştir</div>
+        <div class="quick-action">📋 Kopyala</div>
+        <div class="quick-action">💾 Kaydet</div>
+    </div>
+</body>
+
+</html>

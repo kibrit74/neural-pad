@@ -17,7 +17,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
     const { t } = useTranslations();
     // Access theme context safely; fall back to DOM/localStorage if provider is missing
     const themeCtx = useContext(ThemeContext);
-    const theme: Theme = (themeCtx?.theme || (document.documentElement.getAttribute('data-theme') as Theme) || 'default');
+    const theme: Theme = (themeCtx?.theme || (document.documentElement.getAttribute('data-theme') as Theme) || 'midnight');
     const setThemeSafe = (th: Theme) => {
         if (themeCtx?.setTheme) {
             themeCtx.setTheme(th);
@@ -59,7 +59,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
         }
     };
 
-    const themes: Theme[] = ['default', 'twilight', 'ocean', 'forest', 'blossom', 'dusk'];
+    const themes: Theme[] = ['coral', 'emerald', 'gold', 'teal', 'azure', 'midnight'];
+    const themeNames: Record<Theme, { en: string; tr: string }> = {
+        coral: { en: 'Coral', tr: 'Mercan' },
+        emerald: { en: 'Emerald', tr: 'Zümrüt' },
+        gold: { en: 'Gold', tr: 'Altın' },
+        teal: { en: 'Teal', tr: 'Turkuaz' },
+        azure: { en: 'Azure', tr: 'Okyanus' },
+        midnight: { en: 'Midnight', tr: 'Gece Yarısı' },
+    };
     const providers: ApiProvider[] = ['gemini', 'openai', 'claude'];
     const defaultModels: Record<ApiProvider, string> = {
         gemini: 'gemini-2.5-flash',
@@ -188,15 +196,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {themes.map(themeName => (
                             <button
-                                key={themeName}
+                                key={`theme-${themeName}`}
                                 onClick={() => setThemeSafe(themeName)}
                                 aria-pressed={theme === themeName}
-                                className={`p-4 rounded-md border-2 transition-colors text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary capitalize ${theme === themeName
+                                className={`p-4 rounded-md border-2 transition-colors text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary ${theme === themeName
                                     ? 'border-primary bg-primary text-primary-text'
                                     : 'border-border-strong bg-background hover:bg-border text-text-primary'
                                     }`}
                             >
-                                {t(`settings.themes.${themeName}`)}
+                                {themeNames[themeName][language]}
                             </button>
                         ))}
                     </div>

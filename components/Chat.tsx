@@ -659,7 +659,7 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
                 <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${isUser ? 'bg-primary/20 text-primary' : 'bg-border text-text-secondary'}`}>
                     <Icon />
                 </div>
-                <div className="flex-grow p-3 rounded-lg bg-background min-w-0 group relative">
+                <div className={`flex-grow p-3 rounded-lg min-w-0 group relative ${isUser ? 'bg-primary/10 border border-primary/20' : 'bg-white/5 border border-white/5'}`}>
                     {onInsertToEditor && message.content && (
                         <button
                             onClick={handleInsert}
@@ -797,8 +797,8 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
     };
 
     return (
-        <div className="flex flex-col h-full bg-background-secondary border-l border-border-strong text-text-primary">
-            <header className="p-3 border-b border-border-strong flex items-center justify-between flex-shrink-0">
+        <div className="flex flex-col h-full bg-background/80 backdrop-blur-2xl border-l border-border/20 text-text-primary">
+            <header className="p-4 border-b border-border/10 flex items-center justify-between flex-shrink-0 bg-white/5 backdrop-blur-sm">
                 <div className="flex items-center gap-2">
                     <SparkleIcon className="text-primary" />
                     <h2 className="text-lg font-bold">{t('chat.title')}</h2>
@@ -809,7 +809,7 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
             </header>
 
             {/* Tabs */}
-            <div className="px-2 py-1 border-b border-border-strong flex items-center gap-2 overflow-x-auto">
+            <div className="px-2 py-2 border-b border-border/10 flex items-center gap-2 overflow-x-auto bg-black/5">
                 {sessions.map(s => (
                     <button
                         key={s.id}
@@ -906,7 +906,7 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
                 <div ref={messagesEndRef} />
             </div>
 
-            <footer className="p-3 border-t border-border-strong flex-shrink-0">
+            <footer className="p-4 border-t border-border/10 flex-shrink-0 bg-background/50 backdrop-blur-lg">
                 {/* Show pasted images */}
                 {pastedImages.length > 0 && (
                     <div className="mb-2 flex flex-wrap gap-2">

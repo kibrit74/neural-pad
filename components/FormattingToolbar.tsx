@@ -332,7 +332,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
 
     return (
         <>
-            <div className="flex items-center gap-1 p-1.5 border-b border-border-strong bg-background-secondary flex-wrap">
+            <div className="flex items-center gap-1 p-2 border-b border-white/10 bg-white/5 backdrop-blur-md flex-wrap">
                 <select
                     value={currentFont}
                     onChange={(e) => {

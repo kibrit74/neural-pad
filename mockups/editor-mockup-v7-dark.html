@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Pad - v7 Ultra Karanlık</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #71717a;
+            --primary-light: #a1a1aa;
+            --bg-dark: #09090b;
+            --bg-card: rgba(9, 9, 11, 0.95);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #09090b;
+            min-height: 100vh;
+            color: #a1a1aa;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar-left {
+            width: 280px;
+            background: var(--bg-card);
+            border-right: 1px solid #27272a;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #27272a;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fafafa;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #27272a, #3f3f46);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #3f3f46;
+        }
+
+        .search-box {
+            margin-top: 16px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 12px;
+            color: #a1a1aa;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #52525b;
+        }
+
+        .notes-section {
+            padding: 16px;
+            flex: 1;
+        }
+
+        .note-item {
+            padding: 14px;
+            background: #18181b;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .note-item:hover {
+            border-color: #3f3f46;
+        }
+
+        .note-item.active {
+            background: #1f1f23;
+            border-color: #52525b;
+        }
+
+        .note-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #fafafa;
+        }
+
+        .note-preview {
+            font-size: 0.8rem;
+            color: #71717a;
+        }
+
+        .tag {
+            padding: 2px 8px;
+            background: #27272a;
+            border-radius: 6px;
+            color: #a1a1aa;
+            font-size: 0.75rem;
+        }
+
+        .editor-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0c0c0e;
+        }
+
+        .editor-header {
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #27272a;
+        }
+
+        .breadcrumb {
+            color: #71717a;
+        }
+
+        .breadcrumb span {
+            color: #fafafa;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #18181b;
+            border: 1px solid #27272a;
+            color: #71717a;
+            cursor: pointer;
+        }
+
+        .icon-btn:hover {
+            background: #27272a;
+            color: #fafafa;
+        }
+
+        .editor-content {
+            flex: 1;
+            padding: 40px 80px;
+        }
+
+        .document-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #fafafa;
+        }
+
+        .editor-body {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #a1a1aa;
+        }
+
+        .highlight {
+            background: #27272a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fafafa;
+        }
+
+        .floating-toolbar {
+            position: absolute;
+            top: 280px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            border-radius: 14px;
+            padding: 8px;
+            display: flex;
+            gap: 4px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+        }
+
+        .toolbar-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            color: #71717a;
+            cursor: pointer;
+        }
+
+        .toolbar-btn:hover {
+            background: #27272a;
+            color: #fafafa;
+        }
+
+        .toolbar-btn.active {
+            background: #3f3f46;
+            color: #fafafa;
+        }
+
+        .sidebar-right {
+            width: 320px;
+            background: var(--bg-card);
+            border-left: 1px solid #27272a;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ai-header {
+            padding: 20px;
+            border-bottom: 1px solid #27272a;
+            display: flex;
+            gap: 12px;
+        }
+
+        .ai-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #27272a, #3f3f46);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #3f3f46;
+        }
+
+        .ai-chat {
+            flex: 1;
+            padding: 16px;
+        }
+
+        .ai-message {
+            margin-bottom: 16px;
+            padding: 14px;
+            border-radius: 14px;
+        }
+
+        .ai-message.assistant {
+            background: #18181b;
+            border: 1px solid #27272a;
+        }
+
+        .ai-message.user {
+            background: #1f1f23;
+            margin-left: 20px;
+        }
+
+        .ai-action-btn {
+            padding: 6px 12px;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            border-radius: 8px;
+            color: #fafafa;
+            cursor: pointer;
+            margin-right: 8px;
+            margin-top: 12px;
+        }
+
+        .ai-action-btn:hover {
+            background: #3f3f46;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fafafa;
+        }
+
+        .ai-send-btn {
+            width: 36px;
+            height: 36px;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            border-radius: 10px;
+            color: #fafafa;
+            cursor: pointer;
+        }
+
+        .ai-send-btn:hover {
+            background: #3f3f46;
+        }
+
+        .quick-actions {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            border-radius: 16px;
+            padding: 12px 20px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .quick-action {
+            padding: 8px 16px;
+            background: #27272a;
+            border-radius: 10px;
+            color: #a1a1aa;
+            cursor: pointer;
+        }
+
+        .quick-action:hover {
+            background: #3f3f46;
+            color: #fafafa;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="sidebar-left">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">🌑</div> Neural Pad
+                </div>
+                <div class="search-box"><input placeholder="Notlarda ara..."></div>
+            </div>
+            <div class="notes-section">
+                <div class="note-item active">
+                    <div class="note-title">📋 Proje Planı 2025</div>
+                    <div class="note-preview">Neural Pad geliştirme...</div>
+                    <span class="tag">İş</span>
+                </div>
+                <div class="note-item">
+                    <div class="note-title">⚖️ Dava Notları</div>
+                    <div class="note-preview">2024/12345 esas...</div>
+                </div>
+            </div>
+        </div>
+        <div class="editor-main">
+            <div class="editor-header">
+                <div class="breadcrumb">📁 Notlarım / <span>Proje Planı</span></div>
+                <div><button class="icon-btn">🔔</button> <button class="icon-btn">📤</button></div>
+            </div>
+            <div class="editor-content">
+                <h1 class="document-title">📋 Proje Planı 2025</h1>
+                <div class="editor-body">
+                    <p>Neural Pad'in 2025 yılı için planlanan geliştirme yol haritası.</p>
+                    <p>• <span class="highlight">Yeni editör arayüzü</span> - Modern tasarım</p>
+                </div>
+            </div>
+            <div class="floating-toolbar">
+                <button class="toolbar-btn active">B</button>
+                <button class="toolbar-btn">I</button>
+                <button class="toolbar-btn">U</button>
+                <button class="toolbar-btn">✨AI</button>
+            </div>
+        </div>
+        <div class="sidebar-right">
+            <div class="ai-header">
+                <div class="ai-avatar">🤖</div>
+                <div><strong style="color:#fafafa">AI Asistan</strong><br><small style="color:#71717a">Yazma
+                        yardımcınız</small></div>
+            </div>
+            <div class="ai-chat">
+                <div class="ai-message user">Metni iyileştir</div>
+                <div class="ai-message assistant">İşte geliştirilmiş versiyon<button class="ai-action-btn">✓
+                        Uygula</button></div>
+            </div>
+        </div>
+    </div>
+    <div class="quick-actions">
+        <div class="quick-action">🌑 AI İyileştir</div>
+        <div class="quick-action">📋 Kopyala</div>
+        <div class="quick-action">💾 Kaydet</div>
+    </div>
+</body>
+
+</html>

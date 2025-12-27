@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode, useMemo } from 'react';
 
-export type Theme = 'default' | 'twilight' | 'ocean' | 'forest' | 'blossom' | 'dusk';
+export type Theme = 'coral' | 'emerald' | 'gold' | 'teal' | 'azure' | 'midnight';
 
 interface ThemeContextType {
     theme: Theme;
@@ -14,14 +14,15 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [theme, setTheme] = useState<Theme>(() => {
         const savedTheme = localStorage.getItem('theme') as Theme;
         // Validate that the saved theme is one of the allowed values
-        if (['default', 'twilight', 'ocean', 'forest', 'blossom', 'dusk'].includes(savedTheme)) {
+        if (['coral', 'emerald', 'gold', 'teal', 'azure', 'midnight'].includes(savedTheme)) {
             return savedTheme;
         }
-        return 'default'; // Default theme
+        return 'midnight'; // Default theme
     });
 
     useEffect(() => {
         // Set the data-theme attribute on the root element
+        console.log('[ThemeContext] Setting theme:', theme);
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
     }, [theme]);

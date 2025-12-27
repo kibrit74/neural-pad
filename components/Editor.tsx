@@ -142,14 +142,14 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
     }, [editor, addNotification, t]);
 
     return (
-        <div className="flex flex-col h-full bg-background text-text-primary">
+        <div className="flex flex-col h-full bg-transparent text-text-primary">
             <FormattingToolbar editor={editor} onImageUpload={handleImageUpload} addNotification={addNotification} onVoiceSave={onVoiceSave} settings={settings} />
             <div className="relative flex-grow overflow-y-auto" onClick={() => editor?.commands.focus()}>
                 {editor && (
                     <BubbleMenu
                         editor={editor}
                         tippyOptions={{ duration: 100 }}
-                        className="bg-background-secondary border border-border shadow-lg rounded-lg p-1 flex gap-1 animate-in fade-in zoom-in duration-200"
+                        className="bg-black/60 backdrop-blur-xl border border-white/10 shadow-xl rounded-lg p-1.5 flex gap-1 animate-in fade-in zoom-in duration-200"
                     >
                         <button
                             onMouseDown={handleCopySelection}

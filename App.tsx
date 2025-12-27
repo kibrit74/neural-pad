@@ -23,6 +23,7 @@ import ReminderModal from './components/ReminderModal';
 import ReminderAlertModal from './components/ReminderAlertModal';
 import DataHunterSidebar from './components/DataHunterSidebar';
 import CustomPatternManager from './components/CustomPatternManager';
+import QuickActionsBar from './components/QuickActionsBar';
 // TagInput is small, keep it eager
 
 import type { Settings, NotificationType, Note } from './types';
@@ -638,14 +639,57 @@ const App: React.FC = () => {
         }
     };
 
+    const handleDownload = () => {
+        if (!activeNote) return;
+        try {
+            const safeTitle = (activeNote.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
+            const html = activeNote.content || '';
+
+            // Simple HTML to text conversion
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            const text = div.textContent || div.innerText || '';
+
+            // Download as TXT
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${safeTitle}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            addNotification(t('notifications.downloadSuccess') || 'İndirildi', 'success');
+        } catch (err: any) {
+            addNotification('Download failed: ' + err.message, 'error');
+        }
+    };
+
+    const handleCopyAll = async () => {
+        if (!activeNote?.content) return;
+        try {
+            // Create a temp element to strip HTML
+            const div = document.createElement('div');
+            div.innerHTML = activeNote.content;
+            const text = div.textContent || div.innerText || '';
+
+            await navigator.clipboard.writeText(text);
+            addNotification(t('notifications.copied') || 'Kopyalandı', 'success');
+        } catch (e) {
+            addNotification('Kopyalama başarısız', 'error');
+        }
+    };
+
     return (
-        <div className="flex h-screen w-screen bg-background text-text-primary overflow-hidden font-sans">
+        <div className="flex h-screen w-screen bg-gradient-to-br from-background via-background-secondary to-[#000000] text-text-primary overflow-hidden font-sans">
             <Suspense fallback={null}>
                 <HelpModal isOpen={isHelpModalOpen} onClose={() => setHelpModalOpen(false)} />
             </Suspense>
 
             {!isMobile && isNotesSidebarOpen && (
-                <div className="w-72 flex-shrink-0">
+                <div className="w-[280px] flex-shrink-0 h-full">
                     <NotesSidebar
                         notes={filteredNotes}
                         activeNoteId={activeNote?.id || null}
@@ -657,6 +701,8 @@ const App: React.FC = () => {
                         allTags={allTags}
                         selectedTag={selectedTag}
                         onSelectTag={setSelectedTag}
+                        searchQuery={searchQuery}
+                        onSearchChange={handleSearchChange}
                     />
                 </div>
             )}
@@ -684,33 +730,7 @@ const App: React.FC = () => {
                         setPasswordModalOpen(true);
                     }}
                     onOpenHistory={() => setHistoryModalOpen(true)}
-                    onDownload={() => {
-                        if (!activeNote) return;
-                        try {
-                            const safeTitle = (activeNote.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
-                            const html = activeNote.content || '';
-
-                            // Simple HTML to text conversion
-                            const div = document.createElement('div');
-                            div.innerHTML = html;
-                            const text = div.textContent || div.innerText || '';
-
-                            // Download as TXT
-                            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `${safeTitle}.txt`;
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-
-                            addNotification('Downloaded as TXT', 'success');
-                        } catch (err: any) {
-                            addNotification('Download failed: ' + err.message, 'error');
-                        }
-                    }}
+                    onDownload={handleDownload}
                     onOpenLandingPage={() => {
                         localStorage.removeItem('hasSeenWelcome');
                         setShowWelcome(true);
@@ -787,6 +807,17 @@ const App: React.FC = () => {
                         />
                     )}
                 </div>
+                {!isMobile && (
+                    <QuickActionsBar
+                        onCopyAll={handleCopyAll}
+                        onExport={handleDownload}
+                        onShare={() => {
+                            setShareContent('');
+                            setShareModalOpen(true);
+                        }}
+                        onSettings={() => setSettingsModalOpen(true)}
+                    />
+                )}
             </main>
 
             {!isMobile && isChatSidebarOpen && (

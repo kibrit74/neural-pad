@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useTranslations } from '../hooks/useTranslations';
-import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SaveAsIcon, SearchIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon, DownloadIcon, HomeIcon, ShareIcon, BellIcon, BellOffIcon } from './icons/Icons';
+import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SaveAsIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon, DownloadIcon, HomeIcon, ShareIcon, BellIcon, BellOffIcon } from './icons/Icons';
 import type { Note } from '../types';
 
 interface HeaderProps {
@@ -22,26 +22,18 @@ interface HeaderProps {
     isDataHunterOpen?: boolean;
     isLocked: boolean;
     activeNote: Note | null;
-    searchQuery: string;
-    onSearchChange: (query: string) => void;
+    // These props are deprecated but kept for compatibility with App.tsx
+    searchQuery?: string;
+    onSearchChange?: (query: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
-    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSaveAs, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, onOpenLandingPage, onShare, onReminder, onToggleDataHunter, isDataHunterOpen, isLocked, activeNote, searchQuery, onSearchChange
+    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSaveAs, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, onOpenLandingPage, onShare, onReminder, onToggleDataHunter, isDataHunterOpen, isLocked, activeNote
 }) => {
     const { t } = useTranslations();
 
     // Check if running in Electron
     const isElectron = typeof window !== 'undefined' && (window as any).electron;
-
-    const formatDate = (date: Date) => {
-        return new Intl.DateTimeFormat(undefined, {
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: 'numeric',
-        }).format(new Date(date));
-    };
 
     const IconButton: React.FC<{ onClick: () => void; title: string; isActive?: boolean; children: React.ReactNode, className?: string }> =
         ({ onClick, title, isActive = false, children, className = '' }) => (
@@ -49,97 +41,92 @@ const Header: React.FC<HeaderProps> = ({
                 onClick={onClick}
                 title={title}
                 aria-label={title}
-                className={`p-2 rounded-full transition-colors ${isActive ? 'bg-primary text-primary-text' : 'hover:bg-border'
-                    } ${className}`}
+                className={`
+                    w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200
+                    border border-transparent
+                    ${isActive
+                        ? 'bg-primary/20 text-primary border-primary/30 shadow-[0_0_10px_rgba(var(--color-primary-rgb),0.3)]'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-white/10 hover:border-white/10'
+                    } ${className}
+                `}
             >
-                {children}
+                {React.cloneElement(children as React.ReactElement, {
+                    width: "18", height: "18",
+                    className: isActive ? "text-primary" : "current-color"
+                })}
             </button>
         );
 
     return (
-        <header className="relative z-50 flex items-center justify-between p-2 border-b border-border-strong bg-background-secondary text-text-primary flex-shrink-0 gap-4">
-            {/* Left section */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+        <header className="relative z-40 flex items-center justify-between px-6 py-3 border-b border-border/10 bg-gradient-to-r from-background/90 to-background/60 backdrop-blur-md flex-shrink-0 transition-all duration-300">
+            {/* Left section: Sidebar Toggle & Breadcrumb */}
+            <div className="flex items-center gap-4 flex-shrink-0">
                 <IconButton onClick={onToggleNotesSidebar} title={t('header.toggleNotes')}>
                     <NotesIcon />
                 </IconButton>
-                <div className="flex-col items-start hidden sm:flex">
-                    <h1 className="text-lg font-bold leading-tight">{t('header.title')}</h1>
+
+                <div className="flex items-center gap-2 text-sm font-medium animate-fade-in">
+                    <span className="text-text-secondary/60">📁 {t('notesSidebar.allNotes') || 'Notlarım'}</span>
+                    <span className="text-text-secondary/40 text-xs">/</span>
+                    <span className="text-primary truncate max-w-[200px] md:max-w-[400px]">
+                        {activeNote?.title || t('defaultNoteTitle') || 'Yeni Not'}
+                    </span>
                     {activeNote?.updatedAt && (
-                        <span className="text-xs text-text-secondary leading-tight">
-                            {t('header.lastSaved')} {formatDate(activeNote.updatedAt)}
+                        <span className="hidden lg:inline-block ml-3 text-[10px] text-text-secondary/30 bg-white/5 px-2 py-0.5 rounded-full">
+                            {t('header.lastSaved')} {new Date(activeNote.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                     )}
                 </div>
             </div>
 
-            {/* Center section - Search */}
-            <div className="flex-1 flex justify-center px-4">
-                <div className="w-full max-w-md relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <SearchIcon className="h-4 w-4 text-text-secondary" />
-                    </div>
-                    <input
-                        type="search"
-                        value={searchQuery}
-                        onChange={(e) => onSearchChange(e.target.value)}
-                        placeholder={t('notesSidebar.searchPlaceholder')}
-                        className="w-full bg-background border border-border rounded-full py-1.5 pl-9 pr-4 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                    />
-                </div>
-            </div>
-
-            {/* Right section */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Right section: Toolbar Actions */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
                 {!isElectron && onOpenLandingPage && (
                     <IconButton onClick={onOpenLandingPage} title={t('header.backToLanding')}>
                         <HomeIcon />
                     </IconButton>
                 )}
-                <IconButton onClick={onSave} title={t('header.save')}>
-                    <SaveIcon />
-                </IconButton>
-                {onSaveAs && (
-                    <IconButton onClick={onSaveAs} title={t('header.saveAs')}>
-                        <SaveAsIcon />
+
+                <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
+
+                {onReminder && (
+                    <IconButton onClick={onReminder} title={t('reminder.title')} className={activeNote?.reminder ? 'text-amber-500 hover:text-amber-400' : ''}>
+                        {activeNote?.reminder ? <BellIcon className="text-amber-500" /> : <BellOffIcon />}
                     </IconButton>
                 )}
-                {onDownload && (
-                    <IconButton onClick={onDownload} title={t('header.download')}>
-                        <DownloadIcon />
-                    </IconButton>
-                )}
+
                 {onShare && (
                     <IconButton onClick={onShare} title={t('share.title')}>
                         <ShareIcon />
                     </IconButton>
                 )}
-                {onReminder && (
-                    <IconButton onClick={onReminder} title={t('reminder.title')} className={activeNote?.reminder ? 'text-yellow-500' : ''}>
-                        {activeNote?.reminder ? <BellIcon /> : <BellOffIcon />}
+
+                {onDownload && (
+                    <IconButton onClick={onDownload} title={t('header.download')}>
+                        <DownloadIcon />
                     </IconButton>
                 )}
+
+                <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
+
                 {onToggleDataHunter && (
                     <IconButton onClick={onToggleDataHunter} title="Veri Avcısı" isActive={isDataHunterOpen}>
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </IconButton>
                 )}
-                <IconButton onClick={onToggleLock} title={isLocked ? t('header.unlock') : t('header.lock')}>
+
+                <IconButton onClick={onToggleLock} title={isLocked ? t('header.unlock') : t('header.lock')} isActive={isLocked}>
                     {isLocked ? <UnlockIcon /> : <LockIcon />}
                 </IconButton>
-                <IconButton onClick={onHelp} title={t('header.help')}>
-                    <HelpCircleIcon />
-                </IconButton>
-                {onOpenHistory && (
-                    <IconButton onClick={onOpenHistory} title={t('history.title')}>
-                        <HistoryIcon />
-                    </IconButton>
-                )}
+
+                <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
+
                 <IconButton onClick={onSettings} title={t('header.settings')}>
                     <SettingsIcon />
                 </IconButton>
+
                 <IconButton onClick={onToggleChatSidebar} title={isChatOpen ? t('chat.close') : t('chat.open')} isActive={isChatOpen}>
                     <ChatIcon />
                 </IconButton>
