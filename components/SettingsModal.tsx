@@ -4,6 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslations } from '../hooks/useTranslations';
 import type { Settings, ApiProvider } from '../types';
 import Modal from './Modal';
+import CustomPatternsSection from './CustomPatternsSection';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -421,6 +422,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                         </Section>
                     </>
                 )}
+
+                <Section title="🎯 Özel Tarama Kalıpları">
+                    <p className="text-sm text-text-secondary mb-4">
+                        NotlarınızdanÖzel veri tipleri tanımlayın (örn: Dosya Esas No, Hasta Adı, Karar No)
+                    </p>
+                    <CustomPatternsSection
+                        patterns={localSettings.customPatterns || []}
+                        onChange={(patterns) => {
+                            setLocalSettings(prev => ({ ...prev, customPatterns: patterns }));
+                        }}
+                    />
+                </Section>
 
             </div>
         </Modal>

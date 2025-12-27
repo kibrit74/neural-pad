@@ -35,11 +35,11 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     const setLanguage = (lang: Language) => {
         setLanguageState(lang);
     };
-    
+
     const t = (key: string, replacements?: Record<string, string>): string => {
         const keys = key.split('.');
         let result: any = translations[language];
-        
+
         for (const k of keys) {
             result = result?.[k];
             if (result === undefined) {

@@ -18,6 +18,8 @@ interface HeaderProps {
     onOpenLandingPage?: () => void;
     onShare?: () => void;
     onReminder?: () => void;
+    onToggleDataHunter?: () => void;
+    isDataHunterOpen?: boolean;
     isLocked: boolean;
     activeNote: Note | null;
     searchQuery: string;
@@ -25,7 +27,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({
-    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSaveAs, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, onOpenLandingPage, onShare, onReminder, isLocked, activeNote, searchQuery, onSearchChange
+    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSaveAs, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, onOpenLandingPage, onShare, onReminder, onToggleDataHunter, isDataHunterOpen, isLocked, activeNote, searchQuery, onSearchChange
 }) => {
     const { t } = useTranslations();
 
@@ -115,6 +117,13 @@ const Header: React.FC<HeaderProps> = ({
                 {onReminder && (
                     <IconButton onClick={onReminder} title={t('reminder.title')} className={activeNote?.reminder ? 'text-yellow-500' : ''}>
                         {activeNote?.reminder ? <BellIcon /> : <BellOffIcon />}
+                    </IconButton>
+                )}
+                {onToggleDataHunter && (
+                    <IconButton onClick={onToggleDataHunter} title="Veri Avcısı" isActive={isDataHunterOpen}>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
                     </IconButton>
                 )}
                 <IconButton onClick={onToggleLock} title={isLocked ? t('header.unlock') : t('header.lock')}>

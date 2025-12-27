@@ -1,5 +1,6 @@
 import { GoogleGenAI, GenerateContentResponse, Type, Content } from '@google/genai';
 import type { Settings, WebSource, ChatMessage, ApiProvider } from '../types';
+import { CHAT_FUNCTION_DECLARATIONS, executeFunctionCall, FunctionResult } from './chatFunctions';
 
 // ============================================================================
 // CONSTANTS & CONFIGURATION
@@ -30,8 +31,10 @@ const ERROR_MESSAGES = {
 interface StreamChunk {
     text: string;
     sources?: WebSource[];
-    isSearching?: boolean; // Yeni: Arama yapıldığını gösterir
-    searchQuery?: string; // Yeni: Arama sorgusunu gösterir
+    isSearching?: boolean;
+    searchQuery?: string;
+    functionCall?: { name: string; args: Record<string, any> };
+    functionResult?: FunctionResult;
 }
 
 interface GenerationConfig {
@@ -57,7 +60,7 @@ const fileToGenerativePart = (mimeType: string, data: string) => ({
  */
 const handleApiError = (error: any, provider: string): never => {
     console.error(`[${provider}] API Error:`, error);
-    
+
     const errorMessage = (error.message || '').toLowerCase();
     const errorCode = error.code || error.status;
 
@@ -68,8 +71,8 @@ const handleApiError = (error: any, provider: string): never => {
 
     // Authentication errors
     if (
-        errorMessage.includes('api key') || 
-        errorMessage.includes('invalid_api_key') || 
+        errorMessage.includes('api key') ||
+        errorMessage.includes('invalid_api_key') ||
         errorMessage.includes('authentication') ||
         errorMessage.includes('unauthorized') ||
         errorCode === 401
@@ -92,10 +95,10 @@ const handleApiError = (error: any, provider: string): never => {
 const getWebSources = (response: GenerateContentResponse): WebSource[] => {
     const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
     if (!groundingMetadata?.groundingChunks) return [];
-    
+
     const sources: WebSource[] = [];
     const seenUris = new Set<string>(); // Duplicate kontrolü
-    
+
     for (const chunk of groundingMetadata.groundingChunks) {
         if (chunk.web && chunk.web.uri && !seenUris.has(chunk.web.uri)) {
             sources.push({
@@ -105,7 +108,7 @@ const getWebSources = (response: GenerateContentResponse): WebSource[] => {
             seenUris.add(chunk.web.uri);
         }
     }
-    
+
     return sources;
 };
 
@@ -150,8 +153,8 @@ export const generateContent = async (
         const model = settings.model || DEFAULT_MODELS.gemini;
         const config = getGenerationConfig(settings);
 
-        const parts = image 
-            ? [fileToGenerativePart(image.mimeType, image.data), { text: prompt }] 
+        const parts = image
+            ? [fileToGenerativePart(image.mimeType, image.data), { text: prompt }]
             : [{ text: prompt }];
 
         // Use proper contents format - array of Content objects
@@ -168,7 +171,7 @@ export const generateContent = async (
                 topK: config.topK,
                 topP: config.topP,
                 tools: useWebSearch ? [{ googleSearch: {} }] : undefined,
-                systemInstruction: useWebSearch 
+                systemInstruction: useWebSearch
                     ? "Use Google Search when the question requires current information or real-time data. Always cite your sources with numbered references."
                     : undefined
             }
@@ -192,26 +195,26 @@ export const transcribeAudio = async (
 ): Promise<string> => {
     try {
         const apiKey = validateApiKey(settings.geminiApiKey, 'Gemini');
-        
+
         // Use new Client structure
         const client = new GoogleGenAI({ apiKey });
         const model = 'gemini-2.0-flash';
-        
+
         console.log('[Gemini Audio] Starting transcription, size:', audioData.length, 'bytes, model:', model);
-        
+
         // Convert Uint8Array to base64
         const base64Audio = btoa(String.fromCharCode(...audioData));
-        
-        const prompt = language === 'tr' 
+
+        const prompt = language === 'tr'
             ? 'Bu ses kaydındaki konuşmayı Türkçe olarak metne çevir. Sadece konuşulan sözleri yaz.'
             : 'Transcribe the speech in this audio to text. Only write the spoken words.';
-        
+
         const startTime = Date.now();
-        
+
         // According to Gemini docs, audio should be in parts array with proper structure
         // Use MP3 format as it's explicitly supported
         const audioMimeType = 'audio/mp3';
-        
+
         const contents: Content[] = [{
             role: 'user',
             parts: [
@@ -226,12 +229,12 @@ export const transcribeAudio = async (
                 }
             ]
         }];
-        
+
         console.log('[Gemini Audio] Request - Model:', model);
         console.log('[Gemini Audio] Request - Audio size:', audioData.length, 'bytes');
         console.log('[Gemini Audio] Request - MIME type:', audioMimeType);
         console.log('[Gemini Audio] Request - Prompt:', prompt.substring(0, 50));
-        
+
         // Generate content
         const response = await client.models.generateContent({
             model,
@@ -254,7 +257,7 @@ export const transcribeAudio = async (
         console.error('[Gemini Audio] Error object:', error);
         console.error('[Gemini Audio] Error message:', error.message);
         console.error('[Gemini Audio] Error stack:', error.stack);
-        
+
         // Try to get response body
         if (error.response) {
             console.error('[Gemini Audio] Response status:', error.response.status);
@@ -262,7 +265,7 @@ export const transcribeAudio = async (
             console.error('[Gemini Audio] Response data:', error.response.data);
             console.error('[Gemini Audio] Response body:', JSON.stringify(error.response.data, null, 2));
         }
-        
+
         // Try to get request details
         if (error.config) {
             console.error('[Gemini Audio] Request URL:', error.config.url);
@@ -270,14 +273,14 @@ export const transcribeAudio = async (
             console.error('[Gemini Audio] Request headers:', error.config.headers);
             console.error('[Gemini Audio] Request data:', error.config.data ? error.config.data.substring(0, 500) : 'N/A');
         }
-        
+
         // Log the entire error as JSON
         console.error('[Gemini Audio] Full error JSON:', JSON.stringify(error, null, 2));
         console.error('[Gemini Audio] ========== END ERROR ==========');
-        
+
         const errorMessage = error.message || '';
         const errorString = JSON.stringify(error);
-        
+
         if (errorMessage.includes('API_KEY_INVALID') || errorString.includes('API_KEY_INVALID')) {
             throw new Error('Gemini API key geçersiz.');
         } else if (errorMessage.includes('QUOTA_EXCEEDED') || errorString.includes('QUOTA')) {
@@ -285,7 +288,7 @@ export const transcribeAudio = async (
         } else if (errorMessage.includes('400') || errorString.includes('400')) {
             throw new Error('Gemini API 400 hatası - Console\'da detayları kontrol edin.');
         }
-        
+
         throw new Error(`Gemini ses tanıma hatası: ${errorMessage || 'Bilinmeyen hata'}`);
     }
 };
@@ -298,13 +301,13 @@ export const generateTagsForNote = async (
     settings: Settings
 ): Promise<string[]> => {
     if (!noteContent.trim()) return [];
-    
+
     try {
         const apiKey = validateApiKey(settings.geminiApiKey, 'Gemini');
 
         const ai = new GoogleGenAI({ apiKey });
         const model = settings.model || DEFAULT_MODELS.gemini;
-        
+
         const prompt = `Based on the following note content, suggest 3-5 relevant, single-word or two-word tags. Return only the tags as a JSON object with a "tags" key containing an array of strings. For example: {"tags": ["technology", "react-js"]}.\n\nNote:\n"${noteContent}"`;
 
         const response = await ai.models.generateContent({
@@ -353,11 +356,11 @@ const shouldUseWebSearch = (message: string): boolean => {
         // Zaman ifadeleri
         'bugün', 'today', 'şu an', 'now', 'güncel', 'current',
         'son', 'latest', 'yeni', 'new', 'recent',
-        
+
         // Soru kelimeleri + güncel bilgi
         'hava durumu', 'weather', 'fiyat', 'price',
         'haber', 'news', 'olay', 'event',
-        
+
         // Direkt arama isteği
         'ara', 'search', 'bul', 'find',
         'araştır', 'research', 'incele', 'investigate'
@@ -428,7 +431,7 @@ async function* streamGemini(
             }))
         );
 
-        const languageInstruction = language === 'tr' 
+        const languageInstruction = language === 'tr'
             ? 'IMPORTANT: Always respond in Turkish (Türkçe). Kullanıcıya her zaman Türkçe cevap ver.'
             : 'IMPORTANT: Always respond in English.';
 
@@ -459,7 +462,37 @@ Example:
 Sources:
 [1] Weather.com - Today's Forecast
 [2] AccuWeather - Current Conditions"`
-            : `You are a helpful AI assistant. ${languageInstruction} Provide clear, accurate, and comprehensive answers.`;
+            : `You are a helpful AI assistant. ${languageInstruction}
+
+**DATA EXTRACTION RULES:**
+When user asks to find/list specific data types (email, phone, date, address, IBAN, etc.):
+1. ONLY list the requested data - do NOT summarize the document
+2. Format each item clearly with bullet points or numbered list
+3. If no matching data found, say "Bu belgede [requested type] bulunamadı."
+
+Example for "email adreslerini bul":
+✅ CORRECT:
+"Belgede bulunan e-posta adresleri:
+• example@gmail.com
+• info@company.com"
+
+❌ WRONG: Summarizing the entire document
+
+Example for "telefon numaralarını listele":
+✅ CORRECT:
+"Belgede bulunan telefon numaraları:
+• 0534 548 4373
+• 0212 555 1234"
+
+**GENERAL RULES:**
+- Provide clear, accurate, and concise answers
+- For questions about the document, answer directly
+- For data extraction, use the extract_data function`;
+
+        // Define tools: web search OR function calling (not both at the same time)
+        const tools = useWebSearch
+            ? [{ googleSearch: {} }]
+            : [{ functionDeclarations: CHAT_FUNCTION_DECLARATIONS }];
 
         const stream = await ai.models.generateContentStream({
             model,
@@ -469,13 +502,36 @@ Sources:
                 temperature: config.temperature,
                 topK: config.topK,
                 topP: config.topP,
-                tools: useWebSearch ? [{ googleSearch: {} }] : undefined
+                tools
             }
         });
 
         let hasYieldedSearching = false;
         for await (const chunk of stream) {
-            // İlk chunk'ta arama bilgisini kaldır
+            // Debug: log chunk structure
+            console.log('[Gemini] Chunk received:', JSON.stringify(chunk, null, 2).substring(0, 500));
+
+            // Check for function call in response - multiple possible paths
+            const candidate = chunk.candidates?.[0];
+            const parts = candidate?.content?.parts;
+            const functionCall = parts?.[0]?.functionCall || (chunk as any).functionCall;
+
+            if (functionCall) {
+                console.log('[Gemini] Function call detected:', functionCall.name, functionCall.args);
+
+                // Execute the function
+                const docText = editorContext?.text || '';
+                const result = executeFunctionCall(functionCall.name, functionCall.args || {}, docText, 'Not');
+
+                yield {
+                    text: result.message,
+                    functionCall: { name: functionCall.name, args: functionCall.args || {} },
+                    functionResult: result
+                };
+                return; // End stream after function execution
+            }
+
+            // Normal text response
             if (!hasYieldedSearching && useWebSearch) {
                 yield { text: '', isSearching: false };
                 hasYieldedSearching = true;
@@ -483,7 +539,7 @@ Sources:
 
             const sources = getWebSources(chunk);
             yield {
-                text: chunk.text,
+                text: chunk.text || '',
                 sources: sources.length > 0 ? sources : undefined
             };
         }
@@ -507,27 +563,27 @@ async function* streamOpenAI(
         const apiKey = validateApiKey(settings.openaiApiKey, 'OpenAI');
         const config = getGenerationConfig(settings);
 
-        const languageInstruction = language === 'tr' 
+        const languageInstruction = language === 'tr'
             ? 'IMPORTANT: Always respond in Turkish (Türkçe). Kullanıcıya her zaman Türkçe cevap ver.'
             : 'IMPORTANT: Always respond in English.';
 
-        const messages = [] as { role: 'assistant'|'user'|'system'; content: string }[];
-        
+        const messages = [] as { role: 'assistant' | 'user' | 'system'; content: string }[];
+
         // Add language instruction as system message
         messages.push({
             role: 'system',
             content: languageInstruction
         });
-        
+
         if (editorContext && (editorContext.text || (editorContext.images && editorContext.images.length))) {
             messages.push({
                 role: 'system',
-                content: `User's document context (text only shown here). Use it when relevant.\n\n${(editorContext.text||'').slice(0, 8000)}`
+                content: `User's document context (text only shown here). Use it when relevant.\n\n${(editorContext.text || '').slice(0, 8000)}`
             });
         }
         messages.push(
-            ...history.map(({ role, content }): { role: 'assistant'|'user'|'system'; content: string } => ({
-                role: (role === 'model' ? 'assistant' : 'user') as 'assistant'|'user',
+            ...history.map(({ role, content }): { role: 'assistant' | 'user' | 'system'; content: string } => ({
+                role: (role === 'model' ? 'assistant' : 'user') as 'assistant' | 'user',
                 content
             }))
         );
@@ -568,7 +624,7 @@ async function* streamOpenAI(
                 if (line.startsWith('data: ')) {
                     const data = line.substring(6).trim();
                     if (data === '[DONE]') continue;
-                    
+
                     try {
                         const parsed = JSON.parse(data);
                         const chunk = parsed.choices[0]?.delta?.content;
@@ -601,27 +657,27 @@ async function* streamClaude(
         const apiKey = validateApiKey(settings.claudeApiKey, 'Claude');
         const config = getGenerationConfig(settings);
 
-        const languageInstruction = language === 'tr' 
+        const languageInstruction = language === 'tr'
             ? 'IMPORTANT: Always respond in Turkish (Türkçe). Kullanıcıya her zaman Türkçe cevap ver.'
             : 'IMPORTANT: Always respond in English.';
 
-        const messages = [] as { role: 'assistant'|'user'|'system'; content: string }[];
-        
+        const messages = [] as { role: 'assistant' | 'user' | 'system'; content: string }[];
+
         // Add language instruction as system message
         messages.push({
             role: 'system',
             content: languageInstruction
         });
-        
+
         if (editorContext && (editorContext.text || (editorContext.images && editorContext.images.length))) {
             messages.push({
                 role: 'system',
-                content: `User's document context (text only):\n\n${(editorContext.text||'').slice(0, 8000)}`
+                content: `User's document context (text only):\n\n${(editorContext.text || '').slice(0, 8000)}`
             });
         }
         messages.push(
-            ...history.map(({ role, content }): { role: 'assistant'|'user'|'system'; content: string } => ({
-                role: (role === 'model' ? 'assistant' : 'user') as 'assistant'|'user',
+            ...history.map(({ role, content }): { role: 'assistant' | 'user' | 'system'; content: string } => ({
+                role: (role === 'model' ? 'assistant' : 'user') as 'assistant' | 'user',
                 content
             }))
         );
@@ -715,11 +771,11 @@ export async function* getChatStream(
             case 'openai':
                 yield* streamOpenAI(history, settings, editorContext, language);
                 break;
-            
+
             case 'claude':
                 yield* streamClaude(history, settings, editorContext, language);
                 break;
-            
+
             case 'gemini':
             default:
                 yield* streamGemini(history, settings, forceWebSearch, editorContext, language);
@@ -757,7 +813,7 @@ export const checkProviderStatus = async (
                     contents: { parts: [{ text: 'test' }] }
                 });
                 return { status: 'ok', message: 'Gemini API is working' };
-            
+
             case 'openai':
                 const openaiRes = await fetch(API_ENDPOINTS.openai, {
                     method: 'POST',
@@ -773,7 +829,7 @@ export const checkProviderStatus = async (
                 });
                 if (!openaiRes.ok) throw new Error('OpenAI API error');
                 return { status: 'ok', message: 'OpenAI API is working' };
-            
+
             case 'claude':
                 const claudeRes = await fetch(API_ENDPOINTS.claude, {
                     method: 'POST',
@@ -790,7 +846,7 @@ export const checkProviderStatus = async (
                 });
                 if (!claudeRes.ok) throw new Error('Claude API error');
                 return { status: 'ok', message: 'Claude API is working' };
-            
+
             default:
                 throw new Error('Unknown provider');
         }
@@ -804,11 +860,11 @@ export const checkProviderStatus = async (
  */
 export const formatWebSources = (sources: WebSource[]): string => {
     if (!sources || sources.length === 0) return '';
-    
+
     let formatted = '\n\n**Kaynaklar:**\n';
     sources.forEach((source, index) => {
         formatted += `[${index + 1}] ${source.title}\n${source.uri}\n`;
     });
-    
+
     return formatted;
 };

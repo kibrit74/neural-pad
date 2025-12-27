@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { useTranslations } from '../hooks/useTranslations';
+import { openExternalUrl } from '../utils/openExternal';
 
 interface ReminderModalProps {
     isOpen: boolean;
@@ -110,7 +111,8 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
             calendarUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(eventTitle)}&startdt=${formatOutlookDate(date)}&enddt=${formatOutlookDate(endDate)}&body=${encodeURIComponent(eventDetails)}`;
         }
 
-        window.open(calendarUrl, '_blank');
+        // Use openExternalUrl for proper Electron support
+        openExternalUrl(calendarUrl);
         addNotification('Takvim açıldı', 'success');
     };
 

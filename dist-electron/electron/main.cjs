@@ -219,6 +219,20 @@ function setupAppIPC() {
             shell.showItemInFolder(filePath);
         }
     });
+    // Open External URL in default browser
+    ipcMain.handle('app:open-external', async (event, url) => {
+        if (url && typeof url === 'string') {
+            try {
+                await shell.openExternal(url);
+                return { success: true };
+            }
+            catch (error) {
+                console.error('[App IPC] Failed to open external URL:', error);
+                return { success: false, error: error.message };
+            }
+        }
+        return { success: false, error: 'Invalid URL' };
+    });
 }
 function setupSpeechIPC() {
     const whisperService = require('./whisperService.cjs');
@@ -307,6 +321,13 @@ function createWindow() {
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
         shell.openExternal(url);
         return { action: 'deny' };
+    });
+    // Handle standard navigation events (like window.location.href = 'mailto:...')
+    mainWindow.webContents.on('will-navigate', (event, url) => {
+        if (url.startsWith('mailto:') || url.startsWith('tel:') || url.startsWith('http')) {
+            event.preventDefault();
+            shell.openExternal(url);
+        }
     });
     // Automatically grant permissions for microphone, Web Speech API, and clipboard
     mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {

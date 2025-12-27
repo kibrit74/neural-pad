@@ -106,7 +106,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, content
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={t('share.title')}>
+        <Modal isOpen={isOpen} onClose={onClose} title="Notu Paylaş">
             <div className="p-1 space-y-6">
 
                 {/* 1. Scope Selection (Modern Segmented Control) */}
@@ -115,28 +115,28 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, content
                         <button
                             onClick={() => setShareScope('selection')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 z-10 ${shareScope === 'selection'
-                                    ? 'bg-primary text-primary-text shadow-md transform scale-[1.02]'
-                                    : 'text-text-secondary hover:bg-background-secondary'
+                                ? 'bg-primary text-primary-text shadow-md transform scale-[1.02]'
+                                : 'text-text-secondary hover:bg-background-secondary'
                                 }`}
                         >
-                            <span className="text-lg">✨</span> {t('share.selection') || 'Seçili Alan'}
+                            <span className="text-lg">✨</span> Seçili Alan
                         </button>
                         <button
                             onClick={() => setShareScope('full')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 z-10 ${shareScope === 'full'
-                                    ? 'bg-primary text-primary-text shadow-md transform scale-[1.02]'
-                                    : 'text-text-secondary hover:bg-background-secondary'
+                                ? 'bg-primary text-primary-text shadow-md transform scale-[1.02]'
+                                : 'text-text-secondary hover:bg-background-secondary'
                                 }`}
                         >
-                            <span className="text-lg">📄</span> {t('share.fullNote') || 'Tüm Not'}
+                            <span className="text-lg">📄</span> Tüm Not
                         </button>
                     </div>
                 )}
 
                 {/* 2. Primary Actions (Social Grid) */}
                 <div className="space-y-3">
-                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider ml-1 opacity-70">
-                        {t('share.shareAsText') || 'Metin Olarak Paylaş'}
+                    <label className="text-xs font-bold text-text-secondary tracking-wider ml-1 opacity-70">
+                        METİN OLARAK PAYLAŞ
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                         <button onClick={() => handleSocialShare('whatsapp')} className="flex flex-col items-center justify-center p-4 rounded-2xl bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border border-[#25D366]/20 transition-all hover:scale-[1.02] gap-2 group">
@@ -151,7 +151,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, content
                     <div className="grid grid-cols-2 gap-3">
                         <button onClick={handleCopy} className="flex items-center justify-center gap-3 p-3 rounded-xl bg-background-secondary hover:bg-border border border-border text-text-primary transition-all font-medium">
                             <CopyIcon className="w-5 h-5 text-gray-500" />
-                            {t('share.copy')}
+                            Kopyala
                         </button>
                         <button onClick={() => handleSocialShare('email')} className="flex items-center justify-center gap-3 p-3 rounded-xl bg-background-secondary hover:bg-border border border-border text-text-primary transition-all font-medium">
                             <MailIcon className="w-5 h-5 text-gray-500" />
@@ -165,8 +165,8 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, content
                 {/* 3. Download Section */}
                 <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                        <label className="text-xs font-bold text-text-secondary uppercase tracking-wider ml-1 opacity-70">
-                            {t('share.download') || 'İndir'}
+                        <label className="text-xs font-bold text-text-secondary tracking-wider ml-1 opacity-70">
+                            İNDİR
                         </label>
                     </div>
 
@@ -176,8 +176,8 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, content
                                 key={fmt}
                                 onClick={() => setSelectedFormat(fmt)}
                                 className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all uppercase ${selectedFormat === fmt
-                                        ? 'bg-background text-primary shadow-sm ring-1 ring-border'
-                                        : 'text-text-secondary hover:text-text-primary'
+                                    ? 'bg-background text-primary shadow-sm ring-1 ring-border'
+                                    : 'text-text-secondary hover:text-text-primary'
                                     }`}
                             >
                                 {fmt}
@@ -190,7 +190,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, content
                         className="w-full flex items-center justify-center gap-2 py-3 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl font-bold transition-colors border border-primary/20"
                     >
                         <DownloadIcon className="w-5 h-5" />
-                        {t('share.download')} .{selectedFormat.toUpperCase()}
+                        İndir .{selectedFormat.toUpperCase()}
                     </button>
                 </div>
             </div>

@@ -31,6 +31,7 @@ const electronAPI = {
   },
   showNotification: (options) => ipcRenderer.send('app:show-notification', options),
   showItemInFolder: (filePath) => ipcRenderer.send('app:show-item-in-folder', filePath),
+  openExternal: (url) => ipcRenderer.invoke('app:open-external', url),
 };
 
 contextBridge.exposeInMainWorld('electron', electronAPI);

@@ -21,6 +21,8 @@ import PasswordModal, { PasswordMode } from './components/PasswordModal';
 import ShareModal from './components/ShareModal';
 import ReminderModal from './components/ReminderModal';
 import ReminderAlertModal from './components/ReminderAlertModal';
+import DataHunterSidebar from './components/DataHunterSidebar';
+import CustomPatternManager from './components/CustomPatternManager';
 // TagInput is small, keep it eager
 
 import type { Settings, NotificationType, Note } from './types';
@@ -73,6 +75,8 @@ const App: React.FC = () => {
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [isMarkdownModalOpen, setMarkdownModalOpen] = useState(false);
     const [isSaveAsModalOpen, setSaveAsModalOpen] = useState(false);
+    const [isDataHunterOpen, setDataHunterOpen] = useState(false);
+    const [isPatternManagerOpen, setPatternManagerOpen] = useState(false);
 
     // Password / lock state
     const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
@@ -272,14 +276,14 @@ const App: React.FC = () => {
             setActiveNote(note);
             if (note.isLocked && note.encrypted) {
                 // Show empty editor until unlocked
-                editorRef.current?.commands.setContent('', { emitUpdate: false });
+                editorRef.current?.commands.setContent('', false);
                 setPasswordTargetNoteId(note.id);
                 setPasswordMode('unlock');
                 setPasswordModalOpen(true);
             } else {
                 // By passing `emitUpdate: false`, we prevent `onUpdate` from firing unnecessarily,
                 // which avoids a potential race condition and improves stability.
-                editorRef.current?.commands.setContent(note.content, { emitUpdate: false });
+                editorRef.current?.commands.setContent(note.content, false);
             }
         }
     }, [handleSaveNow]);
@@ -716,6 +720,8 @@ const App: React.FC = () => {
                         setShareModalOpen(true);
                     }}
                     onReminder={() => setReminderModalOpen(true)}
+                    onToggleDataHunter={() => setDataHunterOpen(!isDataHunterOpen)}
+                    isDataHunterOpen={isDataHunterOpen}
                     isLocked={!!activeNote?.isLocked}
                     activeNote={activeNote}
                     searchQuery={searchQuery}
@@ -875,7 +881,7 @@ const App: React.FC = () => {
                             // Update active note/editor
                             if (activeNoteRef.current?.id === note.id) {
                                 setActiveNote(prev => prev ? { ...prev, content: html } : prev);
-                                editorRef.current?.commands.setContent(html, { emitUpdate: false });
+                                editorRef.current?.commands.setContent(html, false);
                             }
                             setPasswordModalOpen(false);
                         } catch (e) {
@@ -895,7 +901,7 @@ const App: React.FC = () => {
                         // Reflect locked state in UI and clear editor
                         if (activeNoteRef.current?.id === note.id) {
                             setActiveNote(prev => prev ? { ...prev, isLocked: true, encrypted, content: '' } : prev);
-                            editorRef.current?.commands.setContent('', { emitUpdate: false });
+                            editorRef.current?.commands.setContent('', false);
                         }
                         addNotification(t('notifications.noteLocked'), 'success');
                         setPasswordModalOpen(false);
@@ -912,7 +918,7 @@ const App: React.FC = () => {
                             setNotes(all);
                             if (activeNoteRef.current?.id === note.id) {
                                 setActiveNote(prev => prev ? { ...prev, isLocked: false, encrypted: null, content: html } : prev);
-                                editorRef.current?.commands.setContent(html, { emitUpdate: false });
+                                editorRef.current?.commands.setContent(html, false);
                             }
                             // Clear cached password
                             passwordCacheRef.current.delete(note.id);
@@ -933,7 +939,7 @@ const App: React.FC = () => {
                     html={activeNote?.content || ''}
                     onClose={() => setMarkdownModalOpen(false)}
                     onApply={(html) => {
-                        editorRef.current?.commands.setContent(html, { emitUpdate: true });
+                        editorRef.current?.commands.setContent(html, true);
                     }}
                 />
             </Suspense>
@@ -945,7 +951,7 @@ const App: React.FC = () => {
                     currentHtml={activeNote?.content || ''}
                     onClose={() => setHistoryModalOpen(false)}
                     onRestore={(html) => {
-                        editorRef.current?.commands.setContent(html, { emitUpdate: true });
+                        editorRef.current?.commands.setContent(html, true);
                         setHistoryModalOpen(false);
                     }}
                 />
@@ -1009,6 +1015,27 @@ const App: React.FC = () => {
                     setReminderAlert(null);
                 }}
                 onDismiss={handleDismissReminder}
+            />
+
+            <DataHunterSidebar
+                isOpen={isDataHunterOpen}
+                onClose={() => setDataHunterOpen(false)}
+                noteContent={activeNote?.content || ''}
+                noteTitle={activeNote?.title || ''}
+                customPatterns={settings.customPatterns || []}
+                onOpenPatternManager={() => setPatternManagerOpen(true)}
+                settings={settings}
+            />
+
+            <CustomPatternManager
+                isOpen={isPatternManagerOpen}
+                onClose={() => setPatternManagerOpen(false)}
+                patterns={settings.customPatterns || []}
+                onPatternsChange={(patterns) => {
+                    const newSettings = { ...settings, customPatterns: patterns };
+                    setSettings(newSettings);
+                    localStorage.setItem('gemini-writer-settings', JSON.stringify(newSettings));
+                }}
             />
 
             <div className="absolute bottom-4 right-4 z-50 space-y-2 w-full max-w-sm" role="region" aria-live="polite" aria-relevant="additions" aria-atomic="false">
