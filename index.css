@@ -2,27 +2,27 @@
    THEME VARIABLES - Must be BEFORE Tailwind directives
    ═══════════════════════════════════════════════════ */
 
-/* 🌑 Midnight - Default Theme */
+/* 🔥 Coral - Default Theme (matches landing page) */
 :root {
-  --color-primary: #71717a;
-  --color-primary-hover: #52525b;
-  --color-primary-text: #fafafa;
-  --color-background: #09090b;
-  --color-background-secondary: #18181b;
-  --color-text-primary: #fafafa;
-  --color-text-secondary: #a1a1aa;
-  --color-border: #27272a;
-  --color-border-strong: #3f3f46;
-  --color-backdrop: rgba(9, 9, 11, 0.9);
+  --color-primary: #ef4444;
+  --color-primary-hover: #dc2626;
+  --color-primary-text: #ffffff;
+  --color-background: #1a0a0a;
+  --color-background-secondary: #251616;
+  --color-text-primary: #fef2f2;
+  --color-text-secondary: #fca5a5;
+  --color-border: #7f1d1d;
+  --color-border-strong: #991b1b;
+  --color-backdrop: rgba(26, 10, 10, 0.8);
   --color-success-bg: #14532d;
   --color-success-text: #bbf7d0;
   --color-error-bg: #450a0a;
   --color-error-text: #fecaca;
   --color-warning-bg: #78350f;
   --color-warning-text: #fde68a;
-  --table-border: #a1a1aa;
-  --table-header-bg: #27272a;
-  --table-header-text: #fafafa;
+  --table-border: #fca5a5;
+  --table-header-bg: #7f1d1d;
+  --table-header-text: #fef2f2;
 }
 
 /* 🔥 Coral Theme */
@@ -273,11 +273,11 @@ body {
 
     0%,
     100% {
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
     }
 
     50% {
-      box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
     }
   }
 

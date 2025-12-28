@@ -19,6 +19,7 @@ const electronAPI = {
         export: (content, filename) => electron_1.ipcRenderer.invoke('files:export', { content, filename }),
         saveAs: (noteData) => electron_1.ipcRenderer.invoke('files:save-as', noteData),
         saveTemp: (content, filename) => electron_1.ipcRenderer.invoke('files:save-temp', { content, filename }),
+        saveImage: (data) => electron_1.ipcRenderer.invoke('files:save-image', data),
     },
     speech: {
         start: (options) => electron_1.ipcRenderer.send('speech:start', options),

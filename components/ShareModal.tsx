@@ -17,6 +17,7 @@ type ExportFormat = 'txt' | 'html' | 'json' | 'pdf';
 const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, content, fullContent, addNotification }) => {
     const { t } = useTranslations();
     const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('txt');
+    const [isExporting, setIsExporting] = useState(false);
     // Default to selection if available, otherwise full note
     const [shareScope, setShareScope] = useState<'full' | 'selection'>(content ? 'selection' : 'full');
 
@@ -28,6 +29,107 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, content
         const temp = document.createElement('div');
         temp.innerHTML = html.replace(/<br>/g, '\n').replace(/<\/p>/g, '\n\n');
         return temp.innerText.trim();
+    };
+
+    // Convert images in HTML to base64 data URLs
+    const embedImagesInHtml = async (html: string): Promise<string> => {
+        if (!html) return '';
+
+        const container = document.createElement('div');
+        container.innerHTML = html;
+
+        const images = container.querySelectorAll('img');
+
+        for (const img of Array.from(images)) {
+            const src = img.getAttribute('src') || '';
+
+            // Skip if already a data URL
+            if (src.startsWith('data:')) continue;
+
+            try {
+                // Handle file:// URLs or blob: URLs
+                if (src.startsWith('file://') || src.startsWith('blob:')) {
+                    const response = await fetch(src);
+                    const blob = await response.blob();
+                    const dataUrl = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.readAsDataURL(blob);
+                    });
+                    img.setAttribute('src', dataUrl);
+                } else if (src.startsWith('http://') || src.startsWith('https://')) {
+                    // For external URLs, try to fetch and embed
+                    try {
+                        const response = await fetch(src);
+                        const blob = await response.blob();
+                        const dataUrl = await new Promise<string>((resolve) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result as string);
+                            reader.readAsDataURL(blob);
+                        });
+                        img.setAttribute('src', dataUrl);
+                    } catch {
+                        // If can't fetch, keep original URL
+                        console.warn('Could not embed external image:', src);
+                    }
+                }
+            } catch (error) {
+                console.error('Error embedding image:', error);
+            }
+        }
+
+        return container.innerHTML;
+    };
+
+    // Create complete HTML document
+    const createHtmlDocument = (content: string, docTitle: string): string => {
+        return `<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${docTitle || 'Neural Pad Note'}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: #fff;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            color: #111;
+        }
+        h1 { font-size: 2em; border-bottom: 2px solid #e5e5e5; padding-bottom: 0.3em; }
+        p { margin: 1em 0; }
+        img { max-width: 100%; height: auto; border-radius: 8px; margin: 1em 0; }
+        code { background: #f4f4f4; padding: 0.2em 0.4em; border-radius: 3px; font-family: 'Consolas', 'Monaco', monospace; }
+        pre { background: #1a1a1a; color: #e5e5e5; padding: 1em; border-radius: 8px; overflow-x: auto; }
+        pre code { background: none; padding: 0; }
+        blockquote { border-left: 4px solid #e5e5e5; margin: 1em 0; padding-left: 1em; color: #555; }
+        table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+        th, td { border: 1px solid #e5e5e5; padding: 8px 12px; text-align: left; }
+        th { background: #f9f9f9; }
+        ul, ol { padding-left: 2em; }
+        li { margin: 0.5em 0; }
+        a { color: #0066cc; }
+        .meta { color: #666; font-size: 0.9em; margin-bottom: 2em; }
+    </style>
+</head>
+<body>
+    ${docTitle ? `<h1>${docTitle}</h1>` : ''}
+    <div class="meta">
+        <p>Exported from Neural Pad on ${new Date().toLocaleString('tr-TR')}</p>
+    </div>
+    <div class="content">
+        ${content}
+    </div>
+</body>
+</html>`;
     };
 
     const plainText = getPlainText(activeContent);
@@ -63,46 +165,81 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, content
         }
     };
 
-    const handleDownload = () => {
-        const safeTitle = (title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
-        let blob: Blob;
-        let filename: string = `${safeTitle}.${selectedFormat}`;
+    const handleDownload = async () => {
+        setIsExporting(true);
 
-        if (selectedFormat === 'pdf') {
-            // Basic print fallback for PDF
-            const printWindow = window.open('', '_blank');
-            if (printWindow) {
-                printWindow.document.write(`<html><head><title>${title}</title></head><body><h1>${title}</h1>${activeContent}</body></html>`);
-                printWindow.document.close();
-                printWindow.print();
+        try {
+            const safeTitle = (title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
+            let blob: Blob;
+            let filename: string = `${safeTitle}.${selectedFormat}`;
+
+            if (selectedFormat === 'pdf') {
+                // Basic print fallback for PDF
+                const embeddedContent = await embedImagesInHtml(activeContent);
+                const htmlDoc = createHtmlDocument(embeddedContent, title);
+                const printWindow = window.open('', '_blank');
+                if (printWindow) {
+                    printWindow.document.write(htmlDoc);
+                    printWindow.document.close();
+                    setTimeout(() => {
+                        printWindow.print();
+                    }, 500);
+                }
+                setIsExporting(false);
+                onClose();
+                return;
             }
+
+            switch (selectedFormat) {
+                case 'html': {
+                    // Embed images as base64
+                    const embeddedContent = await embedImagesInHtml(activeContent);
+                    const htmlDoc = createHtmlDocument(embeddedContent, title);
+                    blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
+                    break;
+                }
+                case 'json': {
+                    // Create a clean, readable JSON structure
+                    const jsonData = {
+                        metadata: {
+                            application: 'Neural Pad',
+                            version: '1.0',
+                            exportedAt: new Date().toISOString(),
+                            exportedAtLocal: new Date().toLocaleString('tr-TR'),
+                        },
+                        note: {
+                            title: title || 'Untitled',
+                            plainText: plainText,
+                            htmlContent: activeContent,
+                            wordCount: plainText.split(/\s+/).filter(w => w.length > 0).length,
+                            characterCount: plainText.length,
+                        }
+                    };
+                    blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json;charset=utf-8' });
+                    break;
+                }
+                case 'txt':
+                default:
+                    blob = new Blob([shareText], { type: 'text/plain;charset=utf-8' });
+                    break;
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            addNotification(t('notifications.downloadSuccess') || 'İndirildi', 'success');
             onClose();
-            return;
+        } catch (error) {
+            console.error('Download error:', error);
+            addNotification('İndirme başarısız: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'), 'error');
+        } finally {
+            setIsExporting(false);
         }
-
-        switch (selectedFormat) {
-            case 'html':
-                blob = new Blob([activeContent], { type: 'text/html' });
-                break;
-            case 'json':
-                blob = new Blob([JSON.stringify({ title, content: activeContent }, null, 2)], { type: 'application/json' });
-                break;
-            case 'txt':
-            default:
-                blob = new Blob([plainText], { type: 'text/plain' });
-                break;
-        }
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        addNotification(t('notifications.downloadSuccess') || 'İndirildi', 'success');
-        onClose();
     };
 
     return (
@@ -187,10 +324,23 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, content
 
                     <button
                         onClick={handleDownload}
-                        className="w-full flex items-center justify-center gap-2 py-3 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl font-bold transition-colors border border-primary/20"
+                        disabled={isExporting}
+                        className="w-full flex items-center justify-center gap-2 py-3 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl font-bold transition-colors border border-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <DownloadIcon className="w-5 h-5" />
-                        İndir .{selectedFormat.toUpperCase()}
+                        {isExporting ? (
+                            <>
+                                <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Hazırlanıyor...
+                            </>
+                        ) : (
+                            <>
+                                <DownloadIcon className="w-5 h-5" />
+                                İndir .{selectedFormat.toUpperCase()}
+                            </>
+                        )}
                     </button>
                 </div>
             </div>

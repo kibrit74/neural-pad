@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Neural Pad - Yapay zeka destekli akıllı not tutma uygulaması. Notlarınızı %50 daha hızlı organize edin.">
+    <meta name="keywords" content="not tutma, yapay zeka, AI, neural pad, akıllı notlar, editör">
+    <meta property="og:title" content="Neural Pad - Akıllı Not Tutmanın Geleceği">
+    <meta property="og:description" content="Yapay zeka destekli not tutma uygulaması ile verimliliğinizi artırın.">
+    <meta property="og:type" content="website">
+    <title>Neural Pad - Akıllı Not Tutmanın Geleceği</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #ef4444;
+            --primary-light: #f87171;
+            --secondary: #f97316;
+            --bg-dark: #1a0a0a;
+            --bg-dark-2: #1f1515;
+            --bg-card: rgba(37, 22, 22, 0.8);
+            --bg-card-solid: #251616;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(239, 68, 68, 0.2);
+            --border-light: rgba(255, 255, 255, 0.1);
+            --gradient-primary: linear-gradient(135deg, #ef4444, #f97316);
+            --gradient-bg: linear-gradient(135deg, #1a0a0a 0%, #1f1515 50%, #150a0a 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--gradient-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animations */
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(239, 68, 68, 0.6);
+            }
+        }
+
+        @keyframes gradient-shift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-3 {
+            animation-delay: 0.3s;
+        }
+
+        .delay-4 {
+            animation-delay: 0.4s;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 16px 0;
+            background: rgba(26, 10, 10, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .navbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .nav-cta {
+            padding: 10px 24px;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            padding: 140px 0 80px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 30%, rgba(239, 68, 68, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 70%, rgba(249, 115, 22, 0.08) 0%, transparent 50%);
+            animation: gradient-shift 15s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        .hero .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-content {
+            max-width: 560px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: var(--primary);
+            margin-bottom: 24px;
+        }
+
+        .hero-badge svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero h1 span {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-description {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            animation: pulse-glow 2s infinite;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 32px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--border);
+            transform: translateY(-2px);
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 40px;
+        }
+
+        .stat-item {
+            text-align: left;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .hero-image {
+            position: relative;
+        }
+
+        .hero-image img {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .hero-image::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: var(--gradient-primary);
+            border-radius: 22px;
+            z-index: -1;
+            opacity: 0.3;
+            filter: blur(20px);
+        }
+
+        /* Social Proof Bar */
+        .social-proof {
+            padding: 40px 0;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .social-proof .container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
+            flex-wrap: wrap;
+        }
+
+        .proof-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-secondary);
+        }
+
+        .proof-icon {
+            font-size: 1.5rem;
+        }
+
+        .proof-text {
+            font-size: 0.95rem;
+        }
+
+        .proof-text strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 120px 0;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 64px;
+        }
+
+        .section-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(239, 68, 68, 0.15);
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .section-description {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .feature-card {
+            padding: 32px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(239, 68, 68, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(239, 68, 68, 0.15);
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-primary);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .feature-description {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* App Showcase */
+        .showcase {
+            padding: 120px 0;
+            background: rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .showcase::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .showcase-content {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        .showcase-text h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .showcase-text p {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            font-size: 1.1rem;
+        }
+
+        .showcase-features {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .showcase-feature {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .showcase-feature:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .showcase-feature-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .showcase-image {
+            position: relative;
+        }
+
+        .showcase-image img {
+            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Testimonials */
+        .testimonials {
+            padding: 120px 0;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .testimonial-card {
+            padding: 32px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .testimonial-card:hover {
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .testimonial-stars {
+            color: #fbbf24;
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+        }
+
+        .testimonial-text {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 24px;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .testimonial-avatar {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+            font-weight: 600;
+        }
+
+        .testimonial-info h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .testimonial-info p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Download Section */
+        .download {
+            padding: 120px 0;
+            background: linear-gradient(180deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%);
+            position: relative;
+        }
+
+        .download-content {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .download-content h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .download-content p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+        }
+
+        .download-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 28px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .download-btn-icon {
+            font-size: 1.5rem;
+        }
+
+        .download-btn-text {
+            text-align: left;
+        }
+
+        .download-btn-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .download-btn-platform {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .trust-badges {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .trust-badge-icon {
+            color: #22c55e;
+        }
+
+        /* FAQ Section */
+        .faq {
+            padding: 120px 0;
+        }
+
+        .faq-grid {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            padding: 24px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .faq-question {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: color 0.2s;
+        }
+
+        .faq-question:hover {
+            color: var(--primary);
+        }
+
+        .faq-icon {
+            font-size: 1.2rem;
+            color: var(--primary);
+            transition: transform 0.3s;
+        }
+
+        .faq-answer {
+            margin-top: 16px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            display: none;
+        }
+
+        .faq-item.active .faq-answer {
+            display: block;
+        }
+
+        .faq-item.active .faq-icon {
+            transform: rotate(45deg);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 60px 0 30px;
+            background: rgba(0, 0, 0, 0.4);
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 48px;
+            margin-bottom: 48px;
+        }
+
+        .footer-brand .logo {
+            margin-bottom: 16px;
+        }
+
+        .footer-brand p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            max-width: 280px;
+        }
+
+        .footer-column h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .footer-column ul {
+            list-style: none;
+        }
+
+        .footer-column li {
+            margin-bottom: 12px;
+        }
+
+        .footer-column a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .footer-column a:hover {
+            color: var(--primary);
+        }
+
+        .footer-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-copyright {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 16px;
+        }
+
+        .footer-social a {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .footer-social a:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hero .container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-content {
+                max-width: 100%;
+            }
+
+            .hero-cta-group {
+                justify-content: center;
+            }
+
+            .hero-stats {
+                justify-content: center;
+            }
+
+            .hero-image {
+                max-width: 600px;
+                margin: 0 auto;
+            }
+
+            .features-grid,
+            .testimonials-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .showcase-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .showcase-text {
+                order: 2;
+            }
+
+            .showcase-image {
+                order: 1;
+                max-width: 600px;
+                margin: 0 auto;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 12px 0;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-description {
+                font-size: 1rem;
+            }
+
+            .hero-cta-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+
+            .hero-stats {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .features-grid,
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .download-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .download-btn {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .footer-brand p {
+                max-width: 100%;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+
+        /* Scroll reveal animation trigger */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="#" class="logo">
+                <div class="logo-icon"><i data-lucide="flame" style="width:20px;height:20px;color:white"></i></div>
+                Neural Pad
+            </a>
+            <div class="nav-links">
+                <a href="#features">Özellikler</a>
+                <a href="#showcase">Uygulama</a>
+                <a href="#testimonials">Yorumlar</a>
+                <a href="#faq">SSS</a>
+                <a href="#download" class="nav-cta">Ücretsiz İndir</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content fade-in-up">
+                <span class="hero-badge"><i data-lucide="rocket" style="width:14px;height:14px"></i> Yeni Versiyon: v2.0
+                    Çıktı!</span>
+                <h1>Notlarınızı <span>Yapay Zeka</span> ile Organize Edin</h1>
+                <p class="hero-description">
+                    Neural Pad ile notlarınızı %50 daha hızlı oluşturun, düzenleyin ve bulun.
+                    AI destekli akıllı özellikler ile verimliliğinizi artırın.
+                </p>
+                <div class="hero-cta-group">
+                    <a href="#download" class="btn-primary">
+                        <i data-lucide="download" style="width:20px;height:20px"></i> Ücretsiz İndir
+                    </a>
+                    <a href="#showcase" class="btn-secondary">
+                        <i data-lucide="play" style="width:20px;height:20px"></i> Demo İzle
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">10,000+</div>
+                        <div class="stat-label">Aktif Kullanıcı</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">4.9/5</div>
+                        <div class="stat-label">Kullanıcı Puanı</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">%99.9</div>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image fade-in-up delay-2">
+                <img src="mockups/editor-mockup-v2.html" alt="Neural Pad Uygulama Önizlemesi"
+                    onerror="this.src='https://placehold.co/800x600/251616/ef4444?text=Neural+Pad+Preview'">
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof Bar -->
+    <section class="social-proof">
+        <div class="container">
+            <div class="proof-item">
+                <span class="proof-icon"><i data-lucide="briefcase"
+                        style="width:24px;height:24px;color:var(--primary)"></i></span>
+                <span class="proof-text"><strong>Avukatlar</strong> tarafından tercih ediliyor</span>
+            </div>
+            <div class="proof-item">
+                <span class="proof-icon"><i data-lucide="code"
+                        style="width:24px;height:24px;color:var(--primary)"></i></span>
+                <span class="proof-text"><strong>Yazılımcılar</strong> tarafından sevildi</span>
+            </div>
+            <div class="proof-item">
+                <span class="proof-icon"><i data-lucide="graduation-cap"
+                        style="width:24px;height:24px;color:var(--primary)"></i></span>
+                <span class="proof-text"><strong>Öğrenciler</strong> için ideal</span>
+            </div>
+            <div class="proof-item">
+                <span class="proof-icon"><i data-lucide="building"
+                        style="width:24px;height:24px;color:var(--primary)"></i></span>
+                <span class="proof-text"><strong>50+ Şirket</strong> kullanıyor</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="section-badge">Özellikler</span>
+                <h2 class="section-title">Güçlü Özellikler, Basit Kullanım</h2>
+                <p class="section-description">
+                    Neural Pad, modern not tutma ihtiyaçlarınız için tasarlanmış güçlü araçlar sunar.
+                </p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i data-lucide="brain" style="width:28px;height:28px;color:white"></i>
+                    </div>
+                    <h3 class="feature-title">Yapay Zeka Destekli Yazım</h3>
+                    <p class="feature-description">
+                        AI asistan ile metinlerinizi geliştirin, özetleyin ve profesyonel hale getirin.
+                    </p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i data-lucide="search" style="width:28px;height:28px;color:white"></i>
+                    </div>
+                    <h3 class="feature-title">Akıllı Veri Tarama</h3>
+                    <p class="feature-description">
+                        E-posta, telefon, tarih gibi verileri otomatik algılayın ve dışa aktarın.
+                    </p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i data-lucide="file-text" style="width:28px;height:28px;color:white"></i>
+                    </div>
+                    <h3 class="feature-title">Zengin Metin Editörü</h3>
+                    <p class="feature-description">
+                        Slash komutları, formatlama ve blok yapısı ile profesyonel belgeler oluşturun.
+                    </p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i data-lucide="share" style="width:28px;height:28px;color:white"></i>
+                    </div>
+                    <h3 class="feature-title">Çoklu Dışa Aktarım</h3>
+                    <p class="feature-description">
+                        PDF, Word, Excel, HTML ve Markdown formatlarında dışa aktarın.
+                    </p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i data-lucide="bell" style="width:28px;height:28px;color:white"></i>
+                    </div>
+                    <h3 class="feature-title">Akıllı Hatırlatıcılar</h3>
+                    <p class="feature-description">
+                        Notlarınıza hatırlatıcı ekleyin ve önemli görevleri asla kaçırmayın.
+                    </p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i data-lucide="moon" style="width:28px;height:28px;color:white"></i>
+                    </div>
+                    <h3 class="feature-title">Özelleştirilebilir Temalar</h3>
+                    <p class="feature-description">
+                        Karanlık mod dahil 10+ tema seçeneği ile gözlerinizi koruyun.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- App Showcase -->
+    <section id="showcase" class="showcase">
+        <div class="container">
+            <div class="showcase-content">
+                <div class="showcase-text reveal">
+                    <span class="section-badge">Uygulama</span>
+                    <h2>Modern ve Güçlü Editör</h2>
+                    <p>
+                        Neural Pad'in sezgisel arayüzü ile not tutmak hiç bu kadar kolay olmamıştı.
+                        Slash komutları, AI asistan ve zengin formatlama seçenekleri ile profesyonel belgeler oluşturun.
+                    </p>
+                    <div class="showcase-features">
+                        <div class="showcase-feature">
+                            <div class="showcase-feature-icon"><i data-lucide="zap"
+                                    style="width:18px;height:18px;color:var(--primary)"></i></div>
+                            <span>Anında AI yanıtları</span>
+                        </div>
+                        <div class="showcase-feature">
+                            <div class="showcase-feature-icon"><i data-lucide="palette"
+                                    style="width:18px;height:18px;color:var(--primary)"></i></div>
+                            <span>Özelleştirilebilir arayüz</span>
+                        </div>
+                        <div class="showcase-feature">
+                            <div class="showcase-feature-icon"><i data-lucide="shield"
+                                    style="width:18px;height:18px;color:var(--primary)"></i></div>
+                            <span>Yerel veri depolama</span>
+                        </div>
+                        <div class="showcase-feature">
+                            <div class="showcase-feature-icon"><i data-lucide="keyboard"
+                                    style="width:18px;height:18px;color:var(--primary)"></i></div>
+                            <span>Klavye kısayolları</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="showcase-image reveal">
+                    <img src="mockups/editor-mockup-v2.html" alt="Neural Pad Editör"
+                        onerror="this.src='https://placehold.co/900x600/251616/ef4444?text=Neural+Pad+Editor'">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section id="testimonials" class="testimonials">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="section-badge">Kullanıcı Yorumları</span>
+                <h2 class="section-title">Kullanıcılarımız Ne Diyor?</h2>
+                <p class="section-description">
+                    Binlerce kullanıcının Neural Pad hakkındaki görüşleri.
+                </p>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card reveal">
+                    <div class="testimonial-stars"><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i></div>
+                    <p class="testimonial-text">
+                        "Avukatlık mesleğinde dava notları hayati önem taşıyor. Neural Pad'in AI özellikleri sayesinde
+                        notlarımı çok daha hızlı organize edebiliyorum. Veri tarama özelliği muhteşem!"
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">AY</div>
+                        <div class="testimonial-info">
+                            <h4>Av. Ayşe Yılmaz</h4>
+                            <p>Hukuk Bürosu Sahibi</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card reveal">
+                    <div class="testimonial-stars"><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i></div>
+                    <p class="testimonial-text">
+                        "Yazılım geliştirici olarak kod notlarımı tutmak için mükemmel. Markdown desteği ve
+                        dışa aktarım seçenekleri tam aradığım şeydi. Notion'dan geçiş yaptım!"
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">MK</div>
+                        <div class="testimonial-info">
+                            <h4>Mehmet Kaya</h4>
+                            <p>Senior Developer</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card reveal">
+                    <div class="testimonial-stars"><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i><i data-lucide="star"
+                            style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24"></i></div>
+                    <p class="testimonial-text">
+                        "Üniversite derslerinde not tutmak için en iyi uygulama. AI asistan ile ders notlarımı
+                        özetliyorum ve sınavlara çok daha verimli hazırlanıyorum."
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">ES</div>
+                        <div class="testimonial-info">
+                            <h4>Elif Şahin</h4>
+                            <p>Tıp Öğrencisi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download">
+        <div class="container">
+            <div class="download-content reveal">
+                <span class="section-badge">İndirme</span>
+                <h2>Masaüstü Uygulamasını Edinin</h2>
+                <p>
+                    Tüm platformlar için ücretsiz, reklamsız ve açık kaynak.
+                    Verileriniz sadece sizin cihazınızda kalır.
+                </p>
+                <div class="download-buttons">
+                    <a href="#" class="download-btn">
+                        <span class="download-btn-icon"><i data-lucide="monitor"
+                                style="width:24px;height:24px"></i></span>
+                        <div class="download-btn-text">
+                            <div class="download-btn-label">İndir</div>
+                            <div class="download-btn-platform">Windows</div>
+                        </div>
+                    </a>
+                    <a href="#" class="download-btn">
+                        <span class="download-btn-icon"><i data-lucide="laptop"
+                                style="width:24px;height:24px"></i></span>
+                        <div class="download-btn-text">
+                            <div class="download-btn-label">İndir</div>
+                            <div class="download-btn-platform">macOS</div>
+                        </div>
+                    </a>
+                    <a href="#" class="download-btn">
+                        <span class="download-btn-icon"><i data-lucide="terminal"
+                                style="width:24px;height:24px"></i></span>
+                        <div class="download-btn-text">
+                            <div class="download-btn-label">İndir</div>
+                            <div class="download-btn-platform">Linux</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="trust-badges">
+                    <div class="trust-badge">
+                        <span class="trust-badge-icon"><i data-lucide="check"
+                                style="width:16px;height:16px;color:#22c55e"></i></span>
+                        <span>%100 Ücretsiz</span>
+                    </div>
+                    <div class="trust-badge">
+                        <span class="trust-badge-icon"><i data-lucide="check"
+                                style="width:16px;height:16px;color:#22c55e"></i></span>
+                        <span>Reklam Yok</span>
+                    </div>
+                    <div class="trust-badge">
+                        <span class="trust-badge-icon"><i data-lucide="check"
+                                style="width:16px;height:16px;color:#22c55e"></i></span>
+                        <span>Açık Kaynak</span>
+                    </div>
+                    <div class="trust-badge">
+                        <span class="trust-badge-icon"><i data-lucide="check"
+                                style="width:16px;height:16px;color:#22c55e"></i></span>
+                        <span>Gizlilik Garantili</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="faq">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="section-badge">SSS</span>
+                <h2 class="section-title">Sıkça Sorulan Sorular</h2>
+            </div>
+            <div class="faq-grid">
+                <div class="faq-item active">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Neural Pad ücretsiz mi?</span>
+                        <span class="faq-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Evet, Neural Pad tamamen ücretsizdir. Reklam içermez ve tüm özelliklere ücretsiz
+                        erişim sağlar. Açık kaynak bir proje olarak geliştirilmektedir.
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Verilerim güvende mi?</span>
+                        <span class="faq-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Kesinlikle! Neural Pad verilerinizi yerel olarak cihazınızda saklar. Hiçbir veriniz
+                        sunucularımıza gönderilmez. AI özellikleri için API çağrıları yapılsa bile, notlarınız
+                        sadece işlem süresi boyunca kullanılır ve saklanmaz.
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>AI özellikleri nasıl çalışıyor?</span>
+                        <span class="faq-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Neural Pad, Google Gemini AI kullanarak metin iyileştirme, özetleme, genişletme ve
+                        çeviri gibi özellikler sunar. Kendi API anahtarınızı kullanabilir veya varsayılan
+                        ayarlarla kullanabilirsiniz.
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Hangi platformları destekliyor?</span>
+                        <span class="faq-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Neural Pad Windows, macOS ve Linux işletim sistemlerinde çalışır. Electron tabanlı
+                        bir uygulama olduğu için tüm masaüstü platformlarında aynı deneyimi sunar.
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Notlarımı dışa aktarabilir miyim?</span>
+                        <span class="faq-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Evet! Notlarınızı PDF, Word (.docx), Excel, HTML ve Markdown formatlarında dışa
+                        aktarabilirsiniz. Ayrıca Data Hunter özelliği ile tespit edilen verileri ayrıca
+                        dışa aktarabilirsiniz.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <a href="#" class="logo">
+                        <div class="logo-icon"><i data-lucide="flame" style="width:20px;height:20px;color:white"></i>
+                        </div>
+                        Neural Pad
+                    </a>
+                    <p>
+                        Yapay zeka destekli akıllı not tutma uygulaması.
+                        Notlarınızı organize edin, verimliliğinizi artırın.
+                    </p>
+                </div>
+                <div class="footer-column">
+                    <h4>Ürün</h4>
+                    <ul>
+                        <li><a href="#features">Özellikler</a></li>
+                        <li><a href="#download">İndir</a></li>
+                        <li><a href="#">Değişiklik Günlüğü</a></li>
+                        <li><a href="#">Yol Haritası</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Kaynaklar</h4>
+                    <ul>
+                        <li><a href="#">Dokümantasyon</a></li>
+                        <li><a href="#">Klavye Kısayolları</a></li>
+                        <li><a href="#">API Referans</a></li>
+                        <li><a href="#">Blog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Destek</h4>
+                    <ul>
+                        <li><a href="#faq">SSS</a></li>
+                        <li><a href="#">İletişim</a></li>
+                        <li><a href="#">GitHub Issues</a></li>
+                        <li><a href="#">Discord</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-copyright">
+                    © 2024 Neural Pad. Tüm hakları saklıdır.
+                </div>
+                <div class="footer-social">
+                    <a href="#" title="GitHub"><i data-lucide="github" style="width:18px;height:18px"></i></a>
+                    <a href="#" title="Twitter"><i data-lucide="twitter" style="width:18px;height:18px"></i></a>
+                    <a href="#" title="Discord"><i data-lucide="message-circle" style="width:18px;height:18px"></i></a>
+                    <a href="#" title="YouTube"><i data-lucide="youtube" style="width:18px;height:18px"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // FAQ Toggle
+        function toggleFaq(element) {
+            const item = element.parentElement;
+            const wasActive = item.classList.contains('active');
+
+            // Close all
+            document.querySelectorAll('.faq-item').forEach(faq => {
+                faq.classList.remove('active');
+            });
+
+            // Open clicked if it wasn't active
+            if (!wasActive) {
+                item.classList.add('active');
+            }
+        }
+
+        // Scroll Reveal Animation
+        function reveal() {
+            const reveals = document.querySelectorAll('.reveal');
+
+            reveals.forEach(element => {
+                const windowHeight = window.innerHeight;
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+
+                if (elementTop < windowHeight - elementVisible) {
+                    element.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', reveal);
+
+        // Initial reveal check
+        reveal();
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Navbar background on scroll
+        window.addEventListener('scroll', function () {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(26, 10, 10, 0.98)';
+            } else {
+                navbar.style.background = 'rgba(26, 10, 10, 0.9)';
+            }
+        });
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

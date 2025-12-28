@@ -286,15 +286,29 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                             <div className="flex gap-2">
                                 <button
                                     onClick={async () => {
-                                        const { exportAll } = await import('../utils/exportAll');
-                                        await exportAll('html');
+                                        console.log('[Settings] HTML export button clicked');
+                                        try {
+                                            const mod = await import('../utils/exportAll');
+                                            console.log('[Settings] Module loaded:', mod);
+                                            await mod.exportAll('html');
+                                        } catch (error) {
+                                            console.error('[Settings] Export error:', error);
+                                            alert(`Export hatası: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+                                        }
                                     }}
                                     className="flex-1 px-3 py-2 rounded-md font-semibold bg-background border border-border-strong hover:bg-border text-text-primary transition-colors"
                                 >HTML</button>
                                 <button
                                     onClick={async () => {
-                                        const { exportAll } = await import('../utils/exportAll');
-                                        await exportAll('md');
+                                        console.log('[Settings] Markdown export button clicked');
+                                        try {
+                                            const mod = await import('../utils/exportAll');
+                                            console.log('[Settings] Module loaded:', mod);
+                                            await mod.exportAll('md');
+                                        } catch (error) {
+                                            console.error('[Settings] Export error:', error);
+                                            alert(`Export hatası: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+                                        }
                                     }}
                                     className="flex-1 px-3 py-2 rounded-md font-semibold bg-background border border-border-strong hover:bg-border text-text-primary transition-colors"
                                 >{t('common.markdown')}</button>
