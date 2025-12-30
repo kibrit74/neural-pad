@@ -24,3 +24,6 @@ dist-ssr
 *.sln
 *.sw?
 *.zip
+.env
+.env.production
+
