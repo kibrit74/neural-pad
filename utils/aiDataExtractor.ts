@@ -21,11 +21,14 @@ export const extractDataWithAI = async (
     text: string,
     settings: Settings
 ): Promise<CategoryizedData> => {
-    if (!settings.geminiApiKey) {
+    // Priority: Env Var > Settings (User input removed, but keeping fallback just in case)
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || settings.geminiApiKey;
+
+    if (!apiKey) {
         throw new Error("Gemini API Key is missing");
     }
 
-    const ai = new GoogleGenAI({ apiKey: settings.geminiApiKey });
+    const ai = new GoogleGenAI({ apiKey });
     const model = settings.model || 'gemini-2.0-flash'; // Default to flash for speed
 
     const schema = {
