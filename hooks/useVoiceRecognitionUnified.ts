@@ -22,13 +22,13 @@ export type VoiceRecognitionResult = {
  */
 export const useVoiceRecognitionUnified = (options: VoiceRecognitionOptions): VoiceRecognitionResult => {
   const { isElectron } = speechRecognitionManager.checkSupport();
-  
+
   // Use Electron IPC in Electron environment, Web Speech API in browser
   if (isElectron) {
-    console.log('[VoiceRecognitionUnified] Using Electron IPC voice recognition');
+    // console.log('[VoiceRecognitionUnified] Using Electron IPC voice recognition');
     return useElectronVoiceIPC(options);
   } else {
-    console.log('[VoiceRecognitionUnified] Using Web Speech API');
+    // console.log('[VoiceRecognitionUnified] Using Web Speech API');
     return useVoiceRecognition(options);
   }
 };

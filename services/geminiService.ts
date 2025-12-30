@@ -25,7 +25,7 @@ const ERROR_MESSAGES = {
 } as const;
 
 // Environment variable API keys (set by admin, not user)
-const ENV_API_KEYS = {
+export const ENV_API_KEYS = {
     gemini: import.meta.env.VITE_GEMINI_API_KEY || '',
     openai: import.meta.env.VITE_OPENAI_API_KEY || '',
     claude: import.meta.env.VITE_CLAUDE_API_KEY || ''

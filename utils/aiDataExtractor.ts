@@ -1,7 +1,7 @@
-
 import { GoogleGenAI, Type } from '@google/genai';
 import { Settings } from '../types';
 import { CategoryizedData, ExtractedData } from './dataExtractor';
+import { ENV_API_KEYS } from '../services/geminiService';
 
 // Helper to find position of value in text for DataHunter compatibility
 const findPosition = (fullText: string, value: string): number => {
@@ -21,11 +21,15 @@ export const extractDataWithAI = async (
     text: string,
     settings: Settings
 ): Promise<CategoryizedData> => {
-    // Priority: Env Var > Settings (User input removed, but keeping fallback just in case)
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || settings.geminiApiKey;
+    // Check environment key via centralized service config
+    const apiKey = ENV_API_KEYS.gemini || settings.geminiApiKey;
+
+    // Debug log to verify key availability (prints first 4 chars)
+    console.log('[AI Data Hunter] Using API Key:', apiKey ? `${apiKey.substring(0, 4)}...` : 'NONE');
 
     if (!apiKey) {
-        throw new Error("Gemini API Key is missing");
+        console.error("Gemini API key not found. Checked ENV_API_KEYS.gemini and settings.");
+        throw new Error("Gemini API Key is missing. Please check VITE_GEMINI_API_KEY in your environment variables.");
     }
 
     const ai = new GoogleGenAI({ apiKey });
