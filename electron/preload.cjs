@@ -33,6 +33,13 @@ const electronAPI = {
   showNotification: (options) => ipcRenderer.send('app:show-notification', options),
   showItemInFolder: (filePath) => ipcRenderer.send('app:show-item-in-folder', filePath),
   openExternal: (url) => ipcRenderer.invoke('app:open-external', url),
+  sync: {
+    start: () => ipcRenderer.invoke('sync:start'),
+    stop: () => ipcRenderer.invoke('sync:stop'),
+    status: () => ipcRenderer.invoke('sync:status'),
+    qr: () => ipcRenderer.invoke('sync:qr'),
+    ip: () => ipcRenderer.invoke('sync:ip'),
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronAPI);

@@ -101,10 +101,41 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
 
     useEffect(() => {
         if (editor && content !== undefined && content !== null) {
+            console.log('[Editor] useEffect - Content received:', {
+                length: content.length,
+                hasImage: content.includes('<img'),
+                preview: content.substring(0, 200)
+            });
+
             const currentContent = editor.getHTML();
+            console.log('[Editor] Current editor content:', {
+                length: currentContent.length,
+                hasImage: currentContent.includes('<img')
+            });
+
             const normalizeContent = (html: string) => html.replace(/\s+/g, ' ').trim();
-            if (normalizeContent(content) !== normalizeContent(currentContent)) {
+            const normalizedNew = normalizeContent(content);
+            const normalizedCurrent = normalizeContent(currentContent);
+
+            console.log('[Editor] Normalized comparison:', {
+                newHasImage: normalizedNew.includes('<img'),
+                currentHasImage: normalizedCurrent.includes('<img'),
+                shouldUpdate: normalizedNew !== normalizedCurrent
+            });
+
+            if (normalizedNew !== normalizedCurrent) {
+                console.log('[Editor] Setting new content...');
                 editor.commands.setContent(content, false);
+
+                // Verify after set
+                setTimeout(() => {
+                    const afterSet = editor.getHTML();
+                    console.log('[Editor] After setContent:', {
+                        length: afterSet.length,
+                        hasImage: afterSet.includes('<img'),
+                        success: afterSet.includes('<img') === content.includes('<img')
+                    });
+                }, 100);
             }
         }
     }, [editor, content]);
@@ -117,15 +148,29 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
         input.onchange = (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-                // Replicate the logic from our CustomImage plugin's handlePaste/handleDrop
-                file.arrayBuffer().then(buffer => {
-                    (window as any).electron.files.saveImage(new Uint8Array(buffer))
-                        .then((url: string | null) => {
-                            if (url && editor) {
-                                editor.chain().focus().insertContent({ type: 'image', attrs: { src: url } }).run();
-                            }
-                        });
-                });
+                const isElectron = !!(window as any).electron?.files?.saveImage;
+
+                if (isElectron) {
+                    // Electron: Save to local file system
+                    file.arrayBuffer().then(buffer => {
+                        (window as any).electron.files.saveImage(new Uint8Array(buffer))
+                            .then((url: string | null) => {
+                                if (url && editor) {
+                                    editor.chain().focus().insertContent({ type: 'image', attrs: { src: url } }).run();
+                                }
+                            });
+                    });
+                } else {
+                    // Web: Use base64 data URL
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const dataUrl = e.target?.result as string;
+                        if (dataUrl && editor) {
+                            editor.chain().focus().insertContent({ type: 'image', attrs: { src: dataUrl } }).run();
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
             }
         };
         input.click();

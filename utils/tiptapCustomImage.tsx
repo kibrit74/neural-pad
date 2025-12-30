@@ -20,11 +20,11 @@ const ImageWithAiButton: React.FC<NodeViewProps> = ({ node, extension }) => {
 
     return (
         <NodeViewWrapper as="span" className="relative inline-block my-2">
-            <img 
-                src={src} 
-                alt={alt} 
-                title={title} 
-                className="gemini-writer-image rounded-md max-w-full h-auto" 
+            <img
+                src={src}
+                alt={alt}
+                title={title}
+                className="gemini-writer-image rounded-md max-w-full h-auto"
             />
             <button
                 ref={buttonRef}
@@ -43,7 +43,10 @@ export const CustomImage = Image.extend({
     addOptions() {
         return {
             ...this.parent?.(),
-            onAiMenuClick: () => {},
+            inline: true, // Allow inline images
+            allowBase64: true, // CRITICAL: Allow base64 data URLs
+            HTMLAttributes: {},
+            onAiMenuClick: () => { },
         };
     },
     addNodeView() {
@@ -66,22 +69,51 @@ export const CustomImage = Image.extend({
                         event.preventDefault();
                         console.log('[CustomImage] Pasted image file detected:', file.name);
                         file.arrayBuffer().then(buffer => {
-                            console.log(`[CustomImage] Image converted to buffer, size: ${buffer.byteLength}. Sending to main process...`);
-                            (window as any).electron.files.saveImage(new Uint8Array(buffer))
-                                .then((url: string | null) => {
-                                    if (url) {
-                                        console.log(`[CustomImage] Received image URL: ${url}. Inserting into editor.`);
-                                        const { schema } = view.state;
-                                        const node = schema.nodes.image.create({ src: url });
-                                        const transaction = view.state.tr.replaceSelectionWith(node);
-                                        view.dispatch(transaction);
-                                    } else {
-                                        console.error('[CustomImage] Main process failed to return a valid image URL.');
-                                    }
-                                })
-                                .catch((error: any) => {
-                                    console.error('[CustomImage] Error saving image via IPC:', error);
+                            if ((window as any).electron) {
+                                console.log(`[CustomImage] Image converted to buffer, size: ${buffer.byteLength}. Sending to main process...`);
+                                (window as any).electron.files.saveImage(new Uint8Array(buffer))
+                                    .then((url: string | null) => {
+                                        if (url) {
+                                            console.log(`[CustomImage] Received image URL: ${url}. Inserting into editor.`);
+                                            const { schema } = view.state;
+                                            const node = schema.nodes.image.create({ src: url });
+                                            const transaction = view.state.tr.replaceSelectionWith(node);
+                                            view.dispatch(transaction);
+                                        } else {
+                                            console.error('[CustomImage] Main process failed to return a valid image URL.');
+                                        }
+                                    })
+                                    .catch((error: any) => {
+                                        console.error('[CustomImage] Error saving image via IPC:', error);
+                                    });
+                            } else {
+                                // Web: Use base64 data URL with compression
+                                import('./imageCompress').then(({ compressImage }) => {
+                                    compressImage(file)
+                                        .then((dataUrl) => {
+                                            console.log(`[CustomImage] Image compressed and converted to base64, inserting into editor.`);
+                                            const { schema } = view.state;
+                                            const node = schema.nodes.image.create({ src: dataUrl });
+                                            const transaction = view.state.tr.replaceSelectionWith(node);
+                                            view.dispatch(transaction);
+                                        })
+                                        .catch((error) => {
+                                            console.error('[CustomImage] Compression error:', error);
+                                            // Fallback to uncompressed
+                                            const reader = new FileReader();
+                                            reader.onload = (e) => {
+                                                const dataUrl = e.target?.result as string;
+                                                if (dataUrl) {
+                                                    const { schema } = view.state;
+                                                    const node = schema.nodes.image.create({ src: dataUrl });
+                                                    const transaction = view.state.tr.replaceSelectionWith(node);
+                                                    view.dispatch(transaction);
+                                                }
+                                            };
+                                            reader.readAsDataURL(file);
+                                        });
                                 });
+                            }
                         });
                         return true;
                     },

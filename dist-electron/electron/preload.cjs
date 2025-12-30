@@ -34,5 +34,12 @@ const electronAPI = {
     showNotification: (options) => electron_1.ipcRenderer.send('app:show-notification', options),
     showItemInFolder: (filePath) => electron_1.ipcRenderer.send('app:show-item-in-folder', filePath),
     openExternal: (url) => electron_1.ipcRenderer.invoke('app:open-external', url),
+    sync: {
+        start: () => electron_1.ipcRenderer.invoke('sync:start'),
+        stop: () => electron_1.ipcRenderer.invoke('sync:stop'),
+        status: () => electron_1.ipcRenderer.invoke('sync:status'),
+        qr: () => electron_1.ipcRenderer.invoke('sync:qr'),
+        ip: () => electron_1.ipcRenderer.invoke('sync:ip'),
+    },
 };
 electron_1.contextBridge.exposeInMainWorld('electron', electronAPI);

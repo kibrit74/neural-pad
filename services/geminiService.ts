@@ -24,6 +24,13 @@ const ERROR_MESSAGES = {
     UNKNOWN_ERROR: 'An unknown error occurred.'
 } as const;
 
+// Environment variable API keys (set by admin, not user)
+const ENV_API_KEYS = {
+    gemini: import.meta.env.VITE_GEMINI_API_KEY || '',
+    openai: import.meta.env.VITE_OPENAI_API_KEY || '',
+    claude: import.meta.env.VITE_CLAUDE_API_KEY || ''
+} as const;
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -113,13 +120,21 @@ const getWebSources = (response: GenerateContentResponse): WebSource[] => {
 };
 
 /**
- * Validates API key format
+ * Validates API key format - uses environment variable first, then settings fallback
  */
-const validateApiKey = (key: string | undefined, provider: string): string => {
-    if (!key || key.trim().length === 0) {
-        throw new Error(`API_KEY_INVALID`);
+const validateApiKey = (settingsKey: string | undefined, provider: string): string => {
+    // First try environment variable
+    const envKey = ENV_API_KEYS[provider.toLowerCase() as keyof typeof ENV_API_KEYS];
+    if (envKey && envKey.trim().length > 0) {
+        return envKey.trim();
     }
-    return key.trim();
+
+    // Fallback to settings (for backward compatibility)
+    if (settingsKey && settingsKey.trim().length > 0) {
+        return settingsKey.trim();
+    }
+
+    throw new Error(`API_KEY_INVALID`);
 };
 
 /**

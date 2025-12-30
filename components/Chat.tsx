@@ -7,7 +7,7 @@ import type { EditorContext } from '../services/geminiService';
 import { SendIcon, BotIcon, UserIcon, CloseIcon, SparkleIcon, SearchIcon, MicIcon } from './icons/Icons';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useWhisperVoice } from '../hooks/useWhisperVoice';
+import { useVoiceRecognitionUnified } from '../hooks/useVoiceRecognitionUnified';
 import VoiceInputModal from './VoiceInputModal';
 
 interface ChatProps {
@@ -536,11 +536,15 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
         }
     }, [isLoading, addNotification, t, useWebSearch, settings, activeSessionId, sessions, getEditorContext, activeSession.messages, language]);
 
-    // Voice recognition hook - using Gemini/Whisper like notepad
-    const { isRecording, isProcessing, start, stop, hasSupport } = useWhisperVoice({
+    // Voice recognition hook - using Web Speech API for web, Electron IPC for electron
+    const { isRecording, isInitializing, start, stop, hasSupport } = useVoiceRecognitionUnified({
         onResult: (transcript, isFinal) => {
             if (isFinal && transcript.trim()) {
+                // Append new final transcript (hook now sends only new parts)
                 setFinalTranscript(prev => (prev ? prev + ' ' : '') + transcript);
+                setInterimTranscript(''); // Clear interim when final arrives
+            } else if (!isFinal) {
+                setInterimTranscript(transcript);
             }
         },
         onError: (error) => {
@@ -553,29 +557,11 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
                 'error'
             );
         },
-        settings: settings,
-        useGemini: !!(settings?.geminiApiKey) // Use Gemini if available
+        lang: language as 'tr' | 'en'
     });
 
-    const isInitializing = isProcessing;
-
-    const handleOpenVoiceModal = async () => {
-        // Start Whisper if needed (only if Gemini not available)
-        const isElectron = !!(window as any).electron;
-        const hasGeminiKey = !!(settings?.geminiApiKey);
-
-        if (!hasGeminiKey && isElectron && (window as any).electron?.whisper) {
-            try {
-                const modelSize = localStorage.getItem('whisper-model-size') || 'tiny';
-                console.log('[Chat Voice] Starting Whisper service, model:', modelSize);
-                await (window as any).electron.whisper.start(modelSize);
-            } catch (error) {
-                console.error('[Chat Voice] Failed to start Whisper:', error);
-            }
-        } else if (hasGeminiKey) {
-            console.log('[Chat Voice] Using Gemini 2.0 Flash for transcription');
-        }
-
+    const handleOpenVoiceModal = () => {
+        console.log('[Chat Voice] Using Web Speech API for transcription');
         setShowVoiceModal(true);
         setFinalTranscript('');
         setInterimTranscript('');
@@ -797,7 +783,7 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
     };
 
     return (
-        <div className="flex flex-col h-full bg-background/80 backdrop-blur-2xl border-l border-border/20 text-text-primary">
+        <div className="flex flex-col h-full w-96 max-w-md flex-shrink-0 bg-background/80 backdrop-blur-2xl border-l border-border/20 text-text-primary">
             <header className="p-4 border-b border-border/10 flex items-center justify-between flex-shrink-0 bg-white/5 backdrop-blur-sm">
                 <div className="flex items-center gap-2">
                     <SparkleIcon className="text-primary" />

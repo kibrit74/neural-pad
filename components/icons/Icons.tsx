@@ -251,6 +251,12 @@ export const UnlockIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </SVGIcon>
 );
 
+export const SyncIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <SVGIcon {...props}>
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38"></path>
+    </SVGIcon>
+);
+
 export const HistoryIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <SVGIcon {...props}>
         <circle cx="12" cy="12" r="10"></circle>

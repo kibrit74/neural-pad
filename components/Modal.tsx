@@ -9,9 +9,10 @@ interface ModalProps {
     children: React.ReactNode;
     footer?: React.ReactNode;
     size?: 'md' | 'lg' | 'xl';
+    zIndex?: number;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, size = 'lg' }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, size = 'lg', zIndex = 50 }) => {
     const { t } = useTranslations();
     const [isRendered, setIsRendered] = useState(isOpen);
     const modalContentRef = useRef<HTMLDivElement>(null);
@@ -54,7 +55,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
 
     return (
         <div
-            className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isOpen ? 'modal-enter' : 'modal-exit'}`}
+            className={`fixed inset-0 flex items-center justify-center p-4 ${isOpen ? 'modal-enter' : 'modal-exit'}`}
+            style={{ zIndex }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"

@@ -13,9 +13,11 @@ import {
 interface LandingPageProps {
     isOpen: boolean;
     onClose: () => void;
+    onAuthClick?: () => void;
+    currentUser?: any; // Current authenticated user
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose, onAuthClick, currentUser }) => {
     const { t } = useTranslations();
     const { language, setLanguage } = useLanguage();
     const [isElectron, setIsElectron] = useState(false);
@@ -40,6 +42,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                 : 'Write, edit and organize your notes with AI-powered tools. Increase your productivity by 50%.',
             cta: language === 'tr' ? 'Hemen Başla' : 'Get Started',
             watchDemo: language === 'tr' ? 'Demo İzle' : 'Watch Demo',
+            downloadNow: language === 'tr' ? 'Şimdi İndir' : 'Download Now',
             stats: {
                 users: language === 'tr' ? 'Aktif Kullanıcı' : 'Active Users',
                 rating: language === 'tr' ? 'Kullanıcı Puanı' : 'User Rating',
@@ -182,6 +185,34 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className="flex gap-2">
+                        {!isElectron && (
+                            currentUser ? (
+                                <button
+                                    onClick={() => {
+                                        console.log('[WelcomeModal] Editörüm clicked - navigating to editor');
+                                        onClose();
+                                    }}
+                                    className="px-4 py-2 rounded-lg text-white font-semibold hover:opacity-80 transition-all mr-2 flex items-center gap-2"
+                                    style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    {language === 'tr' ? 'Editörüm' : 'My Editor'}
+                                </button>
+                            ) : onAuthClick && (
+                                <button
+                                    onClick={() => {
+                                        console.log('[WelcomeModal] Giriş Yap clicked');
+                                        onAuthClick();
+                                    }}
+                                    className="px-4 py-2 rounded-lg text-white font-semibold hover:opacity-80 transition-all mr-2"
+                                    style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}
+                                >
+                                    {language === 'tr' ? 'Giriş Yap' : 'Login'}
+                                </button>
+                            )
+                        )}
                         {['en', 'tr'].map((lang) => (
                             <button
                                 key={lang}
@@ -220,20 +251,32 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose }) => {
 
                         <p className="text-xl text-gray-400 mb-8 leading-relaxed">{texts.hero.subtitle}</p>
 
-                        <div className="flex flex-wrap gap-4 mb-10">
-                            {isElectron && (
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            {isElectron ? (
                                 <button
                                     onClick={onClose}
-                                    className="px-8 py-4 rounded-xl text-white font-bold text-lg flex items-center gap-2 transition-all hover:scale-105 shadow-2xl shadow-red-500/30"
-                                    style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}
+                                    className="px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white font-semibold rounded-xl hover:from-red-700 hover:to-orange-700 transform hover:scale-105 transition-all shadow-lg shadow-red-500/50"
                                 >
-                                    <DownloadIcon className="w-5 h-5" />
-                                    {texts.hero.cta}
+                                    {language === 'tr' ? 'Uygulamayı Başlat' : 'Start App'}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={onClose}
+                                    className="px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white font-semibold rounded-xl hover:from-red-700 hover:to-orange-700 transform hover:scale-105 transition-all shadow-lg shadow-red-500/50"
+                                >
+                                    {language === 'tr' ? '🚀 Ücretsiz Dene' : '🚀 Try Free'}
                                 </button>
                             )}
                             <button
-                                onClick={() => scrollToSection('showcase')}
-                                className="px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-2 border border-white/20 text-white bg-white/5 hover:bg-red-500/10 hover:border-red-500/30 transition-all"
+                                onClick={() => window.open('https://github.com/neural-pad/releases', '_blank')}
+                                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl hover:bg-white/20 border border-white/20 transition-all"
+                            >
+                                <DownloadIcon className="inline-block w-5 h-5 mr-2 -mt-1" />
+                                {texts.hero.downloadNow}
+                            </button>
+                            <button
+                                onClick={() => window.open('https://www.youtube.com/watch?v=demo', '_blank')}
+                                className="px-8 py-4 bg-transparent border-2 border-red-500 text-white font-semibold rounded-xl hover:bg-red-500/20 transition-all flex items-center justify-center gap-2"
                             >
                                 <PlayIcon className="w-5 h-5" />
                                 {texts.hero.watchDemo}

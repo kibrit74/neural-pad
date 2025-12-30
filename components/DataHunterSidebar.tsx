@@ -227,9 +227,30 @@ const DataHunterSidebar: React.FC<DataHunterSidebarProps> = ({
                             </>
                         )}
                     </button>
+
+                    {/* Model Info Highlight */}
+                    <div className="mt-3 bg-background-secondary rounded-lg p-2 border border-border/50">
+                        <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-text-secondary">Seçili Model:</span>
+                            <span className="font-semibold text-primary capitalize">{settings.apiProvider}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className={`w-2 h-2 rounded-full ${aiData ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                            <span className="text-xs font-medium text-text-primary truncate" title={settings.model}>
+                                {settings.model}
+                            </span>
+                        </div>
+                        <p className="text-[10px] text-text-secondary mt-1.5 pt-1.5 border-t border-border/50 leading-tight">
+                            💡 Ayarlardan {settings.apiProvider === 'gemini' ? 'GPT-4 veya Claude 3' : 'diğer modelleri'} de seçebilirsiniz.
+                        </p>
+                    </div>
+
                     {aiData && (
-                        <p className="text-xs text-center text-purple-600 mt-1">
-                            Gemini AI tarafından analiz edildi
+                        <p className="text-[10px] text-center text-purple-600 mt-2 flex items-center justify-center gap-1">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            {settings.apiProvider.toUpperCase()} ile analiz edildi
                         </p>
                     )}
                 </div>

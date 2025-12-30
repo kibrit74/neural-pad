@@ -24,18 +24,18 @@ const decodeHtmlEntities = (text: string): string => {
  */
 export const htmlToPlainText = (html: string): string => {
     if (!html || html.trim() === '') return '';
-    
+
     try {
         // Create a temporary container
         const container = document.createElement('div');
-        
+
         // First decode HTML entities, then set innerHTML
         container.innerHTML = decodeHtmlEntities(html);
-        
+
         // Remove script and style elements completely
         const scripts = container.querySelectorAll('script, style');
         scripts.forEach(el => el.remove());
-        
+
         // Replace block-level elements with newlines before getting text
         // This preserves paragraph structure
         container.querySelectorAll('p, div, h1, h2, h3, h4, h5, h6, li, blockquote, pre, hr').forEach(el => {
@@ -43,18 +43,18 @@ export const htmlToPlainText = (html: string): string => {
             const br = document.createTextNode('\n');
             el.parentNode?.insertBefore(br, el);
         });
-        
+
         // Replace <br> tags with newlines
         container.querySelectorAll('br').forEach(br => {
             br.replaceWith('\n');
         });
-        
+
         // Replace images with placeholder text
         container.querySelectorAll('img').forEach(img => {
             const alt = img.getAttribute('alt') || 'Image';
             img.replaceWith(`[${alt}]`);
         });
-        
+
         // Replace links with their text and URL
         container.querySelectorAll('a').forEach(link => {
             const text = link.textContent || '';
@@ -67,7 +67,7 @@ export const htmlToPlainText = (html: string): string => {
                 link.replaceWith('');
             }
         });
-        
+
         // Replace tables with formatted text
         container.querySelectorAll('table').forEach(table => {
             const rows: string[] = [];
@@ -86,15 +86,15 @@ export const htmlToPlainText = (html: string): string => {
                 table.replaceWith('');
             }
         });
-        
+
         // Get text content (this automatically handles all HTML entities)
         let text = container.textContent || container.innerText || '';
-        
+
         // If textContent is empty, try innerText
         if (!text.trim()) {
             text = container.innerText || '';
         }
-        
+
         // Clean up whitespace
         // Replace multiple spaces with single space
         text = text.replace(/[ \t]+/g, ' ');
@@ -103,13 +103,13 @@ export const htmlToPlainText = (html: string): string => {
         // Remove spaces before/after newlines
         text = text.replace(/[ \t]+\n/g, '\n');
         text = text.replace(/\n[ \t]+/g, '\n');
-        
+
         // Final decode of HTML entities (in case some were missed)
         text = decodeHtmlEntities(text);
-        
+
         // Trim whitespace
         text = text.trim();
-        
+
         return text;
     } catch (error) {
         console.error('Error converting HTML to plain text:', error);
@@ -137,13 +137,13 @@ export const htmlToMarkdown = (html: string): string => {
         codeBlockStyle: 'fenced',
         bulletListMarker: '-'
     });
-    
+
     // Add custom rules for better conversion
     turndownService.addRule('strikethrough', {
         filter: ['del', 's', 'strike'] as any,
         replacement: (content) => `~~${content}~~`
     });
-    
+
     return turndownService.turndown(html);
 };
 
@@ -153,7 +153,7 @@ export const htmlToMarkdown = (html: string): string => {
 export const exportAsTxt = (note: Note): void => {
     const text = htmlToPlainText(note.content || '');
     const safeTitle = (note.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
-    
+
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     downloadBlob(blob, `${safeTitle}.txt`);
 };
@@ -163,7 +163,7 @@ export const exportAsTxt = (note: Note): void => {
  */
 export const exportAsHtml = (note: Note): void => {
     const safeTitle = (note.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
-    
+
     // Create a complete HTML document
     const htmlDocument = `<!DOCTYPE html>
 <html lang="en">
@@ -240,7 +240,7 @@ export const exportAsHtml = (note: Note): void => {
     </div>
 </body>
 </html>`;
-    
+
     const blob = new Blob([htmlDocument], { type: 'text/html;charset=utf-8' });
     downloadBlob(blob, `${safeTitle}.html`);
 };
@@ -250,19 +250,19 @@ export const exportAsHtml = (note: Note): void => {
  */
 export const exportAsMarkdown = (note: Note): void => {
     const safeTitle = (note.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
-    
+
     // Convert HTML to Markdown
     const markdown = htmlToMarkdown(note.content || '');
-    
+
     // Add metadata header
     const header = `# ${note.title || 'Untitled Note'}\n\n`;
     const metadata = `> Created: ${new Date(note.createdAt).toLocaleString()}\n` +
-                    `> Updated: ${new Date(note.updatedAt).toLocaleString()}\n` +
-                    (note.tags && note.tags.length > 0 ? `> Tags: ${note.tags.join(', ')}\n` : '') +
-                    '\n---\n\n';
-    
+        `> Updated: ${new Date(note.updatedAt).toLocaleString()}\n` +
+        (note.tags && note.tags.length > 0 ? `> Tags: ${note.tags.join(', ')}\n` : '') +
+        '\n---\n\n';
+
     const fullMarkdown = header + metadata + markdown;
-    
+
     const blob = new Blob([fullMarkdown], { type: 'text/markdown;charset=utf-8' });
     downloadBlob(blob, `${safeTitle}.md`);
 };
@@ -410,9 +410,9 @@ export const exportAsPdf = async (note: Note): Promise<void> => {
         // Add image to PDF
         const imgData = canvas.toDataURL('image/png');
         console.log('[PDF Export] Image data length:', imgData.length);
-        
+
         const pageHeight = pdf.internal.pageSize.getHeight();
-        
+
         // If content fits on one page
         if (pdfHeight <= pageHeight) {
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
@@ -420,12 +420,12 @@ export const exportAsPdf = async (note: Note): Promise<void> => {
             // Split into multiple pages
             let heightLeft = pdfHeight;
             let position = 0;
-            
+
             while (heightLeft > 0) {
                 pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
                 heightLeft -= pageHeight;
                 position -= pageHeight;
-                
+
                 if (heightLeft > 0) {
                     pdf.addPage();
                 }
@@ -450,7 +450,7 @@ export const exportAsPdf = async (note: Note): Promise<void> => {
  */
 export const exportAsJson = (note: Note): void => {
     const safeTitle = (note.title || 'note').replace(/[^a-z0-9-_]+/gi, '_');
-    
+
     const data = {
         title: note.title,
         content: note.content,
@@ -460,7 +460,7 @@ export const exportAsJson = (note: Note): void => {
         exportedAt: new Date().toISOString(),
         version: '1.0.0'
     };
-    
+
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
     downloadBlob(blob, `${safeTitle}.json`);
@@ -500,40 +500,40 @@ export const getFormatInfo = (format: ExportFormat) => {
             name: 'Plain Text',
             extension: '.txt',
             description: 'Simple text file without formatting',
-            icon: '📝'
+            iconType: 'txt' as const
         },
         html: {
             name: 'HTML Document',
             extension: '.html',
             description: 'Web page with full formatting and styles',
-            icon: '🌐'
+            iconType: 'html' as const
         },
         md: {
             name: 'Markdown',
             extension: '.md',
             description: 'Markdown format for GitHub, VSCode, etc.',
-            icon: '📄'
+            iconType: 'md' as const
         },
         pdf: {
             name: 'PDF Document',
             extension: '.pdf',
             description: 'Portable Document Format',
-            icon: '📕'
+            iconType: 'pdf' as const
         },
         json: {
             name: 'JSON Data',
             extension: '.json',
             description: 'Structured data format (can be re-imported)',
-            icon: '📦'
+            iconType: 'json' as const
         },
         docx: {
             name: 'Word Document',
             extension: '.docx',
             description: 'Microsoft Word format (coming soon)',
-            icon: '📘'
+            iconType: 'docx' as const
         }
     };
-    
+
     return formatInfo[format];
 };
 

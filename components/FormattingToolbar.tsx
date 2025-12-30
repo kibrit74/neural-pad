@@ -85,8 +85,8 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
         return null;
     }
 
-    // Check if Gemini is available
-    const hasGeminiKey = !!(settings?.geminiApiKey);
+    // Check for environment API key instead of user settings
+    const hasEnvGeminiKey = !!(import.meta.env.VITE_GEMINI_API_KEY);
     const isElectron = !!(window as any).electron;
 
     const debouncedSave = useCallback(async () => {
@@ -143,8 +143,8 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
             return;
         }
 
-        // No command detected: insert the text normally
-        editor.chain().focus().insertContent(finalText).run();
+        // No command detected: append to transcript state (hook sends only new parts)
+        // Text will be inserted when user clicks submit in modal
         setFinalTranscript(prev => (prev ? prev + ' ' : '') + finalText);
         setInterimTranscript('');
     }, [editor, debouncedSave, language]);
@@ -166,7 +166,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
             }
         },
         settings: settings,
-        useGemini: hasGeminiKey // Use Gemini 2.0 Flash if API key available
+        useGemini: hasEnvGeminiKey // Use Gemini 2.0 Flash if API key available
     });
 
     const webSpeechVoice = useVoiceRecognitionUnified({
@@ -208,16 +208,16 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
         },
     });
 
-    // Select voice recognition based on environment and API availability
-    // Priority: Whisper (Electron) > Gemini (if key available) > Web Speech API
-    // Whisper is more reliable for audio transcription
-    const voiceService = (isElectron || hasGeminiKey) ? whisperVoice : webSpeechVoice;
+    // Select voice recognition based on environment
+    // Web: Always use Web Speech API for better compatibility
+    // Electron: Use Whisper if available, otherwise Web Speech API
+    const voiceService = isElectron ? whisperVoice : webSpeechVoice;
     const { isRecording, start, stop, hasSupport } = voiceService;
-    const isInitializing = (isElectron || hasGeminiKey) ? (whisperVoice as any).isProcessing : (webSpeechVoice as any).isInitializing;
+    const isInitializing = isElectron ? (whisperVoice as any).isProcessing : (webSpeechVoice as any).isInitializing;
 
     const handleOpenModal = async () => {
-        // Only start Whisper if Gemini is not available
-        if (!hasGeminiKey && isElectron && (window as any).electron?.whisper) {
+        // Only start Whisper if in Electron and Gemini is not available
+        if (!hasEnvGeminiKey && isElectron && (window as any).electron?.whisper) {
             try {
                 const modelSize = localStorage.getItem('whisper-model-size') || 'tiny';
                 console.log('[Voice] Starting Whisper service (Gemini not available), model:', modelSize);
@@ -233,8 +233,10 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                     );
                 }
             }
-        } else if (hasGeminiKey) {
+        } else if (hasEnvGeminiKey) {
             console.log('[Voice] Using Gemini 2.0 Flash for transcription');
+        } else {
+            console.log('[Voice] Using Web Speech API for transcription');
         }
 
         setShowModal(true);

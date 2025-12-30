@@ -234,6 +234,49 @@ function setupAppIPC() {
         return { success: false, error: 'Invalid URL' };
     });
 }
+function setupSyncIPC() {
+    const syncServer = require('./syncServer.cjs');
+    // Start sync server
+    ipcMain.handle('sync:start', async () => {
+        try {
+            const result = await syncServer.startSyncServer(db);
+            console.log('[SyncIPC] Server started:', result);
+            return { success: true, ...result };
+        }
+        catch (error) {
+            console.error('[SyncIPC] Failed to start server:', error);
+            return { success: false, error: error.message };
+        }
+    });
+    // Stop sync server
+    ipcMain.handle('sync:stop', () => {
+        syncServer.stopSyncServer();
+        return { success: true };
+    });
+    // Get server status
+    ipcMain.handle('sync:status', () => {
+        return syncServer.getSyncServerStatus();
+    });
+    // Generate QR code
+    ipcMain.handle('sync:qr', async () => {
+        try {
+            const status = syncServer.getSyncServerStatus();
+            if (!status.running) {
+                return { success: false, error: 'Server not running' };
+            }
+            const qr = await syncServer.generateQRCode(status.ip, status.port);
+            return { success: true, ...qr };
+        }
+        catch (error) {
+            console.error('[SyncIPC] Failed to generate QR:', error);
+            return { success: false, error: error.message };
+        }
+    });
+    // Get local IP
+    ipcMain.handle('sync:ip', () => {
+        return { ip: syncServer.getLocalIP() };
+    });
+}
 function setupSpeechIPC() {
     const whisperService = require('./whisperService.cjs');
     // Start Whisper service
@@ -446,21 +489,7 @@ app.whenReady().then(() => {
     setupSettingsIPC();
     setupSpeechIPC();
     setupAppIPC();
-    // Grant clipboard permissions for copy functionality
-    session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
-        if (permission === 'clipboard-sanitized-write' || permission === 'clipboard-read') {
-            return true;
-        }
-        return false;
-    });
-    session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-        if (permission === 'clipboard-sanitized-write' || permission === 'clipboard-read') {
-            callback(true);
-        }
-        else {
-            callback(false);
-        }
-    });
+    setupSyncIPC();
     if (process.platform === 'win32') {
         app.setAppUserModelId('com.neural-pad.app');
     }

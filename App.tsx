@@ -24,6 +24,11 @@ import ReminderAlertModal from './components/ReminderAlertModal';
 import DataHunterSidebar from './components/DataHunterSidebar';
 import CustomPatternManager from './components/CustomPatternManager';
 import QuickActionsBar from './components/QuickActionsBar';
+import SyncModal from './components/SyncModal';
+import AuthModal from './components/AuthModal';
+import ProfileModal from './components/ProfileModal';
+import ProfileDashboard from './components/ProfileDashboard';
+import { authService, type AuthUser } from './services/authService';
 // TagInput is small, keep it eager
 
 import type { Settings, NotificationType, Note } from './types';
@@ -31,6 +36,7 @@ import { useTranslations } from './hooks/useTranslations';
 import * as db from './services/database';
 import { CloseIcon } from './components/icons/Icons';
 import { encryptString, decryptString } from './utils/crypto';
+import { debounce } from './utils/debounce';
 
 const DEFAULT_SETTINGS: Settings = {
     model: 'gemini-2.5-flash',
@@ -78,6 +84,11 @@ const App: React.FC = () => {
     const [isSaveAsModalOpen, setSaveAsModalOpen] = useState(false);
     const [isDataHunterOpen, setDataHunterOpen] = useState(false);
     const [isPatternManagerOpen, setPatternManagerOpen] = useState(false);
+    const [isSyncModalOpen, setSyncModalOpen] = useState(false);
+    const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+    const [isProfileModalOpen, setProfileModalOpen] = useState(false);
+    const [isProfileDashboardOpen, setProfileDashboardOpen] = useState(false);
+    const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
     // Password / lock state
     const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
@@ -92,6 +103,7 @@ const App: React.FC = () => {
     const [reminderAlert, setReminderAlert] = useState<{ noteId: number; noteTitle: string } | null>(null);
     const triggeredRemindersRef = useRef<Set<number>>(new Set()); // Track already triggered reminders
     const [reminderSelectionText, setReminderSelectionText] = useState('');
+    const userNavigatedToLandingRef = useRef(false); // Track if user intentionally navigated to landing
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -338,10 +350,10 @@ const App: React.FC = () => {
                 console.log('Running in Electron - skipping welcome screen');
                 setShowWelcome(false);
             } else {
-                // Web versiyonunda HER ZAMAN welcome göster (uygulama kullanılamaz)
-                console.log('Running in Web - showing welcome screen only');
+                // Web versiyonunda welcome göster ama uygulamayı da yükle
+                console.log('Running in Web - showing welcome screen, initializing app');
                 setShowWelcome(true);
-                return; // Web'de devam etme, sadece welcome göster
+                // Remove early return - web app needs to initialize too!
             }
 
             const saved = localStorage.getItem('gemini-writer-settings');
@@ -371,17 +383,43 @@ const App: React.FC = () => {
         loadInitialData();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Auth state listener (Web only)
+    useEffect(() => {
+        // Only run auth in web mode (not Electron)
+        const isElectron = (window as any)?.electron?.isElectron === true;
+        if (isElectron) return;
+
+        const unsubscribe = authService.onAuthStateChange((user) => {
+            setCurrentUser(user);
+
+            // If user logs out, show welcome/auth
+            if (!user && showWelcome === false) {
+                setShowWelcome(true);
+            }
+
+            // If user logs in and welcome is showing, hide it
+            // BUT only if user didn't intentionally navigate to landing page
+            if (user && showWelcome === true && !userNavigatedToLandingRef.current) {
+                setShowWelcome(false);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [showWelcome]);
+
     const handleEnterApp = () => {
         const isElectron = (window as any)?.electron?.isElectron === true;
 
-        // Web'de welcome kapatılamaz, sadece Electron'da kapatılabilir
-        if (!isElectron) {
-            console.log('Web mode: Welcome screen cannot be closed');
-            return;
-        }
+        // Reset the intentional navigation flag
+        userNavigatedToLandingRef.current = false;
 
+        // Allow both web and Electron users to enter the app
         setShowWelcome(false);
-        localStorage.setItem('hasSeenWelcomeScreen', 'true');
+
+        // Only save to localStorage in Electron (web uses session storage or auth state)
+        if (isElectron) {
+            localStorage.setItem('hasSeenWelcomeScreen', 'true');
+        }
     };
 
     const handleTitleChange = (newTitle: string) => {
@@ -404,6 +442,37 @@ const App: React.FC = () => {
             handleTagsChange(newTags);
         }
     };
+
+    // Auto-save debounced function
+    const autoSaveRef = useRef<ReturnType<typeof debounce> | null>(null);
+
+    useEffect(() => {
+        // Create debounced save function (1 second delay)
+        autoSaveRef.current = debounce(async (note: Note) => {
+            try {
+                console.log('[Auto-save] Saving note:', note.id, note.title);
+                await db.saveNote(note);
+                console.log('[Auto-save] Note saved successfully');
+            } catch (error) {
+                console.error('[Auto-save] Error:', error);
+                addNotification(t('notifications.saveError') || 'Kaydetme hatası', 'error');
+            }
+        }, 1000);
+
+        return () => {
+            // Cleanup on unmount
+            if (autoSaveRef.current) {
+                // Final save before unmount if needed
+            }
+        };
+    }, []);
+
+    // Trigger auto-save when activeNote changes
+    useEffect(() => {
+        if (activeNote && activeNote.id) {
+            autoSaveRef.current?.(activeNote);
+        }
+    }, [activeNote]);
 
     const handleDeleteNote = async (id: number) => {
         try {
@@ -475,8 +544,8 @@ const App: React.FC = () => {
 
         const anchor = document.createElement('div');
         anchor.style.position = 'fixed';
-        anchor.style.left = `${event.clientX}px`;
-        anchor.style.top = `${event.clientY}px`;
+        anchor.style.left = `${event.clientX} px`;
+        anchor.style.top = `${event.clientY} px`;
 
         setContextMenu({ anchorEl: anchor, type: menuType, data: menuData });
     };
@@ -493,6 +562,7 @@ const App: React.FC = () => {
     // UI Toggles
     const toggleNotesSidebar = () => setNotesSidebarOpen(!isNotesSidebarOpen);
     const toggleChatSidebar = () => setChatSidebarOpen(!isChatSidebarOpen);
+    const toggleDataHunter = () => setDataHunterOpen(!isDataHunterOpen);
 
     // Resize handler
     const handleChatResize = (deltaX: number) => {
@@ -554,7 +624,7 @@ const App: React.FC = () => {
         const htmlContent = content.replace(/\n/g, '<br>');
 
         // Insert at the end of the document
-        editorRef.current.chain().focus().insertContent(`<p>${htmlContent}</p>`).run();
+        editorRef.current.chain().focus().insertContent(`< p > ${htmlContent}</p > `).run();
     }, []);
 
     const allTags = useMemo(() => [...new Set(notes.flatMap(note => note.tags || []))].sort(), [notes]);
@@ -609,7 +679,34 @@ const App: React.FC = () => {
                     </div>
                 </div>
             }>
-                <WelcomeModal isOpen={showWelcome} onClose={handleEnterApp} />
+                <WelcomeModal
+                    isOpen={showWelcome}
+                    onClose={handleEnterApp}
+                    onAuthClick={() => {
+                        console.log('[App] onAuthClick called, opening AuthModal');
+                        setAuthModalOpen(true);
+                    }}
+                    currentUser={currentUser}
+                />
+
+                {/* Auth modals need to be here too, not just below */}
+                <AuthModal
+                    isOpen={isAuthModalOpen}
+                    onClose={() => setAuthModalOpen(false)}
+                    onSuccess={() => {
+                        // Auth successful, load user data
+                        setShowWelcome(false);
+                    }}
+                    addNotification={addNotification}
+                />
+
+                {isProfileModalOpen && currentUser && (
+                    <ProfileModal
+                        user={currentUser}
+                        onClose={() => setProfileModalOpen(false)}
+                        addNotification={addNotification}
+                    />
+                )}
             </Suspense>
         );
     }
@@ -733,16 +830,23 @@ const App: React.FC = () => {
                     onDownload={handleDownload}
                     onOpenLandingPage={() => {
                         localStorage.removeItem('hasSeenWelcome');
+                        userNavigatedToLandingRef.current = true; // Mark as intentional navigation
                         setShowWelcome(true);
                     }}
                     onShare={() => {
                         setShareContent(''); // Reset to use full note content
                         setShareModalOpen(true);
                     }}
+                    onSync={(window as any).electron ? () => setSyncModalOpen(true) : undefined}
                     onReminder={() => setReminderModalOpen(true)}
-                    onToggleDataHunter={() => setDataHunterOpen(!isDataHunterOpen)}
+                    onToggleDataHunter={toggleDataHunter}
                     isDataHunterOpen={isDataHunterOpen}
-                    isLocked={!!activeNote?.isLocked}
+                    isLocked={activeNote?.isLocked || false}
+                    onProfile={() => {
+                        console.log('Profile button clicked, setting dashboard open');
+                        setProfileDashboardOpen(true);
+                    }}
+                    currentUser={currentUser}
                     activeNote={activeNote}
                     searchQuery={searchQuery}
                     onSearchChange={handleSearchChange}
@@ -823,7 +927,7 @@ const App: React.FC = () => {
             {!isMobile && isChatSidebarOpen && (
                 <>
                     <ResizableHandle direction="horizontal" onResize={handleChatResize} />
-                    <aside style={{ width: `${chatWidth}px` }} className="flex-shrink-0 h-full">
+                    <aside style={{ width: `${chatWidth} px` }} className="flex-shrink-0 h-full">
                         <Suspense fallback={<div className="p-4 text-text-secondary">{t('common.loading')}</div>}>
                             <Chat
                                 settings={settings}
@@ -850,7 +954,7 @@ const App: React.FC = () => {
                             aria-hidden="true"
                         />
                     )}
-                    <div className={`fixed top-0 left-0 h-full z-40 transition-transform duration-300 ease-in-out w-[85vw] max-w-sm ${isNotesSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                    <div className={`fixed top - 0 left - 0 h - full z - 40 transition - transform duration - 300 ease -in -out w - [85vw] max - w - sm ${isNotesSidebarOpen ? 'translate-x-0' : '-translate-x-full'} `}>
                         <NotesSidebar
                             notes={filteredNotes}
                             activeNoteId={activeNote?.id || null}
@@ -870,7 +974,7 @@ const App: React.FC = () => {
                             onSelectTag={setSelectedTag}
                         />
                     </div>
-                    <div className={`fixed top-0 right-0 h-full z-40 transition-transform duration-300 ease-in-out w-[85vw] max-w-sm ${isChatSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className={`fixed top - 0 right - 0 h - full z - 40 transition - transform duration - 300 ease -in -out w - [85vw] max - w - sm ${isChatSidebarOpen ? 'translate-x-0' : 'translate-x-full'} `}>
                         <Suspense fallback={<div className="p-4 text-text-secondary">{t('common.loading')}</div>}>
                             <Chat
                                 settings={settings}
@@ -1068,6 +1172,44 @@ const App: React.FC = () => {
                     localStorage.setItem('gemini-writer-settings', JSON.stringify(newSettings));
                 }}
             />
+
+            <SyncModal
+                isOpen={isSyncModalOpen}
+                onClose={() => setSyncModalOpen(false)}
+                addNotification={addNotification}
+            />
+
+            {isProfileModalOpen && currentUser && (
+                <ProfileModal
+                    user={currentUser}
+                    onClose={() => setProfileModalOpen(false)}
+                    addNotification={addNotification}
+                />
+            )}
+
+            {isProfileDashboardOpen && currentUser && (
+                <ProfileDashboard
+                    user={currentUser}
+                    settings={settings}
+                    onSettingsChange={(newSettings: Settings) => {
+                        setSettings(newSettings);
+                        localStorage.setItem('gemini-writer-settings', JSON.stringify(newSettings));
+                    }}
+                    onClose={() => setProfileDashboardOpen(false)}
+                />
+            )}
+
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={() => setAuthModalOpen(false)}
+                onSuccess={() => {
+                    // Auth successful, load user data
+                    setShowWelcome(false);
+                }}
+                addNotification={addNotification}
+            />
+
+
 
             <div className="absolute bottom-4 right-4 z-50 space-y-2 w-full max-w-sm" role="region" aria-live="polite" aria-relevant="additions" aria-atomic="false">
                 {notifications.map(n => (

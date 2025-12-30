@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useTranslations } from '../hooks/useTranslations';
-import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SaveAsIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon, DownloadIcon, HomeIcon, ShareIcon, BellIcon, BellOffIcon } from './icons/Icons';
+import { ChatIcon, SettingsIcon, NotesIcon, SaveIcon, SaveAsIcon, HelpCircleIcon, LockIcon, UnlockIcon, HistoryIcon, DownloadIcon, HomeIcon, ShareIcon, BellIcon, BellOffIcon, SyncIcon } from './icons/Icons';
 import type { Note } from '../types';
 
 interface HeaderProps {
@@ -17,18 +17,21 @@ interface HeaderProps {
     onDownload?: () => void;
     onOpenLandingPage?: () => void;
     onShare?: () => void;
+    onSync?: () => void;
     onReminder?: () => void;
     onToggleDataHunter?: () => void;
     isDataHunterOpen?: boolean;
     isLocked: boolean;
     activeNote: Note | null;
+    onProfile?: () => void; // Profile dashboard
+    currentUser?: any; // Current authenticated user
     // These props are deprecated but kept for compatibility with App.tsx
     searchQuery?: string;
     onSearchChange?: (query: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
-    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSaveAs, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, onOpenLandingPage, onShare, onReminder, onToggleDataHunter, isDataHunterOpen, isLocked, activeNote
+    onToggleNotesSidebar, onToggleChatSidebar, isChatOpen, onSave, onSaveAs, onSettings, onHelp, onToggleLock, onOpenHistory, onDownload, onOpenLandingPage, onShare, onSync, onReminder, onToggleDataHunter, isDataHunterOpen, isLocked, activeNote, onProfile, currentUser
 }) => {
     const { t } = useTranslations();
 
@@ -50,10 +53,7 @@ const Header: React.FC<HeaderProps> = ({
                     } ${className}
                 `}
             >
-                {React.cloneElement(children as React.ReactElement, {
-                    width: "18", height: "18",
-                    className: isActive ? "text-primary" : "current-color"
-                })}
+                {children}
             </button>
         );
 
@@ -101,6 +101,12 @@ const Header: React.FC<HeaderProps> = ({
                     </IconButton>
                 )}
 
+                {onSync && (
+                    <IconButton onClick={onSync} title="Mobil ile Eşle">
+                        <SyncIcon />
+                    </IconButton>
+                )}
+
                 {onDownload && (
                     <IconButton onClick={onDownload} title={t('header.download')}>
                         <DownloadIcon />
@@ -111,8 +117,12 @@ const Header: React.FC<HeaderProps> = ({
 
                 {onToggleDataHunter && (
                     <IconButton onClick={onToggleDataHunter} title="Veri Avcısı" isActive={isDataHunterOpen}>
+                        {/* Crosshair/Target icon - represents data hunting */}
                         <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            <circle cx="12" cy="12" r="10" strokeWidth={1.5} />
+                            <circle cx="12" cy="12" r="6" strokeWidth={1.5} />
+                            <circle cx="12" cy="12" r="2" strokeWidth={2} fill="currentColor" />
+                            <path strokeLinecap="round" strokeWidth={2} d="M12 2v4M12 18v4M2 12h4M18 12h4" />
                         </svg>
                     </IconButton>
                 )}
@@ -123,9 +133,45 @@ const Header: React.FC<HeaderProps> = ({
 
                 <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
 
-                <IconButton onClick={onSettings} title={t('header.settings')}>
-                    <SettingsIcon />
-                </IconButton>
+                {/* Profile Button (Web only) */}
+                {!isElectron && onProfile && currentUser && (
+                    <IconButton onClick={onProfile} title="Profil">
+                        <svg className="w-5 h-5 text-coral-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </IconButton>
+                )}
+
+                {/* Save buttons for Web */}
+                {!isElectron && (
+                    <>
+                        <IconButton onClick={onSave} title={t('header.save') || 'Kaydet'}>
+                            <SaveIcon />
+                        </IconButton>
+                        {onSaveAs && (
+                            <IconButton onClick={onSaveAs} title={t('header.saveAs') || 'Farklı Kaydet'}>
+                                <SaveAsIcon />
+                            </IconButton>
+                        )}
+                    </>
+                )}
+
+                {/* Save buttons and Settings for Electron */}
+                {isElectron && (
+                    <>
+                        <IconButton onClick={onSave} title={t('header.save') || 'Kaydet'}>
+                            <SaveIcon />
+                        </IconButton>
+                        {onSaveAs && (
+                            <IconButton onClick={onSaveAs} title={t('header.saveAs') || 'Farklı Kaydet'}>
+                                <SaveAsIcon />
+                            </IconButton>
+                        )}
+                        <IconButton onClick={onSettings} title={t('header.settings')}>
+                            <SettingsIcon />
+                        </IconButton>
+                    </>
+                )}
 
                 <IconButton onClick={onToggleChatSidebar} title={isChatOpen ? t('chat.close') : t('chat.open')} isActive={isChatOpen}>
                     <ChatIcon />
