@@ -482,36 +482,20 @@ const App: React.FC = () => {
         }
     };
 
-    // Auto-save debounced function
-    const autoSaveRef = useRef<ReturnType<typeof debounce> | null>(null);
+    // Track the last saved state to compare for the 5-minute interval auto-save
+    const lastSavedStateRef = useRef<{ id: number | null; title: string; content: string }>({ id: null, title: '', content: '' });
 
-    useEffect(() => {
-        // Create debounced save function (1 second delay)
-        autoSaveRef.current = debounce(async (note: Note) => {
-            try {
-                console.log('[Auto-save] Saving note:', note.id, note.title);
-                await db.saveNote(note);
-                console.log('[Auto-save] Note saved successfully');
-            } catch (error) {
-                console.error('[Auto-save] Error:', error);
-                addNotification(t('notifications.saveError') || 'Kaydetme hatası', 'error');
-            }
-        }, 1000);
-
-        return () => {
-            // Cleanup on unmount
-            if (autoSaveRef.current) {
-                // Final save before unmount if needed
-            }
-        };
-    }, []);
-
-    // Trigger auto-save when activeNote changes
+    // Update lastSavedStateRef when a different note is selected
     useEffect(() => {
         if (activeNote && activeNote.id) {
-            autoSaveRef.current?.(activeNote);
+            const lastState = lastSavedStateRef.current;
+
+            // When a different note is selected, update the ref (don't trigger auto-save)
+            if (lastState.id !== activeNote.id) {
+                lastSavedStateRef.current = { id: activeNote.id, title: activeNote.title, content: activeNote.content };
+            }
         }
-    }, [activeNote]);
+    }, [activeNote?.id]); // Only when note ID changes
 
     const handleDeleteNote = async (id: number) => {
         try {
@@ -1245,6 +1229,10 @@ const App: React.FC = () => {
                         localStorage.setItem('gemini-writer-settings', JSON.stringify(newSettings));
                     }}
                     onClose={() => setProfileDashboardOpen(false)}
+                    onLogout={() => {
+                        setProfileDashboardOpen(false);
+                        setShowWelcome(true);
+                    }}
                 />
             )}
 

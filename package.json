@@ -48,6 +48,7 @@
     "better-sqlite3": "^12.4.1",
     "cors": "^2.8.5",
     "diff": "^7.0.0",
+    "electron-updater": "^6.6.2",
     "express": "^5.2.1",
     "jspdf": "^3.0.3",
     "jszip": "^3.10.1",
@@ -149,6 +150,12 @@
     },
     "linux": {
       "icon": "build/icons"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "kibrit74",
+      "repo": "neural-pad",
+      "releaseType": "release"
     }
   }
 }

@@ -31,6 +31,18 @@ try {
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+
+// Auto-updater (only in production)
+let autoUpdater = null;
+if (!isDev) {
+  try {
+    autoUpdater = require('electron-updater').autoUpdater;
+    console.log('[AutoUpdater] Module loaded successfully');
+  } catch (e) {
+    console.warn('[AutoUpdater] Failed to load:', e.message);
+  }
+}
+
 // Speech recognition removed - using Web Speech API only
 // db and settings will be loaded after app is ready
 let db = null;
@@ -389,6 +401,113 @@ function setupSpeechIPC() {
   });
 }
 
+function setupAutoUpdater() {
+  if (!autoUpdater) {
+    console.log('[AutoUpdater] Not available (development mode or load failed)');
+    return;
+  }
+
+  // Configure auto-updater
+  autoUpdater.autoDownload = false; // Don't download automatically, let user decide
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  // Event: Checking for updates
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[AutoUpdater] Checking for updates...');
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update:checking');
+    }
+  });
+
+  // Event: Update available
+  autoUpdater.on('update-available', (info) => {
+    console.log('[AutoUpdater] Update available:', info.version);
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update:available', {
+        version: info.version,
+        releaseDate: info.releaseDate,
+        releaseNotes: info.releaseNotes
+      });
+    }
+  });
+
+  // Event: No update available
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('[AutoUpdater] No update available, current version is latest');
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update:not-available', { version: info.version });
+    }
+  });
+
+  // Event: Download progress
+  autoUpdater.on('download-progress', (progress) => {
+    console.log(`[AutoUpdater] Download progress: ${progress.percent.toFixed(1)}%`);
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update:progress', {
+        percent: progress.percent,
+        bytesPerSecond: progress.bytesPerSecond,
+        transferred: progress.transferred,
+        total: progress.total
+      });
+    }
+  });
+
+  // Event: Update downloaded
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('[AutoUpdater] Update downloaded:', info.version);
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update:downloaded', {
+        version: info.version,
+        releaseNotes: info.releaseNotes
+      });
+    }
+  });
+
+  // Event: Error
+  autoUpdater.on('error', (error) => {
+    console.error('[AutoUpdater] Error:', error.message);
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('update:error', { message: error.message });
+    }
+  });
+
+  // IPC Handlers
+  ipcMain.handle('update:check', async () => {
+    try {
+      console.log('[AutoUpdater] Manual check triggered');
+      const result = await autoUpdater.checkForUpdates();
+      return { success: true, updateInfo: result?.updateInfo };
+    } catch (error) {
+      console.error('[AutoUpdater] Check error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('update:download', async () => {
+    try {
+      console.log('[AutoUpdater] Starting download...');
+      await autoUpdater.downloadUpdate();
+      return { success: true };
+    } catch (error) {
+      console.error('[AutoUpdater] Download error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('update:install', () => {
+    console.log('[AutoUpdater] Installing update and restarting...');
+    autoUpdater.quitAndInstall(false, true);
+  });
+
+  // Check for updates on startup (after a short delay)
+  setTimeout(() => {
+    console.log('[AutoUpdater] Initial update check...');
+    autoUpdater.checkForUpdates().catch(err => {
+      console.log('[AutoUpdater] Initial check failed:', err.message);
+    });
+  }, 5000); // Wait 5 seconds after app start
+}
+
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
@@ -567,6 +686,7 @@ app.whenReady().then(() => {
   setupSpeechIPC();
   setupAppIPC();
   setupSyncIPC();
+  setupAutoUpdater();
 
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.neural-pad.app');

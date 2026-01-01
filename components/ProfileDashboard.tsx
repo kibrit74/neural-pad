@@ -12,9 +12,10 @@ interface ProfileDashboardProps {
     user: AuthUser;
     settings: Settings;
     onSettingsChange: (settings: Settings) => void;
+    onLogout?: () => void;
 }
 
-const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ onClose, user, settings, onSettingsChange }) => {
+const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ onClose, user, settings, onSettingsChange, onLogout }) => {
     const { t } = useTranslations();
 
     const [stats, setStats] = useState<UserStats | null>(null);
@@ -43,6 +44,16 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ onClose, user, sett
             console.error('Error loading dashboard data:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await authService.signOut();
+            onLogout?.();
+            onClose();
+        } catch (error) {
+            console.error('Logout error:', error);
         }
     };
 
@@ -770,6 +781,30 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ onClose, user, sett
                                                 {t('profile.updateButton')}
                                             </button>
                                         </div>
+                                    </div>
+
+                                    {/* Logout Section */}
+                                    <div className="bg-gradient-to-br from-background-secondary to-background p-6 rounded-2xl border border-border shadow-lg">
+                                        <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--color-primary)' }}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                            </svg>
+                                            {t('profile.logout') || 'Çıkış Yap'}
+                                        </h3>
+                                        <p className="text-sm text-text-secondary mb-4">{t('profile.logoutDescription') || 'Hesabınızdan güvenli bir şekilde çıkış yapın.'}</p>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full px-4 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                                            style={{
+                                                backgroundColor: 'var(--color-primary)',
+                                                color: 'var(--color-primary-text, white)'
+                                            }}
+                                        >
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                            </svg>
+                                            {t('profile.logoutButton') || 'Çıkış Yap'}
+                                        </button>
                                     </div>
 
                                     {/* Danger Zone */}

@@ -47,5 +47,16 @@ const electronAPI = {
         status: () => electron_1.ipcRenderer.invoke('p2p:signaling-status'),
         generateQR: (peerId) => electron_1.ipcRenderer.invoke('p2p:generate-qr', peerId),
     },
+    update: {
+        check: () => electron_1.ipcRenderer.invoke('update:check'),
+        download: () => electron_1.ipcRenderer.invoke('update:download'),
+        install: () => electron_1.ipcRenderer.invoke('update:install'),
+        onChecking: (callback) => electron_1.ipcRenderer.on('update:checking', callback),
+        onAvailable: (callback) => electron_1.ipcRenderer.on('update:available', (e, info) => callback(info)),
+        onNotAvailable: (callback) => electron_1.ipcRenderer.on('update:not-available', (e, info) => callback(info)),
+        onProgress: (callback) => electron_1.ipcRenderer.on('update:progress', (e, progress) => callback(progress)),
+        onDownloaded: (callback) => electron_1.ipcRenderer.on('update:downloaded', (e, info) => callback(info)),
+        onError: (callback) => electron_1.ipcRenderer.on('update:error', (e, err) => callback(err)),
+    },
 };
 electron_1.contextBridge.exposeInMainWorld('electron', electronAPI);
