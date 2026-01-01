@@ -157,7 +157,7 @@ const DataHunterSidebar: React.FC<DataHunterSidebarProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed right-0 top-0 h-full w-80 bg-background border-l border-border shadow-lg z-30 flex flex-col">
+        <div className="fixed right-0 top-0 h-full w-full md:w-80 bg-background border-l border-border shadow-lg z-30 flex flex-col">
             {/* Header */}
             <div className="flex flex-col border-b border-border">
                 <div className="flex items-center justify-between p-4">

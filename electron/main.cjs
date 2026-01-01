@@ -225,8 +225,9 @@ function setupAppIPC() {
 
 function setupSyncIPC() {
   const syncServer = require('./syncServer.cjs');
+  const { getSignalingServer } = require('./signalingServer.cjs');
 
-  // Start sync server
+  // Start sync server (WiFi - LAN only)
   ipcMain.handle('sync:start', async () => {
     try {
       const result = await syncServer.startSyncServer(db);
@@ -267,6 +268,71 @@ function setupSyncIPC() {
   // Get local IP
   ipcMain.handle('sync:ip', () => {
     return { ip: syncServer.getLocalIP() };
+  });
+
+  // ========== P2P Signaling Server (WebRTC) ==========
+
+  // Start P2P signaling server
+  ipcMain.handle('p2p:start-signaling', async (event, port = 8766) => {
+    try {
+      const signalingServer = getSignalingServer();
+      const result = await signalingServer.start(port);
+      console.log('[P2P IPC] Signaling server started:', result);
+      return { success: true, port: result.port, ip: syncServer.getLocalIP() };
+    } catch (error) {
+      console.error('[P2P IPC] Failed to start signaling:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Stop P2P signaling server
+  ipcMain.handle('p2p:stop-signaling', () => {
+    const signalingServer = getSignalingServer();
+    signalingServer.stop();
+    return { success: true };
+  });
+
+  // Get P2P signaling status
+  ipcMain.handle('p2p:signaling-status', () => {
+    const signalingServer = getSignalingServer();
+    return signalingServer.getStatus();
+  });
+
+  // Generate P2P connection QR code
+  ipcMain.handle('p2p:generate-qr', async (event, peerId) => {
+    try {
+      const signalingServer = getSignalingServer();
+      const status = signalingServer.getStatus();
+
+      if (!status.running) {
+        return { success: false, error: 'Signaling server not running' };
+      }
+
+      const ip = syncServer.getLocalIP();
+      const connectionInfo = {
+        type: 'neural-pad-p2p',
+        peerId: peerId,
+        signalingUrl: `ws://${ip}:${status.port}`,
+        timestamp: Date.now()
+      };
+
+      const QRCode = require('qrcode');
+      const qrDataUrl = await QRCode.toDataURL(JSON.stringify(connectionInfo), {
+        width: 256,
+        margin: 2,
+        color: { dark: '#000000', light: '#ffffff' }
+      });
+
+      return {
+        success: true,
+        qrDataUrl,
+        connectionInfo,
+        url: `ws://${ip}:${status.port}`
+      };
+    } catch (error) {
+      console.error('[P2P IPC] Failed to generate QR:', error);
+      return { success: false, error: error.message };
+    }
   });
 }
 

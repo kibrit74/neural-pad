@@ -783,7 +783,7 @@ const Chat: React.FC<ChatProps> = ({ settings, addNotification, onClose, getEdit
     };
 
     return (
-        <div className="flex flex-col h-full w-96 max-w-md flex-shrink-0 bg-background/80 backdrop-blur-2xl border-l border-border/20 text-text-primary">
+        <div className="flex flex-col h-full w-full md:w-96 md:max-w-md flex-shrink-0 bg-background/80 backdrop-blur-2xl border-l border-border/20 text-text-primary">
             <header className="p-4 border-b border-border/10 flex items-center justify-between flex-shrink-0 bg-white/5 backdrop-blur-sm">
                 <div className="flex items-center gap-2">
                     <SparkleIcon className="text-primary" />

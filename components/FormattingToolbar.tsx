@@ -10,6 +10,7 @@ import { hasVoiceCommand, removeVoiceCommand } from '../utils/voiceCommandUtils'
 import {
     BoldIcon, ItalicIcon, UnderlineIcon, StrikeIcon, CodeIcon, ListIcon, ListOrderedIcon, BlockquoteIcon, UndoIcon, RedoIcon, ImageIcon, MicIcon, PaperclipIcon
 } from './icons/Icons';
+import { extractTextFromPDF, formatPDFTextAsHTML } from '../utils/pdfImport';
 
 const TableIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -332,9 +333,41 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
         input.click();
     };
 
+    const handlePDFImport = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.pdf';
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+
+            try {
+                if (typeof addNotification === 'function') {
+                    addNotification('PDF okunuyor...', 'success');
+                }
+
+                const result = await extractTextFromPDF(file);
+                const html = formatPDFTextAsHTML(result);
+
+                editor.chain().focus().insertContent(html).run();
+
+                if (typeof addNotification === 'function') {
+                    addNotification(`PDF içe aktarıldı: ${result.pageCount} sayfa`, 'success');
+                }
+            } catch (error) {
+                console.error('PDF import error:', error);
+                if (typeof addNotification === 'function') {
+                    addNotification('PDF okunamadı. Dosya bozuk olabilir.', 'error');
+                }
+            }
+        };
+        input.click();
+    };
+
     return (
         <>
             <div className="flex items-center gap-1 p-2 border-b border-white/10 bg-white/5 backdrop-blur-md flex-wrap">
+
                 <select
                     value={currentFont}
                     onChange={(e) => {
@@ -383,6 +416,16 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({ editor, onImageUp
                 <div className="mx-2 h-6 border-l border-border"></div>
                 <ToolbarButton onClick={() => editor.chain().focus().undo().run()} title={t('toolbar.undo')}><UndoIcon /></ToolbarButton>
                 <ToolbarButton onClick={() => editor.chain().focus().redo().run()} title={t('toolbar.redo')}><RedoIcon /></ToolbarButton>
+                <div className="mx-2 h-6 border-l border-border"></div>
+                <ToolbarButton onClick={handlePDFImport} title="PDF İçe Aktar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                </ToolbarButton>
             </div>
             {showModal && (
                 <VoiceInputModal

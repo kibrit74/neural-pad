@@ -2,7 +2,9 @@ import React, { useState, useMemo } from 'react';
 import type { Note } from '../types';
 import { useTranslations } from '../hooks/useTranslations';
 import { TrashIcon, CloseIcon, EditIcon, PinIcon, ChevronDownIcon, LockIcon, BellIcon } from './icons/Icons';
+import MobileSyncButton from './MobileSyncButton';
 import { useTheme } from '../contexts/ThemeContext';
+import { getLogoForTheme, defaultLogo } from '../utils/themeLogos';
 
 interface NotesSidebarProps {
     notes: Note[];
@@ -18,24 +20,27 @@ interface NotesSidebarProps {
     // New optional props for mockup compliance
     searchQuery?: string;
     onSearchChange?: (query: string) => void;
+    // Template selector (Electron-only)
+    onOpenTemplates?: () => void;
 }
 
 type SortOption = 'recent' | 'oldest' | 'alphabetical';
+type DateFilter = 'all' | 'today' | 'week' | 'month';
 
 const NotesSidebar: React.FC<NotesSidebarProps> = ({
     notes, activeNoteId, onSelectNote, onNewNote, onDeleteNote, onTogglePin, onClose,
-    allTags, selectedTag, onSelectTag, searchQuery, onSearchChange
+    allTags, selectedTag, onSelectTag, searchQuery, onSearchChange, onOpenTemplates
 }) => {
     const { t } = useTranslations();
     const { theme } = useTheme();
+    const isElectron = typeof window !== 'undefined' && (window as any).electron;
     const [sortBy, setSortBy] = useState<SortOption>('recent');
+    const [dateFilter, setDateFilter] = useState<DateFilter>('all');
     const [isTagsExpanded, setIsTagsExpanded] = useState(false);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
-    const themeIcons: Record<string, string> = {
-        coral: '🔥', emerald: '🌿', gold: '⚡', teal: '💎', azure: '🌀', midnight: '🌑'
-    };
-    const currentIcon = themeIcons[theme] || '🔹';
+    // Get the logo for current theme
+    const currentLogo = getLogoForTheme(theme);
 
     const toggleGroup = (groupName: string) => {
         setExpandedGroups(prev => ({
@@ -67,7 +72,33 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
 
     // Sort and group notes
     const groupedNotes = useMemo(() => {
-        let sortedNotes = [...notes];
+        let filteredNotes = [...notes];
+
+        // Apply date filter
+        if (dateFilter !== 'all') {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            filteredNotes = filteredNotes.filter(note => {
+                const noteDate = new Date(note.updatedAt);
+                const noteDateOnly = new Date(noteDate.getFullYear(), noteDate.getMonth(), noteDate.getDate());
+                const diffTime = today.getTime() - noteDateOnly.getTime();
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                switch (dateFilter) {
+                    case 'today':
+                        return diffDays === 0;
+                    case 'week':
+                        return diffDays <= 7;
+                    case 'month':
+                        return diffDays <= 30;
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        let sortedNotes = [...filteredNotes];
 
         // Sort by pin first
         sortedNotes.sort((a, b) => {
@@ -110,7 +141,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
         });
 
         return groups;
-    }, [notes, sortBy, t]);
+    }, [notes, sortBy, dateFilter, t]);
 
     return (
         <aside className="w-full h-full flex flex-col bg-background/80 backdrop-blur-xl border-r border-border/40 transition-colors duration-300">
@@ -118,8 +149,13 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
             <div className="p-5 border-b border-border/20 space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-lg shadow-lg shadow-primary/20">
-                            {currentIcon}
+                        <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
+                            <img
+                                src={currentLogo}
+                                alt="Neural Pad"
+                                className="w-10 h-10 object-contain transition-transform duration-300 hover:scale-110"
+                                onError={(e) => { e.currentTarget.src = defaultLogo; }}
+                            />
                         </div>
                         <span className="font-bold text-lg text-primary tracking-tight">Neural Pad</span>
                     </div>
@@ -133,7 +169,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
                     <div className="relative group">
                         <input
                             type="text"
-                            placeholder={t('common.search') || "Ara..."}
+                            placeholder={t('notesSidebar.searchPlaceholder')}
                             value={searchQuery || ''}
                             onChange={(e) => onSearchChange(e.target.value)}
                             className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 focus:bg-primary/5 transition-all"
@@ -148,28 +184,65 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
                 )}
             </div>
 
-            {/* Quick Actions / Sort */}
-            <div className="px-4 py-3 flex items-center justify-between border-b border-border/20">
-                <div className="flex gap-1">
+            {/* Quick Actions */}
+            <div className="px-4 py-3 space-y-3 border-b border-border/20">
+                {/* Action Buttons Row */}
+                <div className="flex gap-2">
                     <button
                         onClick={onNewNote}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-lg transition-colors border border-primary/20"
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-lg transition-colors border border-primary/20"
                     >
                         <EditIcon className="w-3.5 h-3.5" />
                         <span>{t('notesSidebar.newNote')}</span>
                     </button>
+                    {/* Electron-only: Template button */}
+                    {isElectron && onOpenTemplates && (
+                        <button
+                            onClick={onOpenTemplates}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-xs font-semibold rounded-lg transition-colors border border-amber-500/20"
+                            title={t('templates.createFromTemplate')}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                                <polyline points="14,2 14,8 20,8" />
+                                <line x1="16" y1="13" x2="8" y2="13" />
+                                <line x1="16" y1="17" x2="8" y2="17" />
+                            </svg>
+                            <span>{t('templates.title')}</span>
+                        </button>
+                    )}
                 </div>
 
-                <div className="flex gap-1">
+
+
+                {/* Filters Row */}
+                <div className="flex gap-2">
+                    <select
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value as DateFilter)}
+                        className="flex-1 bg-[#1a1a1a] border border-white/10 rounded-lg text-[11px] font-medium text-text-secondary hover:text-text-primary px-3 py-1.5 focus:outline-none focus:border-primary/50 cursor-pointer appearance-none"
+                        style={{ colorScheme: 'dark' }}
+                    >
+                        <option value="all">{t('notesSidebar.filterAll')}</option>
+                        <option value="today">{t('notesSidebar.filterToday')}</option>
+                        <option value="week">{t('notesSidebar.filterWeek')}</option>
+                        <option value="month">{t('notesSidebar.filterMonth')}</option>
+                    </select>
                     <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as SortOption)}
-                        className="bg-transparent text-[10px] font-semibold text-text-secondary hover:text-primary uppercase tracking-wider focus:outline-none cursor-pointer"
+                        className="flex-1 bg-[#1a1a1a] border border-white/10 rounded-lg text-[11px] font-medium text-text-secondary hover:text-text-primary px-3 py-1.5 focus:outline-none focus:border-primary/50 cursor-pointer appearance-none"
+                        style={{ colorScheme: 'dark' }}
                     >
                         <option value="recent">{t('notesSidebar.sortRecent')}</option>
                         <option value="oldest">{t('notesSidebar.sortOldest')}</option>
                         <option value="alphabetical">{t('notesSidebar.sortAlphabetical')}</option>
                     </select>
+                </div>
+
+                {/* Mobile Sync Button (Native only) */}
+                <div className="mt-2">
+                    <MobileSyncButton />
                 </div>
             </div>
 

@@ -4,6 +4,7 @@ import { Editor as TiptapEditor } from '@tiptap/react';
 
 import Header from './components/Header';
 import Editor from './components/Editor';
+import MobileEditor from './components/MobileEditor';
 import NotesSidebar from './components/NotesSidebar';
 import ContextMenu from './components/ContextMenu';
 import SettingsModal from './components/SettingsModal';
@@ -28,7 +29,10 @@ import SyncModal from './components/SyncModal';
 import AuthModal from './components/AuthModal';
 import ProfileModal from './components/ProfileModal';
 import ProfileDashboard from './components/ProfileDashboard';
+import TemplateSelector from './components/TemplateSelector';
+import P2PSyncModal from './components/P2PSyncModal';
 import { authService, type AuthUser } from './services/authService';
+import { noteTemplates, type NoteTemplate } from './utils/templates';
 // TagInput is small, keep it eager
 
 import type { Settings, NotificationType, Note } from './types';
@@ -89,6 +93,8 @@ const App: React.FC = () => {
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
     const [isProfileDashboardOpen, setProfileDashboardOpen] = useState(false);
     const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+    const [isTemplateSelectorOpen, setTemplateSelectorOpen] = useState(false);
+    const [isP2PSyncOpen, setP2PSyncOpen] = useState(false);
 
     // Password / lock state
     const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
@@ -334,6 +340,39 @@ const App: React.FC = () => {
         }
     }, [handleSaveNow, handleSelectNote, t]);
 
+    // Create note from template (Electron-only feature)
+    const handleNewNoteFromTemplate = useCallback(async (template: NoteTemplate) => {
+        console.log('handleNewNoteFromTemplate called with:', template.id);
+        if (activeNoteRef.current) {
+            await handleSaveNow(true);
+        }
+
+        // Extract title from template content (first h2 or h1)
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = template.content;
+        const heading = tempDiv.querySelector('h1, h2');
+        const title = heading?.textContent?.replace(/^[📋📜📝👤🧾📑💼🏥🩺💊🤫🔐]\s*/, '') || '';
+
+        const newNoteData: Omit<Note, 'id'> = {
+            title: title,
+            content: template.content,
+            tags: template.tags,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        try {
+            const newId = await db.saveNote(newNoteData);
+            const allNotes = await db.getAllNotes();
+            setNotes(allNotes);
+            await handleSelectNote(newId, true);
+            setTemplateSelectorOpen(false);
+            addNotification(`${title} şablonundan not oluşturuldu`, 'success');
+        } catch (error: any) {
+            console.error('handleNewNoteFromTemplate error:', error);
+            addNotification(t('notifications.saveError', { message: error.message }), 'error');
+        }
+    }, [handleSaveNow, handleSelectNote, t]);
 
     // Load initial data
     useEffect(() => {
@@ -780,7 +819,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen w-screen bg-gradient-to-br from-background via-background-secondary to-[#000000] text-text-primary overflow-hidden font-sans">
+        <div className="flex h-screen w-full bg-gradient-to-br from-background via-background-secondary to-[#000000] text-text-primary overflow-x-hidden font-sans">
             <Suspense fallback={null}>
                 <HelpModal isOpen={isHelpModalOpen} onClose={() => setHelpModalOpen(false)} />
             </Suspense>
@@ -800,11 +839,12 @@ const App: React.FC = () => {
                         onSelectTag={setSelectedTag}
                         searchQuery={searchQuery}
                         onSearchChange={handleSearchChange}
+                        onOpenTemplates={() => setTemplateSelectorOpen(true)}
                     />
                 </div>
             )}
 
-            <main className="flex-grow flex flex-col h-full relative">
+            <main className="flex-grow flex flex-col h-full relative w-full max-w-full overflow-x-hidden">
                 <Header
                     onToggleNotesSidebar={toggleNotesSidebar}
                     onToggleChatSidebar={toggleChatSidebar}
@@ -837,7 +877,6 @@ const App: React.FC = () => {
                         setShareContent(''); // Reset to use full note content
                         setShareModalOpen(true);
                     }}
-                    onSync={(window as any).electron ? () => setSyncModalOpen(true) : undefined}
                     onReminder={() => setReminderModalOpen(true)}
                     onToggleDataHunter={toggleDataHunter}
                     isDataHunterOpen={isDataHunterOpen}
@@ -851,7 +890,7 @@ const App: React.FC = () => {
                     searchQuery={searchQuery}
                     onSearchChange={handleSearchChange}
                 />
-                <div className="px-4 pt-4 pb-4 border-b border-border-strong flex-shrink-0">
+                <div className="px-2 md:px-4 pt-4 pb-4 border-b border-border-strong flex-shrink-0 w-full max-w-full">
                     <input
                         ref={titleInputRef}
                         type="text"
@@ -869,19 +908,29 @@ const App: React.FC = () => {
                         />
                     )}
                 </div>
-                <div className="flex-grow overflow-hidden relative" onContextMenu={handleContextMenu}>
-                    <div className="absolute right-4 top-4 z-10 flex gap-2">
-                        <button onClick={() => setMarkdownModalOpen(true)} className="px-2 py-1 text-xs rounded bg-background border border-border text-text-primary hover:bg-border">{t('common.markdown')}</button>
-                    </div>
-                    <Editor
-                        content={activeNote?.content || ''}
-                        onChange={handleEditorChange}
-                        editorRef={editorRef}
-                        onAiImageMenu={handleAiImageMenu}
-                        addNotification={addNotification}
-                        onVoiceSave={async () => { await handleSaveNow(true); }}
-                        settings={settings}
-                    />
+                <div className="flex-grow overflow-y-auto relative w-full max-w-full" onContextMenu={handleContextMenu}>
+                    {!isMobile && (
+                        <div className="absolute right-4 top-4 z-10 flex gap-2">
+                            <button onClick={() => setMarkdownModalOpen(true)} className="px-2 py-1 text-xs rounded bg-background border border-border text-text-primary hover:bg-border">{t('common.markdown')}</button>
+                        </div>
+                    )}
+                    {isMobile ? (
+                        <MobileEditor
+                            content={activeNote?.content || ''}
+                            onChange={handleEditorChange}
+                            editorRef={editorRef}
+                        />
+                    ) : (
+                        <Editor
+                            content={activeNote?.content || ''}
+                            onChange={handleEditorChange}
+                            editorRef={editorRef}
+                            onAiImageMenu={handleAiImageMenu}
+                            addNotification={addNotification}
+                            onVoiceSave={async () => { await handleSaveNow(true); }}
+                            settings={settings}
+                        />
+                    )}
                     {contextMenu.anchorEl && (
                         <ContextMenu
                             editor={editorRef.current!}
@@ -954,7 +1003,7 @@ const App: React.FC = () => {
                             aria-hidden="true"
                         />
                     )}
-                    <div className={`fixed top - 0 left - 0 h - full z - 40 transition - transform duration - 300 ease -in -out w - [85vw] max - w - sm ${isNotesSidebarOpen ? 'translate-x-0' : '-translate-x-full'} `}>
+                    <div className={`fixed top-0 left-0 h-full z-40 transition-transform duration-300 ease-in-out w-[85vw] max-w-sm ${isNotesSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                         <NotesSidebar
                             notes={filteredNotes}
                             activeNoteId={activeNote?.id || null}
@@ -974,7 +1023,7 @@ const App: React.FC = () => {
                             onSelectTag={setSelectedTag}
                         />
                     </div>
-                    <div className={`fixed top - 0 right - 0 h - full z - 40 transition - transform duration - 300 ease -in -out w - [85vw] max - w - sm ${isChatSidebarOpen ? 'translate-x-0' : 'translate-x-full'} `}>
+                    <div className={`fixed top-0 right-0 h-full z-40 transition-transform duration-300 ease-in-out w-[85vw] max-w-sm ${isChatSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                         <Suspense fallback={<div className="p-4 text-text-secondary">{t('common.loading')}</div>}>
                             <Chat
                                 settings={settings}
@@ -1210,6 +1259,16 @@ const App: React.FC = () => {
             />
 
 
+            {/* Template Selector Modal (Electron-only) */}
+            <TemplateSelector
+                isOpen={isTemplateSelectorOpen}
+                onClose={() => setTemplateSelectorOpen(false)}
+                onSelectTemplate={handleNewNoteFromTemplate}
+                onCreateEmpty={() => {
+                    setTemplateSelectorOpen(false);
+                    handleNewNote();
+                }}
+            />
 
             <div className="absolute bottom-4 right-4 z-50 space-y-2 w-full max-w-sm" role="region" aria-live="polite" aria-relevant="additions" aria-atomic="false">
                 {notifications.map(n => (

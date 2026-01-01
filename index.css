@@ -406,7 +406,42 @@ body {
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;
+    width: 100% !important;
+    max-width: none !important;
   }
+
+  /* Force prose to full width */
+  .prose {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  /* Mobile Editor Specific Styles */
+  .mobile-editor {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .mobile-editor-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 100%;
+    border: none;
+    outline: none;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .mobile-editor-content p {
+    width: 100% !important;
+    max-width: 100% !important;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
 
   /* Also remove any default focus outline/border that some browsers render */
   .ProseMirror:focus,
@@ -531,5 +566,15 @@ body {
   .prose ul>li::marker,
   .prose ol>li::marker {
     color: var(--color-text-secondary);
+  }
+
+  /* Hide scrollbar for mobile toolbar */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

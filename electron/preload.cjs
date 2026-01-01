@@ -40,6 +40,12 @@ const electronAPI = {
     qr: () => ipcRenderer.invoke('sync:qr'),
     ip: () => ipcRenderer.invoke('sync:ip'),
   },
+  p2p: {
+    startSignaling: (port) => ipcRenderer.invoke('p2p:start-signaling', port),
+    stopSignaling: () => ipcRenderer.invoke('p2p:stop-signaling'),
+    status: () => ipcRenderer.invoke('p2p:signaling-status'),
+    generateQR: (peerId) => ipcRenderer.invoke('p2p:generate-qr', peerId),
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronAPI);

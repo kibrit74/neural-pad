@@ -50,7 +50,7 @@ const TagInput: React.FC<TagInputProps> = ({ tags, allTags = [], onChange }) => 
       return;
     }
     // Allow comma to create a tag quickly
-    if (e.key === ',' ) {
+    if (e.key === ',') {
       e.preventDefault();
       addTag(input);
       return;
@@ -86,7 +86,7 @@ const TagInput: React.FC<TagInputProps> = ({ tags, allTags = [], onChange }) => 
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder={t('addTag') || 'Add tag...'}
-          className="flex-1 min-w-[140px] max-w-[220px] bg-transparent text-xs text-text-primary placeholder:text-text-secondary border-b border-border focus:border-border-strong focus:outline-none py-1"
+          className="flex-1 min-w-[80px] md:min-w-[140px] max-w-[220px] bg-transparent text-xs text-text-primary placeholder:text-text-secondary border-b border-border focus:border-strong focus:outline-none py-1"
           aria-label="Add tag"
         />
       </div>

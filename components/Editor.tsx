@@ -187,9 +187,9 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
     }, [editor, addNotification, t]);
 
     return (
-        <div className="flex flex-col h-full bg-transparent text-text-primary">
+        <div className="flex flex-col h-full bg-transparent text-text-primary w-full max-w-full">
             <FormattingToolbar editor={editor} onImageUpload={handleImageUpload} addNotification={addNotification} onVoiceSave={onVoiceSave} settings={settings} />
-            <div className="relative flex-grow overflow-y-auto" onClick={() => editor?.commands.focus()}>
+            <div className="relative flex-grow overflow-y-auto w-full max-w-full" onClick={() => editor?.commands.focus()}>
                 {editor && (
                     <BubbleMenu
                         editor={editor}
@@ -205,7 +205,7 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, editorRef, onAiImage
                         </button>
                     </BubbleMenu>
                 )}
-                <EditorContent editor={editor} className="prose dark:prose-invert max-w-none px-6 pb-6 pt-2 focus:outline-none h-full" />
+                <EditorContent editor={editor} className="prose dark:prose-invert w-full max-w-none px-3 md:px-6 pb-6 pt-2 focus:outline-none h-full" />
             </div>
         </div>
     );

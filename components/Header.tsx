@@ -58,7 +58,7 @@ const Header: React.FC<HeaderProps> = ({
         );
 
     return (
-        <header className="relative z-40 flex items-center justify-between px-6 py-3 border-b border-border/10 bg-gradient-to-r from-background/90 to-background/60 backdrop-blur-md flex-shrink-0 transition-all duration-300">
+        <header className="relative z-40 flex items-center justify-between px-3 md:px-6 py-2 md:py-3 border-b border-border/10 bg-gradient-to-r from-background/90 to-background/60 backdrop-blur-md flex-shrink-0 transition-all duration-300 w-full max-w-full overflow-x-hidden">
             {/* Left section: Sidebar Toggle & Breadcrumb */}
             <div className="flex items-center gap-4 flex-shrink-0">
                 <IconButton onClick={onToggleNotesSidebar} title={t('header.toggleNotes')}>
@@ -66,9 +66,9 @@ const Header: React.FC<HeaderProps> = ({
                 </IconButton>
 
                 <div className="flex items-center gap-2 text-sm font-medium animate-fade-in">
-                    <span className="text-text-secondary/60">📁 {t('notesSidebar.allNotes') || 'Notlarım'}</span>
-                    <span className="text-text-secondary/40 text-xs">/</span>
-                    <span className="text-primary truncate max-w-[200px] md:max-w-[400px]">
+                    <span className="hidden md:inline text-text-secondary/60">📁 {t('notesSidebar.allNotes') || 'Notlarım'}</span>
+                    <span className="hidden md:inline text-text-secondary/40 text-xs">/</span>
+                    <span className="text-primary truncate max-w-[120px] md:max-w-[200px] lg:max-w-[400px]">
                         {activeNote?.title || t('defaultNoteTitle') || 'Yeni Not'}
                     </span>
                     {activeNote?.updatedAt && (
@@ -87,16 +87,16 @@ const Header: React.FC<HeaderProps> = ({
                     </IconButton>
                 )}
 
-                <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
+                <div className="hidden md:block h-6 w-[1px] bg-white/10 mx-1"></div>
 
                 {onReminder && (
-                    <IconButton onClick={onReminder} title={t('reminder.title')} className={activeNote?.reminder ? 'text-amber-500 hover:text-amber-400' : ''}>
+                    <IconButton onClick={onReminder} title={t('reminder.title')} className={`hidden md:flex ${activeNote?.reminder ? 'text-amber-500 hover:text-amber-400' : ''}`}>
                         {activeNote?.reminder ? <BellIcon className="text-amber-500" /> : <BellOffIcon />}
                     </IconButton>
                 )}
 
                 {onShare && (
-                    <IconButton onClick={onShare} title={t('share.title')}>
+                    <IconButton onClick={onShare} title={t('share.title')} className="hidden md:flex">
                         <ShareIcon />
                     </IconButton>
                 )}
@@ -108,12 +108,12 @@ const Header: React.FC<HeaderProps> = ({
                 )}
 
                 {onDownload && (
-                    <IconButton onClick={onDownload} title={t('header.download')}>
+                    <IconButton onClick={onDownload} title={t('header.download')} className="hidden md:flex">
                         <DownloadIcon />
                     </IconButton>
                 )}
 
-                <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
+                <div className="hidden md:block h-6 w-[1px] bg-white/10 mx-1"></div>
 
                 {onToggleDataHunter && (
                     <IconButton onClick={onToggleDataHunter} title="Veri Avcısı" isActive={isDataHunterOpen}>
@@ -131,7 +131,7 @@ const Header: React.FC<HeaderProps> = ({
                     {isLocked ? <UnlockIcon /> : <LockIcon />}
                 </IconButton>
 
-                <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
+                <div className="hidden md:block h-6 w-[1px] bg-white/10 mx-1"></div>
 
                 {/* Profile Button (Web only) */}
                 {!isElectron && onProfile && currentUser && (

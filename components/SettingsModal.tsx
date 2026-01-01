@@ -5,6 +5,7 @@ import { useTranslations } from '../hooks/useTranslations';
 import type { Settings, ApiProvider } from '../types';
 import Modal from './Modal';
 import CustomPatternsSection from './CustomPatternsSection';
+import P2PSyncModal from './P2PSyncModal';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave, onClose }) => {
     const { t } = useTranslations();
+    const [isP2PSyncOpen, setIsP2PSyncOpen] = useState(false);
     // Access theme context safely; fall back to DOM/localStorage if provider is missing
     const themeCtx = useContext(ThemeContext);
     const theme: Theme = (themeCtx?.theme || (document.documentElement.getAttribute('data-theme') as Theme) || 'midnight');
@@ -266,7 +268,28 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, settings, onSave,
                     />
                 </Section>
 
+                {/* Mobile Sync Section (Electron only typically, or accessible if feature flag enabled) */}
+                <Section title="📱 Mobil Senkronizasyon">
+                    <div className="flex items-center justify-between p-4 rounded-md bg-background border border-border-strong">
+                        <div>
+                            <h4 className="font-semibold text-text-primary">Cihaz Eşleştirme</h4>
+                            <p className="text-sm text-text-secondary">Mobil uygulama ile P2P senkronizasyonu başlatın.</p>
+                        </div>
+                        <button
+                            onClick={() => setIsP2PSyncOpen(true)}
+                            className="px-4 py-2 bg-primary text-primary-text rounded-md font-semibold hover:bg-primary-hover transition-colors"
+                        >
+                            Cihaz Eşleştir
+                        </button>
+                    </div>
+                </Section>
+
             </div>
+
+            <P2PSyncModal
+                isOpen={isP2PSyncOpen}
+                onClose={() => setIsP2PSyncOpen(false)}
+            />
         </Modal>
     );
 };

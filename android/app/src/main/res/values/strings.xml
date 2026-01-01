@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Neural Pad</string>
+    <string name="title_activity_main">Neural Pad</string>
+    <string name="package_name">com.neuralpad.app</string>
+    <string name="custom_url_scheme">com.neuralpad.app</string>
+</resources>

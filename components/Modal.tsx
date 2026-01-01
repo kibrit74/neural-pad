@@ -70,9 +70,11 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
                 ref={modalContentRef}
                 tabIndex={-1}
                 className={`
-                    relative bg-background-secondary text-text-primary rounded-lg shadow-2xl w-full max-h-[90vh] 
+                    relative bg-background-secondary text-text-primary shadow-2xl 
                     flex flex-col focus:outline-none 
-                    ${sizeClasses}
+                    max-h-screen md:max-h-[90vh]
+                    w-full md:${sizeClasses}
+                    rounded-none md:rounded-lg
                     ${isOpen ? 'modal-content-enter' : 'modal-content-exit'}
                 `}
             >

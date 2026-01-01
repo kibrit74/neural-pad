@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from '../hooks/useTranslations';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { getLogoForTheme } from '../utils/themeLogos';
 import {
     BrainIcon, SearchIcon, NotesIcon, ShareIcon, BellIcon, Moon,
     ZapIcon, PaletteIcon, ShieldIcon, KeyboardIcon, StarIcon,
@@ -20,6 +22,9 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose, onAuthClick, currentUser }) => {
     const { t } = useTranslations();
     const { language, setLanguage } = useLanguage();
+    const { theme } = useTheme();
+    // Landing page always uses coral logo (fixed branding)
+    const currentLogo = '/Logo7.png';
     const [isElectron, setIsElectron] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(0);
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -171,8 +176,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose, onAuthClick,
             <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4 backdrop-blur-xl border-b border-red-500/20" style={{ background: 'rgba(26, 10, 10, 0.9)' }}>
                 <div className="max-w-6xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3 cursor-pointer" onClick={() => scrollToSection('hero')}>
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}>
-                            <FlameIcon className="w-5 h-5 text-white" />
+                        <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
+                            <img
+                                src={currentLogo}
+                                alt="Neural Pad"
+                                className="w-12 h-12 object-contain transition-transform duration-300 hover:scale-110"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
                         </div>
                         <span className="text-xl font-bold text-red-500">Neural Pad</span>
                     </div>
@@ -523,8 +533,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ isOpen, onClose, onAuthClick,
                     <div className="grid md:grid-cols-4 gap-10 mb-10">
                         <div>
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}>
-                                    <FlameIcon className="w-5 h-5 text-white" />
+                                <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
+                                    <img
+                                        src={currentLogo}
+                                        alt="Neural Pad"
+                                        className="w-12 h-12 object-contain"
+                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                    />
                                 </div>
                                 <span className="text-xl font-bold text-red-500">Neural Pad</span>
                             </div>
